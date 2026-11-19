@@ -255,7 +255,7 @@ if (chosen.includes("N")) {
     const currencies = [...new Set(W.po_line.map((l) => l.currency))].sort();
     same("N", "world: every currency of an order line has a bundled rate", currencies.every((c) => Number.isFinite(rates[c]) && rates[c] > 0), true);
     for (const c of currencies) {
-      const line = W.po_line.find((l) => l.currency === c && l.material);
+      const line = W.po_line.find((l) => l.currency === c && l.material && !l.cancelled);
       const m = W.material.find((x) => x.id === line.material);
       const n = normaliseLine(line, { group: m.id, ...m }, wctx);
       near("N", `world: ${c} converts at the bundled rate`, n.steps.rate_to_eur, rates[c]);
