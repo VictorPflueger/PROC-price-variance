@@ -1,0 +1,48 @@
+# Builds the exchange-rate snapshot data/fx.js (tools/build_fx.mjs): the mean of the ECB's daily reference
+# rates over the last 365 days, every day cross-checked against Frankfurter. The environment that writes
+# this app cannot reach either host, so the snapshot is built here and pushed to a review branch
+# fx/<date>-<run>, together with the world and its frozen reference figures rebuilt at the new rate.
+# Started by hand, or by a push to a milestone branch that changes the tool or this workflow.
+name: FX snapshot
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["m1-*"]
+    paths: ["tools/build_fx.mjs", ".github/workflows/fx-snapshot.yml"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fx-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the snapshot from the ECB, cross-checked against Frankfurter
+        run: node tools/build_fx.mjs
+      - name: Rebuild the world and its frozen figures at the new rate
+        run: node tools/build_world.mjs
+      - name: Check the world and the engine
+        run: |
+          node tools/check_world.mjs
+          node tests/engine.mjs
+      - name: Push to a review branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="fx/$(date -u +%Y-%m-%d)-${GITHUB_RUN_NUMBER}"
+          git switch -c "$branch"
+          git add data/fx.js data/world.js data/reference_cases.js
+          if git diff --cached --quiet; then echo "The snapshot is unchanged."; exit 0; fi
+          git commit -m "FX snapshot: mean of the ECB's daily reference rates over the last 365 days"
+          git push origin "$branch"
+          echo "Pushed $branch" >> "$GITHUB_STEP_SUMMARY"
