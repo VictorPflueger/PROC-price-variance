@@ -1,0 +1,63 @@
+/* Price Variance Agent — the price board (version 0.1.0: the engine's check of the world), the console's
+ * idle content and the drawer's empty panels. Ink and Vici's neutrals; a flagged group is a danger tag
+ * with its icon and the word; the scenario in focus is framed in 2 px of ink (DESIGN.md, colour grammar). */
+
+#board { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; }
+.board-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 14px 18px 8px;
+}
+.board-title { margin: 0 0 4px; font-family: var(--vc-font-display); font-weight: var(--vc-weight-semibold); font-size: var(--fs-xl); line-height: 1.2; letter-spacing: var(--vc-tracking-heading); color: var(--vc-text); }
+.board-sub { margin: 0; max-width: var(--vc-container-prose); color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); }
+.board-count { flex: none; font-weight: var(--vc-weight-semibold); }
+.board-note { margin: 0; padding: 0 18px 8px; min-height: 1.4em; color: var(--vc-text); font-size: var(--vc-font-size-sm); }
+.board-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 0 18px 16px; scrollbar-width: thin; scrollbar-color: var(--vc-border) transparent; }
+
+.map-panel { container-type: inline-size; container-name: board; }
+.engine-table { width: 100%; background: var(--vc-surface); font-size: var(--vc-font-size-sm); font-variant-numeric: tabular-nums; }
+.engine-table :is(th, td) { padding: 8px 10px; vertical-align: top; }
+.engine-table thead th { position: sticky; top: 0; z-index: 1; background: var(--vc-surface); white-space: nowrap; }
+.engine-table .num { text-align: end; white-space: nowrap; }
+.engine-table .cell-sub { display: block; color: var(--vc-text-muted); font-size: var(--fs-xs); font-weight: var(--vc-weight-regular); text-transform: none; letter-spacing: 0; }
+.engine-table .group-cell { font-weight: var(--vc-weight-medium); min-width: 9rem; }
+.engine-table .group-name { display: block; color: var(--vc-text); }
+.engine-table .group-cell .cell-sub { overflow-wrap: anywhere; }
+.engine-table .flag-cell { white-space: nowrap; }
+.engine-table .flag-cell .vc-tag { gap: 6px; }
+.engine-table .quiet { color: var(--vc-text-muted); }
+@container board (max-width: 820px) {
+  .board-head, .board-note { padding-inline: 12px; }
+  .board-scroll { padding-inline: 12px; }
+  .engine-table { font-size: var(--fs-xs); }
+  .engine-table :is(th, td) { padding: 6px 7px; }
+}
+.engine-table tr[data-focus="true"] > * { box-shadow: inset 0 2px 0 var(--vc-text), inset 0 -2px 0 var(--vc-text); }
+.engine-table tr[data-focus="true"] > :first-child { box-shadow: inset 2px 2px 0 var(--vc-text), inset 0 -2px 0 var(--vc-text); }
+.engine-table tr[data-focus="true"] > :last-child { box-shadow: inset -2px 2px 0 var(--vc-text), inset 0 -2px 0 var(--vc-text); }
+
+/* The console before the agent arrives: what this version holds, and the six tips as buttons. */
+.log.log-idle { padding: 18px 20px; overflow: auto; }
+.log.log-idle .version-note { margin: 0 0 18px; max-width: var(--vc-container-prose); }
+.scenario-head { margin: 0 0 10px; font-family: var(--vc-font-display); font-weight: var(--vc-weight-semibold); font-size: var(--fs-lg); letter-spacing: var(--vc-tracking-heading); color: var(--vc-text); }
+.scenario-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.scenario-pick {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start;
+  width: 100%; min-height: var(--hit); padding: 8px 12px; text-align: start;
+  font: inherit; color: var(--vc-text); background: var(--vc-surface);
+  border: 1px solid var(--vc-border-subtle); border-radius: var(--vc-radius-sm); cursor: pointer;
+}
+.scenario-pick:hover { background: var(--vc-surface-hover); }
+.scenario-pick[aria-pressed="true"] { border: 2px solid var(--vc-text); padding: 7px 11px; }
+.scenario-num {
+  display: inline-grid; place-items: center; width: 27.7px; height: 24px; margin-top: 1px;
+  clip-path: var(--vc-hex); background: var(--vc-bg-subtle); color: var(--vc-text);
+  font-weight: var(--vc-weight-bold); font-size: var(--vc-font-size-sm);
+}
+.scenario-pick[aria-pressed="true"] .scenario-num { background: var(--vc-text); color: var(--vc-surface); }
+.scenario-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.scenario-text span { color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); }
+
+/* The drawer's panels before a run. */
+.drawer-empty { padding: 14px 20px; max-width: var(--vc-container-prose); color: var(--vc-text-muted); }
+.drawer-empty p { margin: 0 0 6px; }
+.drawer-empty-title { color: var(--vc-text); font-weight: var(--vc-weight-semibold); }

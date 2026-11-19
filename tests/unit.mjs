@@ -1,0 +1,217 @@
+// Unit tests (Node.js 22; no browser needed), in groups:
+//   stream   the shared streaming client js/anthropic.js with a mocked fetch: SSE parsing and message
+//            reconstruction, retries, aborts, truncated streams (Rebate Hunter's cases)
+//   cost     the price table in js/cost.js: usage × price per model and tier, the euro conversion
+//   format   display strings beyond the engine suite: cents, dates with and without the year, the clock
+//   schema   the validator of js/schema.js on planted good and bad records, and the data contracts
+//   static   AC-07: the security policy exactly as the brief's section 4, nothing from a third party,
+//            every storage key under "pv." apart from Vici's "vc-theme"
+// Usage: node tests/unit.mjs              (all groups)
+//        node tests/unit.mjs static       (only these groups)
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { APP_ROOT, ONLY } from "./lib/harness.mjs";
+
+const GROUPS = ["stream", "cost", "format", "schema", "static"];
+const chosen = ONLY.length ? ONLY : GROUPS;
+const unknown = chosen.filter((g) => !GROUPS.includes(g));
+if (unknown.length) { console.error(`Unknown group(s): ${unknown.join(", ")}. Groups: ${GROUPS.join(", ")}`); process.exit(2); }
+const mod = (p) => import(pathToFileURL(path.join(APP_ROOT, p)).href);
+const read = (p) => readFileSync(path.join(APP_ROOT, p), "utf8");
+let checks = 0;
+const failures = [];
+const check = (group, what, ok, detail = "") => { checks += 1; if (!ok) failures.push(`${group} ${what}${detail ? `: ${detail}` : ""}`); };
+const attempt = async (group, what, fn) => {
+  try { await fn(); check(group, what, true); } catch (e) { check(group, what, false, String(e.message || e).split("\n")[0]); }
+};
+
+// ---- stream ---------------------------------------------------------------------------------------
+if (chosen.includes("stream")) {
+  const { streamMessage, ApiError, withRetry } = await mod("js/anthropic.js");
+  const sse = (events, { crlf = false } = {}) => {
+    const nl = crlf ? "\r\n" : "\n";
+    return events.map(([ev, data]) => `event: ${ev}${nl}data: ${JSON.stringify(data)}${nl}${nl}`).join("");
+  };
+  const chunked = (text, sizes) => {
+    const enc = new TextEncoder().encode(text);
+    const parts = [];
+    let i = 0; let k = 0;
+    while (i < enc.length) { const n = sizes[k++ % sizes.length]; parts.push(enc.slice(i, i + n)); i += n; }
+    return new ReadableStream({ start(c) { for (const p of parts) c.enqueue(p); c.close(); } });
+  };
+  const events = [
+    ["message_start", { type: "message_start", message: { id: "msg_1", model: "claude-sonnet-5-5", role: "assistant", content: [], usage: { input_tokens: 1200, cache_creation_input_tokens: 3000, cache_read_input_tokens: 0, output_tokens: 3 } } }],
+    ["content_block_start", { type: "content_block_start", index: 0, content_block: { type: "thinking", thinking: "", signature: "" } }],
+    ["content_block_delta", { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "Normalise the Birmingham line " } }],
+    ["content_block_delta", { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "first." } }],
+    ["content_block_delta", { type: "content_block_delta", index: 0, delta: { type: "signature_delta", signature: "SIG==abc" } }],
+    ["content_block_stop", { type: "content_block_stop", index: 0 }],
+    ["ping", { type: "ping" }],
+    ["content_block_start", { type: "content_block_start", index: 1, content_block: { type: "text", text: "" } }],
+    ["content_block_delta", { type: "content_block_delta", index: 1, delta: { type: "text_delta", text: "Hypothesis: Lyon pays more " } }],
+    ["content_block_delta", { type: "content_block_delta", index: 1, delta: { type: "text_delta", text: "for the same gloves — Lyon ✓" } }],
+    ["content_block_stop", { type: "content_block_stop", index: 1 }],
+    ["content_block_start", { type: "content_block_start", index: 2, content_block: { type: "tool_use", id: "toolu_1", name: "pv_normalise", input: {} } }],
+    ["content_block_delta", { type: "content_block_delta", index: 2, delta: { type: "input_json_delta", partial_json: "{\"line_" } }],
+    ["content_block_delta", { type: "content_block_delta", index: 2, delta: { type: "input_json_delta", partial_json: "id\": \"4500010001-00010\"}" } }],
+    ["content_block_stop", { type: "content_block_stop", index: 2 }],
+    ["content_block_start", { type: "content_block_start", index: 3, content_block: { type: "tool_use", id: "toolu_2", name: "erp_get_overview", input: {} } }],
+    ["content_block_stop", { type: "content_block_stop", index: 3 }],
+    ["message_delta", { type: "message_delta", delta: { stop_reason: "tool_use", stop_sequence: null }, usage: { output_tokens: 240, server_tool_use: { web_search_requests: 0 } } }],
+    ["message_stop", { type: "message_stop" }]
+  ];
+  for (const [label, crlf, sizes] of [["lf, small chunks", false, [7, 13, 1, 50]], ["crlf, odd chunks", true, [3, 1, 2, 97, 5]], ["one chunk", false, [100000]]]) {
+    await attempt("stream", `reconstructs a message (${label})`, async () => {
+      globalThis.fetch = async () => new Response(chunked(sse(events, { crlf }), sizes), { status: 200, headers: { "content-type": "text/event-stream", "request-id": "req_123" } });
+      const texts = [];
+      const r = await streamMessage({ key: "k", body: { model: "claude-sonnet-5-5", messages: [] }, hooks: { onText: (i, t) => texts.push(t) } });
+      const m = r.message;
+      assert.equal(m.stop_reason, "tool_use");
+      assert.equal(m.content.length, 4);
+      assert.deepEqual(m.content[0], { type: "thinking", thinking: "Normalise the Birmingham line first.", signature: "SIG==abc" });
+      assert.equal(m.content[1].text, "Hypothesis: Lyon pays more for the same gloves — Lyon ✓");
+      assert.deepEqual(m.content[2].input, { line_id: "4500010001-00010" });
+      assert.deepEqual(m.content[3].input, {});
+      assert.equal(m.usage.output_tokens, 240);
+      assert.equal(m.usage.cache_creation_input_tokens, 3000);
+      assert.equal(r.requestId, "req_123");
+      assert.ok(texts.length >= 2);
+    });
+  }
+  await attempt("stream", "a mid-stream error is retryable", async () => {
+    globalThis.fetch = async () => new Response(chunked(sse([events[0], ["error", { type: "error", error: { type: "overloaded_error", message: "Overloaded" } }]]), [11]), { status: 200 });
+    await assert.rejects(() => streamMessage({ key: "k", body: {} }), (e) => e instanceof ApiError && e.type === "overloaded_error" && e.retryable && e.midStream);
+  });
+  await attempt("stream", "429 with retry-after", async () => {
+    globalThis.fetch = async () => new Response(JSON.stringify({ type: "error", error: { type: "rate_limit_error", message: "slow down" }, request_id: "req_9" }), { status: 429, headers: { "retry-after": "1" } });
+    await assert.rejects(() => streamMessage({ key: "k", body: {} }), (e) => e.status === 429 && e.retryAfter === "1" && e.retryable);
+  });
+  await attempt("stream", "a spend limit is not retryable", async () => {
+    assert.equal(new ApiError({ status: 429, type: "rate_limit_error", message: "x", details: { error_code: "enforced_spend_limit_reached" } }).retryable, false);
+  });
+  await attempt("stream", "withRetry succeeds on the third attempt", async () => {
+    let n = 0;
+    const v = await withRetry(async () => { n += 1; if (n < 3) throw new ApiError({ status: 529, type: "overloaded_error", message: "o" }); return 42; }, { retries: 2 });
+    assert.equal(v, 42); assert.equal(n, 3);
+  });
+  await attempt("stream", "an incomplete tool input (max_tokens) is flagged", async () => {
+    const cut = [events[0], ["content_block_start", { type: "content_block_start", index: 0, content_block: { type: "tool_use", id: "toolu_x", name: "ui_draft_action", input: {} } }],
+      ["content_block_delta", { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: "{\"subject\": \"Harmonise glove pri" } }],
+      ["content_block_stop", { type: "content_block_stop", index: 0 }],
+      ["message_delta", { type: "message_delta", delta: { stop_reason: "max_tokens" }, usage: { output_tokens: 16000 } }]];
+    globalThis.fetch = async () => new Response(chunked(sse(cut), [64]), { status: 200 });
+    const rc = await streamMessage({ key: "k", body: {} });
+    assert.equal(rc.message.stop_reason, "max_tokens"); assert.ok(rc.incomplete.has(0));
+  });
+  await attempt("stream", "an abort rejects with AbortError", async () => {
+    const ac = new AbortController();
+    globalThis.fetch = async (url, init) => new Promise((res, rej) => init.signal.addEventListener("abort", () => rej(Object.assign(new Error("aborted"), { name: "AbortError" }))));
+    setTimeout(() => ac.abort(), 20);
+    await assert.rejects(() => streamMessage({ key: "k", body: {}, signal: ac.signal }), (e) => e.name === "AbortError");
+  });
+  await attempt("stream", "a body that ends without a stop reason is an interrupted connection", async () => {
+    globalThis.fetch = async () => new Response(JSON.stringify({ data: [] }), { status: 200, headers: { "content-type": "application/json" } });
+    await assert.rejects(() => streamMessage({ key: "k", body: {} }), (e) => e instanceof ApiError && e.type === "network_error" && e.midStream);
+    globalThis.fetch = async () => new Response(chunked(sse(events.slice(0, 6)), [40]), { status: 200 });
+    await assert.rejects(() => streamMessage({ key: "k", body: {} }), (e) => e instanceof ApiError && e.type === "network_error");
+  });
+}
+
+// ---- cost ------------------------------------------------------------------------------------------
+if (chosen.includes("cost")) {
+  const { usageCostUsd, createCostTracker } = await mod("js/cost.js");
+  const { MODELS, FX_USD_EUR } = await mod("js/config.js");
+  const usd = usageCostUsd("claude-sonnet-5-5", { input_tokens: 1200, cache_creation_input_tokens: 3000, cache_read_input_tokens: 10000, output_tokens: 240 });
+  const expected = (1200 * 2 + 3000 * 2.5 + 10000 * 0.1 + 240 * 10) / 1e6;
+  check("cost", "Sonnet 5.5: input, cache write, cache read and output at their prices", Math.abs(usd - expected) < 1e-12, `${usd} vs ${expected}`);
+  const haikuLong = usageCostUsd("claude-haiku-5-5", { input_tokens: 90000, cache_read_input_tokens: 20000, output_tokens: 1000 });
+  check("cost", "Haiku 5.5 above 100,000 prompt tokens at the long-prompt prices", Math.abs(haikuLong - (90000 * 0.5 + 20000 * 0.05 + 1000 * 2.5) / 1e6) < 1e-12);
+  const t = createCostTracker("claude-opus-5-5");
+  t.add({ input_tokens: 1e6 });
+  const snap = t.add({ output_tokens: 1e6 });
+  check("cost", "the tracker sums calls and converts at 1 USD = 0.894 EUR", Math.abs(snap.usd - 24) < 1e-9 && Math.abs(snap.eur - 24 * 0.894) < 1e-9 && snap.requests === 2);
+  check("cost", "the three models of the brief with the verified prices", JSON.stringify(MODELS.map((m) => [m.id, m.price.input, m.price.output])) === JSON.stringify([["claude-sonnet-5-5", 2, 10], ["claude-haiku-5-5", 0.1, 0.5], ["claude-opus-5-5", 4, 20]]) && FX_USD_EUR === 0.894);
+}
+
+// ---- format ----------------------------------------------------------------------------------------
+if (chosen.includes("format")) {
+  const { eurCents, shortDate, dateWithYear, clock, int, num2, round9 } = await mod("js/format.js");
+  const today = new Date(2026, 10, 19, 12);
+  check("format", "cents: €0.38 and -€1.50", eurCents(0.375) === "€0.38" && eurCents(-1.5) === "-€1.50", `${eurCents(0.375)} ${eurCents(-1.5)}`);
+  check("format", "a date of this year: Thu 19 Nov", shortDate(0, today) === "Thu 19 Nov", shortDate(0, today));
+  check("format", "a date of another year: Wed 19 Nov 2025, without a comma", shortDate(-365, today) === "Wed 19 Nov 2025", shortDate(-365, today));
+  check("format", "an ISO date: Fri 14 Aug", shortDate("2026-08-14", today) === "Fri 14 Aug", shortDate("2026-08-14", today));
+  check("format", "September is Sep", shortDate("2026-09-01", today) === "Tue 1 Sep", shortDate("2026-09-01", today));
+  check("format", "a date with its year: 19 Nov 2026", dateWithYear("2026-11-19") === "19 Nov 2026");
+  check("format", "the clock: 01:05 and 1:00:05", clock(65000) === "01:05" && clock(3605000) === "1:00:05");
+  check("format", "whole numbers with groups: 1,370,000", int(1370000) === "1,370,000");
+  check("format", "two decimals: 1.16", num2(1.1609456252677857) === "1.16");
+  check("format", "rounding to 1e-9 removes noise and -0", round9(1738.7999999999997) === 1738.8 && Object.is(round9(-1e-12), 0));
+}
+
+// ---- schema ----------------------------------------------------------------------------------------
+if (chosen.includes("schema")) {
+  const { validate, formatErrors } = await mod("js/schema.js");
+  const { SCHEMAS, CONTRACT_NAMES } = await mod("js/schemas.js");
+  const v = (value, name) => validate(value, name, { defs: SCHEMAS });
+  check("schema", "the sixteen contracts of the brief are defined", CONTRACT_NAMES.length === 16 && CONTRACT_NAMES.every((n) => SCHEMAS[n]));
+  const plant = { id: "1010", company_code: "CC-1000", city: "Frankfurt am Main", country: "DE", role: "Headquarters" };
+  check("schema", "a valid plant passes", v(plant, "Plant").ok);
+  const bad = v({ ...plant, id: "101", extra: 1 }, "Plant");
+  check("schema", "a bad id and an unknown field are named", !bad.ok && formatErrors(bad.errors).some((e) => /Plant\.id: expected a text matching/.test(e)) && formatErrors(bad.errors).some((e) => /Plant\.extra: is not a field/.test(e)), formatErrors(bad.errors).join("; "));
+  const missing = v({ id: "1010" }, "Plant");
+  check("schema", "a missing required field is named", !missing.ok && formatErrors(missing.errors).some((e) => /missing the required field company_code/.test(e)));
+  check("schema", "NaN and infinity are not numbers", !v({ currency: "GBP", rate_to_eur: NaN }, "FxRate").ok && !v({ currency: "GBP", rate_to_eur: Infinity }, "FxRate").ok);
+  check("schema", "an integer field refuses 1.5", !v({ id: "VL-1", group: "x", option: "H", plant: "1020", old_supplier: null, new_supplier: null, new_price: null, approved_day: -1.5, approved_savings_eur: 1, bundle_part_eur: 0, implemented_day: null }, "ValueLogEntry").ok);
+  check("schema", "an enum refuses an option that does not exist", !v({ options_seq: 1, option_id: "X", decision: "approved", by: "user" }, "Decision").ok && v({ options_seq: 1, option_id: "accept", decision: "approved", reason: "volume tier", by: "user" }, "Decision").ok);
+  check("schema", "anyOf: a date or null", v({ currency: "GBP", rate_to_eur: 1.16, first: null }, "FxRate").ok && !v({ currency: "GBP", rate_to_eur: 1.16, first: "19 Nov" }, "FxRate").ok);
+  check("schema", "an unsupported keyword in a schema is an error, never silently ignored", !validate(1, { type: "number", multipleOf: 2 }).ok);
+  check("schema", "a reference to an unknown definition is an error", !validate(1, { $ref: "#/$defs/Nothing" }, { defs: SCHEMAS }).ok);
+  check("schema", "unique items", !validate([1, 1], { type: "array", uniqueItems: true }).ok && validate([1, 2], { type: "array", uniqueItems: true }).ok);
+  const event = { id: "ev-1", seq: 1, type: "confirmation_request", ts: "2026-11-19T20:00:00Z", t: 10, run_id: "run-1", mode: "simulation", payload: {} };
+  check("schema", "a run event of this app's new types passes; an unknown type does not", v(event, "RunEvent").ok && !v({ ...event, type: "rebate_found" }, "RunEvent").ok);
+}
+
+// ---- static: AC-07 ---------------------------------------------------------------------------------
+if (chosen.includes("static")) {
+  const POLICY = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src https://api.anthropic.com https://api.frankfurter.dev; object-src 'none'; base-uri 'none'; form-action 'none'";
+  const html = read("index.html");
+  const metas = [...html.matchAll(/<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]*)"\s*>/gi)];
+  check("static", "index.html carries one security policy, exactly the brief's", metas.length === 1 && metas[0][1] === POLICY, metas.map((m) => m[1]).join(" | "));
+  check("static", "no other http-equiv and no inline script or style in index.html",
+    (html.match(/http-equiv/gi) || []).length === 1 && !/<script(?![^>]*\bsrc=)[^>]*>/i.test(html) && !/<style\b/i.test(html) && !/\sstyle="/i.test(html));
+  const srcs = [...html.matchAll(/<(?:script|link|img)\b[^>]*\s(?:src|href)="([^"]+)"/gi)].map((m) => m[1]);
+  check("static", "every script, style, icon and image of index.html comes from this site", srcs.length > 5 && srcs.every((u) => !/^(?:[a-z]+:)?\/\//i.test(u) && !/^data:/i.test(u)), srcs.filter((u) => /^(?:[a-z]+:)?\/\//i.test(u)).join(", "));
+  const walk = (dir) => readdirSync(path.join(APP_ROOT, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]));
+  const appFiles = [...walk("js"), ...walk("css"), ...walk("data"), "index.html"];
+  const outside = [];
+  for (const f of appFiles) {
+    const t = read(f);
+    if (/\.css$/.test(f) && /(?:@import|url\()\s*["']?(?:[a-z]+:)?\/\//i.test(t)) outside.push(`${f}: a stylesheet or font from another site`);
+    if (/\.js$/.test(f) && /\bimport\s*(?:\(|[^;]*?\bfrom)\s*["'](?:[a-z]+:)?\/\//i.test(t)) outside.push(`${f}: a module from another site`);
+    if (/\.js$/.test(f) && /createElement\(\s*["'](?:script|link|iframe)["']/i.test(t)) outside.push(`${f}: creates a script, link or frame element`);
+    if (/\.js$/.test(f) && /\b(?:fonts\.googleapis|cdn\.|unpkg\.com|jsdelivr)/i.test(t)) outside.push(`${f}: names a content host`);
+  }
+  check("static", "no script, style, font or module from a third party in js/, css/ and data/", outside.length === 0, outside.join("; "));
+  const viciCss = read("vici/dist/vici.min.css");
+  check("static", "Vici's stylesheet loads its fonts from vici/ itself", ![...viciCss.matchAll(/url\(\s*["']?([^"')]+)/g)].some((m) => /^(?:[a-z]+:)?\/\//i.test(m[1])));
+  const { STORAGE } = await mod("js/config.js");
+  check("static", "every storage key in js/config.js starts with pv.", Object.values(STORAGE).length >= 5 && Object.values(STORAGE).every((k) => k.startsWith("pv.")), JSON.stringify(STORAGE));
+  const calls = [];
+  for (const f of walk("js")) {
+    for (const m of read(f).matchAll(/\b(?:localStorage|sessionStorage)\s*\.\s*(?:getItem|setItem|removeItem)\(\s*([^,)]+)/g)) calls.push([f, m[1].trim()]);
+    if (/\b(?:localStorage|sessionStorage)\s*\[|\b(?:localStorage|sessionStorage)\.(?!getItem|setItem|removeItem)\w+\s*=/.test(read(f))) calls.push([f, "a key set without getItem/setItem"]);
+  }
+  const strays = calls.filter(([, k]) => !/^STORAGE\.\w+$/.test(k) && k !== '"vc-theme"' && k !== "'vc-theme'");
+  check("static", "every storage call in js/ uses a key from STORAGE or Vici's vc-theme", calls.length >= 4 && strays.length === 0, strays.map(([f, k]) => `${f}: ${k}`).join("; "));
+  const viciJs = read("vici/dist/vici.js");
+  const viciKeys = [...viciJs.matchAll(/storage(?:Get|Set)\(\s*([^,)]+)/g)].map((m) => m[1].trim()).filter((k) => k !== "key");
+  check("static", "Vici's script stores only vc-theme", /STORAGE_KEY = 'vc-theme'/.test(viciJs) && viciKeys.every((k) => k === "STORAGE_KEY"), viciKeys.join(", "));
+  check("static", "the key's storage is this tab's session storage, under pv.anthropic.key", STORAGE.apiKey === "pv.anthropic.key" && /sessionStorage\.setItem\(STORAGE\.apiKey/.test(read("js/keystore.js")) && !/localStorage[^\n]*STORAGE\.apiKey/.test(read("js/keystore.js")));
+}
+
+for (const f of failures) console.log(`FAIL  ${f}`);
+if (failures.length) { console.log(`\nUNIT FAILED: ${failures.length} of ${checks} checks in ${chosen.join(" ")}`); process.exit(1); }
+console.log(`UNIT OK: ${chosen.join(" ")} (${checks} checks)`);

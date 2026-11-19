@@ -1,4 +1,4 @@
-/* Rebate Hunter — the app's own tokens, page layout, header, control bar and boot screen.
+/* Price Variance Agent — the app's own tokens, page layout, header, control bar and boot screen.
  *
  * The look comes from Vici (vici/dist/vici.min.css, loaded first). Vici sits in cascade layers, so
  * these unlayered rules refine it without !important; they style the app's own classes only and
@@ -274,4 +274,25 @@ html { font-size: clamp(93.75%, 0.48vw + 50%, 112.5%); }
 /* Forced colours: the status and live pips keep their hexagons. */
 @media (forced-colors: active) {
   .status-pill[data-tone] .dot, .status-pill .dot, .mode-badge[data-mode="live"] .mode-dot { forced-color-adjust: none; background-color: CanvasText; }
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* App-specific: not part of the shared shell (tests/parity.mjs compares the file above this)  */
+/* ------------------------------------------------------------------------------------------ */
+
+/* The honesty line beside the AI disclosure: plain ink, never a state colour. */
+.honesty { font-size: var(--vc-font-size-sm); font-weight: var(--vc-weight-semibold); color: var(--vc-text-muted); white-space: nowrap; }
+
+/* A tile's unit after its figure ("a year"), smaller than the figure, so the figure keeps its size. */
+.kpi-unit { font-size: var(--vc-font-size-sm); font-weight: var(--vc-weight-medium); color: var(--vc-text-muted); margin-left: 4px; letter-spacing: 0; }
+
+/* Approved savings names three stages in its second line: its tile takes the room for them. */
+.kpi--wide.vc-stat { max-width: 340px; }
+
+/* The scenario chooser of version 0.1.0: Vici's select at the control bar's height. */
+.control-field { display: flex; align-items: center; gap: 8px; }
+.scenario-select.vc-select { min-width: 18rem; }
+
+@media (max-width: 1300px) {
+  .honesty { white-space: normal; max-width: 12rem; line-height: 1.2; }
 }

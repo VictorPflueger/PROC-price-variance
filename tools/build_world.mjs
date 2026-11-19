@@ -20,6 +20,9 @@ import { METHOD_VERSION, INCOTERM_GROUPS, baseUnitsPerOrderUnit } from "../js/no
 import { buildGroups, groupIndex, unitOfLine } from "../js/groups.js";
 import { analyseGroup } from "../js/variance.js";
 import { valuePipeline } from "../js/pipeline.js";
+import { ratesOf, contextOf, analyseWorld } from "../js/world.js";
+
+export { ratesOf, contextOf, analyseWorld };
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const SEED = 1729;
@@ -462,18 +465,6 @@ export function scenariosOf(materialId) {
   ];
 }
 
-/** The engine's context for the world at a set of rates. */
-export function contextOf(world, rates, params = DEFAULTS) {
-  return {
-    rates,
-    params,
-    today: 0,
-    plants: Object.fromEntries(world.plant.map((p) => [p.id, p])),
-    suppliers: Object.fromEntries(world.supplier.map((s) => [s.id, s]))
-  };
-}
-export const ratesOf = (fx) => Object.fromEntries(Object.entries(fx.currencies).map(([c, v]) => [c, v.rate_to_eur]));
-
 /** The figures a check compares: totals, benchmark, flag and the options. */
 export function figuresOf(a) {
   const option = (o) => ({
@@ -491,13 +482,6 @@ export function figuresOf(a) {
     pairs: a.pairs.map((p) => ({ pair: p.id, quantity: p.quantity, price: p.price, share: p.share, unexplained: p.unexplained })),
     options: { H: option(a.options.H), R: option(a.options.R), B: option(a.options.B) }
   };
-}
-
-/** Analyses of the world at a set of rates (with a confirmed cluster when given). */
-export function analyseWorld(world, rates, { clusters = [], params = DEFAULTS } = {}) {
-  const ctx = contextOf(world, rates, params);
-  const groups = buildGroups(world, ctx, { clusters });
-  return { ctx, analyses: groups.map((g) => analyseGroup(g, ctx)) };
 }
 
 export function referenceOf(world, fx, scenarios, cluster) {

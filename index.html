@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The browser enforces where this page may connect: the API key can only ever reach api.anthropic.com,
+       and open data only the ECB's reference rates through api.frankfurter.dev (brief section 4). Scripts,
+       styles, fonts and images come from this site only: the app loads nothing from a third party. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src https://api.anthropic.com https://api.frankfurter.dev; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="The Price Variance Agent finds where a fictional industrial group pays different prices for the same item or service, makes the prices comparable, separates the justified from the unexplained part, and proposes costed options for human approval.">
+  <title>Price Variance Agent — Procurement price variance</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+  <!-- The look comes from Victor's design system Vici, copied unchanged into vici/ (vici/README.md).
+       It sits in cascade layers, so the app's own stylesheets below refine it without !important. -->
+  <link rel="stylesheet" href="vici/dist/vici.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/board.css">
+  <link rel="stylesheet" href="css/console.css">
+  <link rel="stylesheet" href="css/drawer.css">
+  <link rel="stylesheet" href="css/modals.css">
+
+  <!-- The theme before the page is drawn (light unless the visitor chose dark), then Vici's script. -->
+  <script src="js/theme.js"></script>
+  <script src="vici/dist/vici.js" defer></script>
+
+  <!-- Fictional company and its data products: plain scripts that set window globals (no fetch needed). -->
+  <script src="data/fx.js" defer></script>
+  <script src="data/world.js" defer></script>
+  <script src="data/scenarios.js" defer></script>
+  <script src="data/reference_cases.js" defer></script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body class="app-shell">
+  <a class="vc-skip-link skip-link" href="#console">Skip to the agent console</a>
+
+  <header class="app-header">
+    <div class="brand">
+      <span class="vc-cell vc-cell--lilac" aria-hidden="true"><span class="vc-icon vc-icon--trend-down"></span></span>
+      <div class="brand-text">
+        <span class="brand-name">Price Variance Agent</span>
+        <span class="brand-sub">Price variance agent for GlobalCorp SE (fictional)</span>
+      </div>
+    </div>
+
+    <div class="header-badges">
+      <span id="mode-badge" class="vc-tag mode-badge" data-mode="none" role="status" aria-live="polite" title="The agent's runs arrive in version 0.2.0">No run active</span>
+      <!-- Vici's theme toggle (vici.js switches the theme and remembers the choice). -->
+      <span class="vc-tooltip-anchor">
+        <button type="button" class="vc-icon-button theme-toggle" data-vc-theme-toggle aria-labelledby="tip-theme"><span class="vc-icon vc-icon--moon vc-when-light" aria-hidden="true"></span><span class="vc-icon vc-icon--sun vc-when-dark" aria-hidden="true"></span></button>
+        <span class="vc-tooltip vc-tooltip--bottom" role="tooltip" id="tip-theme">Dark theme</span>
+      </span>
+      <span class="vc-tag vc-tag--feature ai-disclosure" title="The Price Variance Agent is an AI system. Its analysis can be wrong. Every action is a draft that waits for your approval, and nothing is ever sent to a real company.">
+        <span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>
+        <span><span class="long">You are interacting with an </span>AI system</span>
+      </span>
+      <span class="honesty">Fictional company, no client data</span>
+    </div>
+
+    <div id="kpis" class="kpis" role="group" aria-label="Key figures for the current run"></div>
+  </header>
+
+  <nav id="controls" class="controls" aria-label="Run controls"></nav>
+
+  <main class="workspace">
+    <!-- The workspace's first panel (layout class shared with the sister apps) holds the price board. -->
+    <section class="map-panel" aria-label="Price board: the comparable groups and their prices">
+      <div id="board"></div>
+    </section>
+    <section id="console" class="console-panel" aria-label="Agent console" tabindex="-1"></section>
+  </main>
+
+  <section id="drawer" class="drawer" aria-label="Options, outbox and audit log"></section>
+
+  <div id="banners" class="banner-stack"></div>
+
+  <!-- Boot screen: removed by js/main.js once the workspace is running. Without JavaScript modules
+       (for example when opened from disk via file://) it stays and explains what to do. -->
+  <div id="boot" class="boot" data-state="loading">
+    <div class="boot-card">
+      <div class="boot-brand">
+        <span class="vc-cell vc-cell--lilac vc-cell--xl" aria-hidden="true"><span class="vc-icon vc-icon--trend-down"></span></span>
+        <span class="brand-name">Price Variance Agent</span>
+      </div>
+      <p class="boot-status" role="status" aria-live="polite"><span class="vc-spinner" aria-hidden="true"></span><span id="boot-status">Starting the Price Variance Agent…</span></p>
+      <p id="boot-detail" class="vc-alert vc-alert--danger boot-detail" hidden></p>
+      <div class="boot-help">
+        <p>Still on this screen? The Price Variance Agent has to be served over http or https. Browsers block its program modules when <code>index.html</code> is opened straight from disk, at an address starting with <code>file://</code>.</p>
+        <p>To run it on your computer, open a terminal in this folder, run <code>python -m http.server 8000</code>, then open <code>http://localhost:8000</code>. Published on GitHub Pages, it works as is. Use a current Chrome or Edge.</p>
+      </div>
+      <noscript><p class="boot-detail">The Price Variance Agent needs JavaScript. Allow it for this site and reload the page.</p></noscript>
+    </div>
+  </div>
+</body>
+</html>
