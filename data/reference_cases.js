@@ -4,7 +4,7 @@
 window.REFERENCE_CASES = {
   "about": "Each scenario's figures as the engine computes them from data/world.js at the bundled rates of data/fx.js, frozen for the checks in tools/check_world.mjs. Never shown to the agent; the simulation recomputes every figure at playback.",
   "world_version": "1.0.0",
-  "fx_version": "fx-fallback-2026-10-14",
+  "fx_version": "fx-2026-11-19",
   "method_version": "1.0.0",
   "cases": {
     "SC-GLOVES": {
@@ -21,11 +21,11 @@ window.REFERENCE_CASES = {
         ],
         "cancelled": 0,
         "quantity": 1370000,
-        "spend": 109586.60306926587,
-        "gap": 15236.603069265864,
+        "spend": 109194.3900512332,
+        "gap": 14844.390051233213,
         "justified": 698.625,
-        "unexplained": 14537.978069265864,
-        "index": 0.1326620012126566,
+        "unexplained": 14145.765051233213,
+        "index": 0.12954662821593788,
         "spread": 0.4202898550724637,
         "flagged": true,
         "benchmark": {
@@ -62,9 +62,9 @@ window.REFERENCE_CASES = {
           {
             "pair": "2010 / 80001",
             "quantity": 250000,
-            "price": 0.07714641227706345,
+            "price": 0.07557756020493285,
             "share": 0.18248175182481752,
-            "unexplained": 2036.6030692658617
+            "unexplained": 1644.3900512332111
           },
           {
             "pair": "3010 / 80002",
@@ -81,8 +81,8 @@ window.REFERENCE_CASES = {
             "bundle": 0,
             "one_off": 2400,
             "net": 10101.375,
-            "residual": 2036.6030692658642,
-            "index_after": 0.020977476283135895,
+            "residual": 1644.390051233213,
+            "index_after": 0.017006296166914705,
             "days_to_first_saving": 30,
             "plants": [
               "1020",
@@ -103,10 +103,10 @@ window.REFERENCE_CASES = {
           },
           "R": {
             "applicable": true,
-            "savings": 14537.978069265864,
+            "savings": 14145.765051233213,
             "bundle": 0,
             "one_off": 7200,
-            "net": 7337.978069265864,
+            "net": 6945.765051233213,
             "residual": 0,
             "index_after": 0,
             "days_to_first_saving": 60,
@@ -123,10 +123,10 @@ window.REFERENCE_CASES = {
           },
           "B": {
             "applicable": true,
-            "savings": 17373.878069265866,
+            "savings": 16981.665051233213,
             "bundle": 2835.9,
             "one_off": 9600,
-            "net": 7773.878069265866,
+            "net": 7381.665051233213,
             "residual": 0,
             "index_after": 0,
             "days_to_first_saving": 90,
@@ -184,12 +184,12 @@ window.REFERENCE_CASES = {
         "excluded": [],
         "cancelled": 0,
         "quantity": 240,
-        "spend": 313466.4336078687,
-        "gap": 37466.43360786869,
+        "spend": 312155.44201456755,
+        "gap": 36155.44201456754,
         "justified": 0,
-        "unexplained": 37466.43360786869,
-        "index": 0.11952295235137483,
-        "spread": 0.40144420886671073,
+        "unexplained": 36155.44201456754,
+        "index": 0.11582512155235868,
+        "spread": 0.37294439162103354,
         "flagged": true,
         "benchmark": {
           "pair": "1010 / 30059",
@@ -198,7 +198,7 @@ window.REFERENCE_CASES = {
         },
         "highest": {
           "pair": "2010 / 80004",
-          "price": 1611.6608401967173
+          "price": 1578.8860503641886
         },
         "pairs": [
           {
@@ -225,9 +225,9 @@ window.REFERENCE_CASES = {
           {
             "pair": "2010 / 80004",
             "quantity": 40,
-            "price": 1611.6608401967173,
+            "price": 1578.8860503641886,
             "share": 0.16666666666666666,
-            "unexplained": 18466.433607868694
+            "unexplained": 17155.442014567543
           }
         ],
         "options": {
@@ -237,8 +237,8 @@ window.REFERENCE_CASES = {
             "bundle": 0,
             "one_off": 2400,
             "net": 16600,
-            "residual": 18466.43360786869,
-            "index_after": 0.06271150630519687,
+            "residual": 17155.44201456754,
+            "index_after": 0.05851995070149524,
             "days_to_first_saving": 30,
             "plants": [
               "1020",
@@ -260,10 +260,10 @@ window.REFERENCE_CASES = {
           },
           "R": {
             "applicable": true,
-            "savings": 37466.43360786869,
+            "savings": 36155.44201456754,
             "bundle": 0,
             "one_off": 7200,
-            "net": 30266.43360786869,
+            "net": 28955.44201456754,
             "residual": 0,
             "index_after": 0,
             "days_to_first_saving": 60,
@@ -280,10 +280,10 @@ window.REFERENCE_CASES = {
           },
           "B": {
             "applicable": true,
-            "savings": 45746.43360786869,
+            "savings": 44435.44201456754,
             "bundle": 8280,
             "one_off": 9600,
-            "net": 36146.43360786869,
+            "net": 34835.44201456754,
             "residual": 0,
             "index_after": 0,
             "days_to_first_saving": 90,
@@ -437,12 +437,12 @@ window.REFERENCE_CASES = {
         "excluded": [],
         "cancelled": 0,
         "quantity": 258000,
-        "spend": 489755.90448539436,
-        "gap": 2135.9044853943265,
+        "spend": 489053.17443280865,
+        "gap": 1600.0000000000011,
         "justified": 0,
-        "unexplained": 2135.9044853943265,
-        "index": 0.004361161276123061,
-        "spread": 0.015752630376082353,
+        "unexplained": 1600.0000000000011,
+        "index": 0.0032716278794338474,
+        "spread": 0.010582010582010592,
         "flagged": false,
         "benchmark": {
           "pair": "3010 / 30080",
@@ -450,10 +450,17 @@ window.REFERENCE_CASES = {
           "share": 0.46511627906976744
         },
         "highest": {
-          "pair": "2010 / 80003",
-          "price": 1.9197724714107955
+          "pair": "1020 / 30109",
+          "price": 1.91
         },
         "pairs": [
+          {
+            "pair": "2010 / 80003",
+            "quantity": 18000,
+            "price": 1.8807319129338131,
+            "share": 0.06976744186046512,
+            "unexplained": 0
+          },
           {
             "pair": "3010 / 30080",
             "quantity": 120000,
@@ -474,13 +481,6 @@ window.REFERENCE_CASES = {
             "price": 1.91,
             "share": 0.15503875968992248,
             "unexplained": 800.0000000000008
-          },
-          {
-            "pair": "2010 / 80003",
-            "quantity": 18000,
-            "price": 1.9197724714107955,
-            "share": 0.06976744186046512,
-            "unexplained": 535.9044853943255
           }
         ],
         "options": {
@@ -490,8 +490,8 @@ window.REFERENCE_CASES = {
             "bundle": 0,
             "one_off": 2400,
             "net": -799.9999999999989,
-            "residual": 535.9044853943253,
-            "index_after": 0.00109781420335224,
+            "residual": 0,
+            "index_after": 0,
             "days_to_first_saving": 30,
             "plants": [
               "1010",
@@ -506,37 +506,33 @@ window.REFERENCE_CASES = {
               "1010",
               "1020"
             ],
-            "plants_not_covered": [
-              "2010"
-            ],
+            "plants_not_covered": [],
             "share_after": 0.9302325581395349
           },
           "R": {
             "applicable": true,
-            "savings": 2135.9044853943265,
+            "savings": 1600.0000000000011,
             "bundle": 0,
-            "one_off": 7200,
-            "net": -5064.095514605673,
+            "one_off": 4800,
+            "net": -3199.999999999999,
             "residual": 0,
             "index_after": 0,
             "days_to_first_saving": 60,
             "plants": [
               "1010",
-              "1020",
-              "2010"
+              "1020"
             ],
             "suppliers": [
               "30025",
-              "30109",
-              "80003"
+              "30109"
             ]
           },
           "B": {
             "applicable": true,
-            "savings": 16764.504485394325,
+            "savings": 16228.6,
             "bundle": 14628.599999999999,
             "one_off": 9600,
-            "net": 7164.5044853943255,
+            "net": 6628.6,
             "residual": 0,
             "index_after": 0,
             "days_to_first_saving": 90,
@@ -570,12 +566,12 @@ window.REFERENCE_CASES = {
         "excluded": [],
         "cancelled": 0,
         "quantity": 22500,
-        "spend": 297985.3172957279,
-        "gap": 18985.317295727917,
+        "spend": 296736.9833888713,
+        "gap": 17736.983388871304,
         "justified": 0,
-        "unexplained": 18985.317295727917,
-        "index": 0.06371225759719706,
-        "spread": 0.41440823262045917,
+        "unexplained": 17736.983388871304,
+        "index": 0.0597734168026745,
+        "spread": 0.3856447785454214,
         "flagged": true,
         "benchmark": {
           "pair": "1010 / 30109",
@@ -584,7 +580,7 @@ window.REFERENCE_CASES = {
         },
         "highest": {
           "pair": "2010 / 80003",
-          "price": 17.538662084493694
+          "price": 17.181995253963226
         },
         "pairs": [
           {
@@ -611,9 +607,9 @@ window.REFERENCE_CASES = {
           {
             "pair": "2010 / 80003",
             "quantity": 3500,
-            "price": 17.538662084493694,
+            "price": 17.181995253963226,
             "share": 0.15555555555555556,
-            "unexplained": 17985.317295727917
+            "unexplained": 16736.983388871304
           }
         ],
         "options": {
@@ -623,8 +619,8 @@ window.REFERENCE_CASES = {
             "bundle": 0,
             "one_off": 1200,
             "net": -200,
-            "residual": 17985.317295727917,
-            "index_after": 0.06055961775988659,
+            "residual": 16736.983388871304,
+            "index_after": 0.0565941506438627,
             "days_to_first_saving": 30,
             "plants": [
               "3010"
@@ -643,10 +639,10 @@ window.REFERENCE_CASES = {
           },
           "R": {
             "applicable": true,
-            "savings": 18985.317295727917,
+            "savings": 17736.983388871304,
             "bundle": 0,
             "one_off": 4800,
-            "net": 14185.317295727917,
+            "net": 12936.983388871304,
             "residual": 0,
             "index_after": 0,
             "days_to_first_saving": 60,
@@ -661,10 +657,10 @@ window.REFERENCE_CASES = {
           },
           "B": {
             "applicable": true,
-            "savings": 27355.317295727917,
+            "savings": 26106.983388871304,
             "bundle": 8370,
             "one_off": 9600,
-            "net": 17755.317295727917,
+            "net": 16506.983388871304,
             "residual": 0,
             "index_after": 0,
             "days_to_first_saving": 90,
@@ -827,7 +823,7 @@ window.REFERENCE_CASES = {
       "group": "20001007",
       "plant": "3010",
       "flagged": false,
-      "opportunity": 3968.1933993008197
+      "opportunity": 3594.657191650676
     }
   },
   "pipeline": {

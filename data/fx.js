@@ -8,14 +8,14 @@
  * status "fallback": one day's rate, labelled as such, until the snapshot workflow has run.
  */
 window.FX = {
-  "version": "fx-fallback-2026-10-14",
-  "status": "fallback",
-  "source": "European Central Bank euro reference rate of 14 Oct 2026 (1 EUR = 0.84385 GBP), as Rebate Hunter's TECH_NOTES section 4 observed it through Frankfurter's v1 API; not a window mean",
-  "label": "ECB reference rate of 14 Oct 2026, one day's rate (fallback until the window's mean is built)",
-  "built": "2026-10-14",
+  "version": "fx-2026-11-19",
+  "status": "snapshot",
+  "source": "European Central Bank, euro foreign exchange reference rates (daily series EXR.D.<currency>.EUR.SP00.A, ECB Data Portal), every day cross-checked against Frankfurter's v1 time series",
+  "label": "mean of the ECB's daily reference rates, 20 Nov 2025 to 19 Nov 2026",
+  "built": "2026-11-19",
   "window": {
-    "first": null,
-    "last": null,
+    "first": "2025-11-20",
+    "last": "2026-11-19",
     "days": 365
   },
   "currencies": {
@@ -23,11 +23,12 @@ window.FX = {
       "rate_to_eur": 1
     },
     "GBP": {
-      "mean_per_eur": 0.84385,
-      "rate_to_eur": 1.1850447354387628,
-      "observations": 1,
-      "first": "2026-10-14",
-      "last": "2026-10-14"
+      "mean_per_eur": 0.8613667843137256,
+      "rate_to_eur": 1.1609456252677857,
+      "observations": 255,
+      "first": "2025-11-20",
+      "last": "2026-11-19",
+      "source": "ECB"
     }
   }
 };
