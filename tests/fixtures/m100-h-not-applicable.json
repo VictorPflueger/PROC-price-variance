@@ -1,0 +1,12 @@
+{
+  "about": "G4b, added to cover AC-02's not-applicable case (PLAN.md B5): group M-100 of the brief without Duisburg's lines P6, P8 and P9, and with S-A delivering to DE only. The benchmark stays 1010 / S-A, every line above it sits in FR or GB, where S-A does not deliver, so option H has nothing to move. Built from tests/fixtures/m100.json by the engine suite.",
+  "base": "m100.json",
+  "drop_lines": ["P6", "P8", "P9"],
+  "supplier_changes": { "S-A": { "delivers_to": ["DE"] } },
+  "expected": {
+    "benchmark_pair": "1010 / S-A",
+    "H": { "applicable": false, "savings": 0, "one_off": 0, "plants_moved": [] },
+    "R": { "suppliers": ["S-B", "S-C"] },
+    "options_applicable": ["R", "B"]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "about": "Normalisation cases for AC-03 beyond the M-100 fixture: price units, the person-day of 8 hours for services (never SAP's 24-hour day), missing conversions, a currency without a rate, and every Incoterms 2020 rule (uplift only for groups E and F; none for a line without Incoterms). The engine suite adds every unit conversion and every currency of the world itself, at the bundled rates. Rates here: 1 GBP = 1.15 EUR; default parameters.",
+  "rates": { "EUR": 1, "GBP": 1.15 },
+  "units": {
+    "gloves": { "base_unit": "EA", "conversions": { "EA": 1, "BOX": 100, "CS": 1000 }, "display_quantity": 100 },
+    "consulting_pd": { "base_unit": "PD", "conversions": {}, "display_quantity": 1 },
+    "consulting_h": { "base_unit": "H", "conversions": {}, "display_quantity": 1 }
+  },
+  "cases": [
+    { "id": "N01", "what": "price unit 1,000 on single pieces", "unit": "gloves", "line": { "quantity": 5000, "order_unit": "EA", "net_price": 69.00, "price_unit": 1000, "currency": "EUR", "incoterm": "DAP" }, "price": 0.069, "display": "€6.90 per 100 EA" },
+    { "id": "N02", "what": "price unit 100 on boxes", "unit": "gloves", "line": { "quantity": 50, "order_unit": "BOX", "net_price": 720.00, "price_unit": 100, "currency": "EUR", "incoterm": "DAP" }, "price": 0.072, "display": "€7.20 per 100 EA" },
+    { "id": "N03", "what": "hours to person-days at 8 hours", "unit": "consulting_pd", "line": { "quantity": 160, "order_unit": "H", "net_price": 150, "price_unit": 1, "currency": "EUR", "incoterm": null }, "price": 1200, "base_units_per_order_unit": 0.125, "display": "€1,200.00 per PD" },
+    { "id": "N04", "what": "a day is a person-day", "unit": "consulting_pd", "line": { "quantity": 60, "order_unit": "DAY", "net_price": 1450, "price_unit": 1, "currency": "EUR", "incoterm": null }, "price": 1450, "base_units_per_order_unit": 1, "display": "€1,450.00 per PD" },
+    { "id": "N05", "what": "days to hours at 8 hours, not 24", "unit": "consulting_h", "line": { "quantity": 10, "order_unit": "DAY", "net_price": 1200, "price_unit": 1, "currency": "EUR", "incoterm": null }, "price": 150, "base_units_per_order_unit": 8, "display": "€150.00 per H" },
+    { "id": "N06", "what": "pounds an hour to euros a person-day", "unit": "consulting_pd", "line": { "quantity": 320, "order_unit": "H", "net_price": 170, "price_unit": 1, "currency": "GBP", "incoterm": null }, "price": 1564, "display": "€1,564.00 per PD" },
+    { "id": "N07", "what": "an order unit without a conversion", "unit": "gloves", "line": { "quantity": 1, "order_unit": "PAL", "net_price": 900, "price_unit": 1, "currency": "EUR", "incoterm": "DAP" }, "excluded": true, "reason": "no conversion from PAL to EA" },
+    { "id": "N08", "what": "hours on an item counted in pieces", "unit": "gloves", "line": { "quantity": 2, "order_unit": "H", "net_price": 80, "price_unit": 1, "currency": "EUR", "incoterm": null }, "excluded": true, "reason": "no conversion from H to EA" },
+    { "id": "N09", "what": "a currency without a bundled rate", "unit": "gloves", "line": { "quantity": 10, "order_unit": "BOX", "net_price": 7.00, "price_unit": 1, "currency": "CHF", "incoterm": "DAP" }, "excluded": true, "reason": "no exchange rate for CHF" }
+  ],
+  "incoterms": {
+    "line": { "quantity": 10, "order_unit": "BOX", "net_price": 10.00, "price_unit": 1, "currency": "EUR" },
+    "unit": "gloves",
+    "price_before_uplift": 0.1,
+    "uplift": { "EXW": 0.05, "FCA": 0.05, "FAS": 0.05, "FOB": 0.05, "CPT": 0, "CIP": 0, "CFR": 0, "CIF": 0, "DAP": 0, "DPU": 0, "DDP": 0 },
+    "groups": { "EXW": "E", "FCA": "F", "FAS": "F", "FOB": "F", "CPT": "C", "CIP": "C", "CFR": "C", "CIF": "C", "DAP": "D", "DPU": "D", "DDP": "D" }
+  }
+}
