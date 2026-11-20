@@ -309,3 +309,6 @@
 /* The decision stays in view: a card taller than the drawer keeps its Approve and Reject (or the reason
    and Accept) at the drawer's lower edge while any part of it shows (review R9). */
 .option-card > .option-actions { position: sticky; bottom: 0; z-index: 1; background-color: inherit; padding-block: 8px 2px; }
+/* Brought into view, a card keeps room above it for the recommended tag that sits 14 px over its edge,
+   less than the 20 px between rows, so the row above stays out of view rather than a sliver of it. */
+.option-card { scroll-margin-top: 16px; }

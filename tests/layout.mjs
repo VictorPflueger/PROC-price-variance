@@ -106,6 +106,13 @@ function layoutProblems() {
     const pending = [...optionsPanel.querySelectorAll('.option-card[data-status=""]')];
     const rec = optionsPanel.querySelector('.option-card[data-recommended="true"][data-status=""] [data-action="approve"]');
     if (rec && !inView(rec)) out.push("decision: the recommended option's Approve is out of view");
+    // The recommended option's tag sits on its card's top edge: bringing the card into view must not
+    // leave the tag half under the drawer's tab bar.
+    const tag = optionsPanel.querySelector('.option-card[data-recommended="true"][data-status=""] .option-top > .vc-tag');
+    if (tag) {
+      const t = tag.getBoundingClientRect();
+      if (t.bottom > B.top && t.top < B.bottom && (t.top < B.top - 0.5 || t.bottom > B.bottom + 0.5)) out.push("decision: the recommended option's tag is cut by the drawer's edge");
+    }
     for (const card of pending) {
       const r = card.getBoundingClientRect();
       if (r.bottom <= B.top + 1 || r.top >= B.bottom - 1) continue;
@@ -428,6 +435,12 @@ try {
     await toDecision(page);
     await settle(page);
     check("controls: at a decision the recommended Approve is in view", !(await measure(page)).some((p) => /^decision:/.test(p)), (await measure(page)).join("; "));
+    await page.evaluate(() => {
+      const body = document.querySelector("#drawer .drawer-body");
+      const tag = document.querySelector('#panel-options .option-card[data-recommended="true"] .option-top > .vc-tag');
+      body.scrollTop += tag.getBoundingClientRect().top - body.getBoundingClientRect().top + 6;
+    });
+    check("controls: the recommended option's tag cut by the drawer's edge is caught", (await measure(page)).some((p) => /^decision: the recommended option's tag is cut/.test(p)));
     await page.evaluate(() => { document.querySelector('#drawer .drawer-body').scrollTop = 0; const pad = document.createElement("div"); pad.id = "planted-pad"; pad.style.height = "900px"; document.getElementById("panel-options").prepend(pad); });
     check("controls: a decision pushed out of view is caught", (await measure(page)).some((p) => /^decision: the recommended option's Approve is out of view/.test(p)));
     await done(s, "controls");
