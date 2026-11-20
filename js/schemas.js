@@ -1,7 +1,8 @@
 // The data contracts (brief §10) as JSON Schemas, validated by js/schema.js: the data products of the world
 // (Material, Supplier, Plant, Contract, PoLine, FxRate, ValueLogEntry, and CompanyCode, MaterialGroup and
 // Buyer, which the world also carries), the engine's results (ComparableGroup, Cluster, Normalisation,
-// GroupAnalysis, Option) and the records of a run (Decision, Draft, RunEvent, AuditEvent).
+// GroupAnalysis, Option) and the records of a run (Decision, Draft, RunEvent, AuditEvent), with the
+// audit log's export (AuditExport, brief §9: the JSON export validates against it, AC-16).
 // Day numbers count from the day the app is opened: 0 is today, negative days are past.
 
 export const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CPT", "CIP", "CFR", "CIF", "DAP", "DPU", "DDP"];
@@ -146,8 +147,46 @@ export const SCHEMAS = {
   }, ["type", "ts", "payload"]),
   AuditEvent: record({
     id: text, seq: { type: "integer", minimum: 0 }, type: { enum: [...EVENT_TYPES, "model_call"] }, ts: text, t: { type: ["number", "null"] },
-    run_id: textOrNull, mode: { enum: ["live", "simulation", null] }, payload: { type: "object" }
-  }, ["type", "ts", "payload"])
+    run_id: textOrNull, mode: { enum: ["live", "simulation", null] }, payload: { type: "object" },
+    reviewer: text
+  }, ["type", "ts", "payload"]),
+
+  // ---- the audit log as exported (js/audit.js buildAuditExport) ----------------------------------------
+  Parameters: record(Object.fromEntries([
+    "window_days", "benchmark_min_share", "urgent_allowance", "logistics_uplift", "person_day_hours", "materiality_eur",
+    "materiality_spread", "day_rate_eur", "harmonise_days_per_plant", "renegotiate_days_per_supplier", "tender_days",
+    "bundle_discount", "lead_time_harmonise_days", "lead_time_renegotiate_days", "lead_time_tender_days"
+  ].map((k) => [k, nonNegative]))),
+  AuditExport: record({
+    app: text, app_version: version, exported_at: text,
+    mode: { enum: ["live", "simulation", null] }, mode_statement: text, ai_disclosure: text, company_note: text,
+    versions: record({ app: version, method: text, engine: text, world: textOrNull, fx: textOrNull }),
+    model: { anyOf: [record({ id: text, label: textOrNull, price_usd_per_million: { type: ["object", "null"] } }), { type: "null" }] },
+    usage: { anyOf: [record({ input_tokens: nonNegative, output_tokens: nonNegative, cache_read_input_tokens: nonNegative, cache_creation_input_tokens: nonNegative }), { type: "null" }] },
+    cost: { type: ["object", "null"] },
+    rates: record({
+      basis: record({ version: textOrNull, label: textOrNull, status: textOrNull, source: textOrNull, currencies: { type: "object" } }),
+      fetched_in_run: { type: "array", items: { type: "object", properties: { ok: { type: "boolean" }, currency: currency, date: isoDate, per_eur: positive, rate_to_eur: positive }, required: ["ok"] } }
+    }),
+    parameters: record({
+      in_effect: { anyOf: [{ $ref: "#/$defs/Parameters" }, { type: "null" }] },
+      changed_from_defaults: { type: "array", items: record({ name: text, default: nonNegative, value: nonNegative }) },
+      changes: { type: "array", items: record({ ts: text, name: text, from: nonNegative, to: nonNegative }) }
+    }),
+    run: { anyOf: [record({
+      run_id: text, mode: { enum: ["live", "simulation"] }, entry: { enum: ["scenario", "sweep", "custom"] }, scenario_id: textOrNull,
+      title: text, model: textOrNull, sim_source: { enum: ["authored", "recorded", null] },
+      parameters: { anyOf: [{ $ref: "#/$defs/Parameters" }, { type: "null" }] },
+      parameters_changed: { type: "array", items: record({ name: text, default: nonNegative, value: nonNegative }) },
+      started_at: text, ended_at: textOrNull, status: text
+    }), { type: "null" }] },
+    run_facts: { type: ["object", "null"] },
+    // A decision: who, when and what (its payload's fields follow, as the run event carries them).
+    decisions: { type: "array", items: { type: "object", properties: { type: { enum: ["confirmation_decision", "option_decision", "action_decision"] }, ts: text, reviewer: text, decision: text }, required: ["type", "ts", "reviewer", "decision"] } },
+    counts: { type: "object" },
+    events: { type: "array", items: { $ref: "#/$defs/AuditEvent" } },
+    api_exchanges: { type: "array", items: { type: "object" } }
+  })
 };
 
 /** The names the brief asks for (§10); the others are the records those refer to. */

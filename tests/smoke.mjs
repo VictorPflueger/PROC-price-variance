@@ -13,7 +13,7 @@ import { APP_ROOT, ONLY, wanted, launchBrowser, serveStatic, NETWORK_NOISE, SKIP
 import { analyseWorld, ratesOf, scanWorld, worldPipeline } from "../js/world.js";
 import { eur, unitPrice } from "../js/format.js";
 
-const CASES = ["boot", "idle", "scenarios", "intro", "drawer", "keyboard", "storage", "missing", "board"];
+const CASES = ["boot", "idle", "scenarios", "intro", "drawer", "keyboard", "storage", "missing", "board", "keyboard-run", "motion", "names", "method"];
 const unknown = ONLY.filter((c) => !CASES.includes(c));
 if (unknown.length) { console.error(`Unknown case(s): ${unknown.join(", ")}. Cases: ${CASES.join(", ")}`); process.exit(2); }
 
@@ -61,6 +61,12 @@ const ready = (page) => page.waitForSelector('html[data-boot="ready"]', { timeou
 const chosenTips = (page) => page.$$eval('.scenario-pick__item[aria-current="true"]', (els) => els.map((e) => e.dataset.id));
 const menuValue = (page) => page.$eval("#dd-scenario .value", (e) => e.textContent);
 const shortOf = (id) => SCENARIOS.find((s) => s.id === id)?.short;
+async function startSimulationFor(page, scenario) {
+  await page.click(`.scenario-pick__item[data-id="${scenario}"]`);
+  await page.click("button[aria-label='Replay speed ×4']");
+  await page.click("#btn-start");
+  await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
+}
 
 /** The value pipeline's bars (or its table's rows): { stage: value|null }. */
 const stagesOf = (page, sel) => page.$$eval(sel, (els) => Object.fromEntries(els.map((e) => [e.dataset.stage, e.dataset.value === "" ? null : Number(e.dataset.value)])));
@@ -256,24 +262,50 @@ try {
     check("board: the caption names the engine's benchmark, spread and opportunity",
       caption.includes(unitPrice(a.benchmark.price, dq, bu)) && caption.includes(`${eur(a.opportunity)} a year unexplained`), caption);
 
-    // Every line opens its normalisation: by keyboard on each, and by a pointer click on the first.
-    const lineIds = await s.page.$$eval(".ladder .ladder-line", (els) => els.map((e) => e.dataset.line));
-    check("board: the ladder draws every line of the engine's group", lineIds.length === a.lines.length && a.lines.every((l) => lineIds.includes(l.id)), `${lineIds.length} vs ${a.lines.length}`);
+    // The ladder draws every line as a mark in its pair's lane; every line opens its normalisation
+    // through its pair: a row opens the pair's lines (buttons of at least 40 px), a line there its
+    // normalisation, with a way back. Every line by pointer, and one pair's lines by keyboard too.
+    const marks = await s.page.$$eval(".ladder .ladder-line", (els) => els.map((e) => ({ id: e.dataset.line, hidden: e.getAttribute("aria-hidden"), events: getComputedStyle(e).pointerEvents })));
+    check("board: the ladder draws every line of the engine's group as a mark", marks.length === a.lines.length && a.lines.every((l) => marks.some((m) => m.id === l.id)) && marks.every((m) => m.hidden === "true" && m.events === "none"), `${marks.length} vs ${a.lines.length}`);
     const wrong = [];
-    for (const id of lineIds) {
-      await s.page.focus(`.ladder-line[data-line="${id}"]`);
-      await s.page.keyboard.press("Enter");
-      const pop = await s.page.waitForSelector(".board-pop", { timeout: 3000 }).catch(() => null);
-      const shown = pop ? await s.page.$eval(".board-pop", (e) => ({ title: e.querySelector(".pop-title")?.textContent || "", result: e.querySelector(".norm-result strong")?.textContent || "", steps: e.querySelectorAll(".norm-steps dt").length })) : null;
-      const l = a.lines.find((x) => x.id === id);
-      if (!shown || !shown.title.includes(id) || shown.result !== l.normalisation.display || shown.steps < 6) wrong.push(`${id}: ${JSON.stringify(shown)} vs ${l?.normalisation?.display}`);
+    const opened = new Set();
+    const small = [];
+    for (const p of a.pairs) {
+      await s.page.click(`.ladder .ladder-row[data-pair="${p.id}"] .row-band`);
+      await s.page.waitForSelector(".board-pop .pop-lines", { timeout: 3000 });
+      const listed = await s.page.$$eval(".board-pop .pop-line", (els) => els.map((e) => { const r = e.getBoundingClientRect(); return { id: e.dataset.line, w: r.width, h: r.height }; }));
+      const want = a.lines.filter((l) => l.pair === p.id).map((l) => l.id).sort();
+      if (JSON.stringify(listed.map((x) => x.id).sort()) !== JSON.stringify(want)) wrong.push(`pair ${p.id} lists ${listed.length} lines, the engine ${want.length}`);
+      small.push(...listed.filter((x) => x.h < 40 || x.w < 40).map((x) => `${x.id} ${Math.round(x.w)}×${Math.round(x.h)}`));
+      for (const id of listed.map((x) => x.id)) {
+        await s.page.click(`.board-pop .pop-line[data-line="${id}"]`);
+        await s.page.waitForSelector(".board-pop .norm-steps", { timeout: 3000 });
+        const shown = await s.page.$eval(".board-pop", (e) => ({ title: e.querySelector(".pop-title")?.textContent || "", result: e.querySelector(".norm-result strong")?.textContent || "", steps: e.querySelectorAll(".norm-steps dt").length }));
+        const l = a.lines.find((x) => x.id === id);
+        if (!shown.title.includes(id) || shown.result !== l.normalisation.display || shown.steps < 6) wrong.push(`${id}: ${JSON.stringify(shown)} vs ${l.normalisation.display}`);
+        else opened.add(id);
+        await s.page.click(".board-pop .pop-back");
+        await s.page.waitForSelector(".board-pop .pop-lines", { timeout: 3000 });
+      }
       await s.page.keyboard.press("Escape");
     }
-    check("board: every line opens its normalisation, the engine's six steps and its normalised price", wrong.length === 0, wrong.slice(0, 3).join(" | "));
-    await s.page.click(`.ladder-line[data-line="${lineIds[0]}"]`);
-    const clicked = await s.page.waitForSelector(".board-pop", { timeout: 3000 }).then(() => s.page.$eval(".board-pop .pop-title", (e) => e.textContent)).catch(() => "");
-    check("board: a pointer click on a line opens it too", clicked.includes(lineIds[0]), clicked);
+    check("board: every pair lists exactly its lines, and every line opens the engine's six steps and its normalised price", wrong.length === 0 && opened.size === a.lines.length, `${opened.size} of ${a.lines.length} opened; ${wrong.slice(0, 3).join(" | ")}`);
+    check("board: every line's button is at least 40 px high and wide", small.length === 0, small.slice(0, 5).join(", "));
+    // By keyboard: Tab reaches the rows; Enter opens a pair; Tab and Enter open a line; Escape returns.
+    const kp = a.pairs[a.pairs.length - 1];
+    await s.page.focus(`.ladder .ladder-row[data-pair="${kp.id}"]`);
+    await s.page.keyboard.press("Enter");
+    await s.page.waitForSelector(".board-pop .pop-lines", { timeout: 3000 });
+    let reachedLine = null;
+    for (let i = 0; i < 6 && !reachedLine; i += 1) {
+      await s.page.keyboard.press("Tab");
+      reachedLine = await s.page.evaluate(() => document.activeElement?.matches(".pop-line") ? document.activeElement.dataset.line : null);
+    }
+    await s.page.keyboard.press("Enter");
+    const kbShown = await s.page.waitForSelector(".board-pop .norm-steps", { timeout: 3000 }).then(() => s.page.$eval(".board-pop .pop-title", (e) => e.textContent)).catch(() => "");
     await s.page.keyboard.press("Escape");
+    const back = await s.page.evaluate(() => document.activeElement?.dataset?.pair || null);
+    check("board: by keyboard a row opens its lines, a line its normalisation, and Escape returns to the row", !!reachedLine && kbShown.includes(reachedLine) && back === kp.id, `${reachedLine} / ${kbShown} / ${back}`);
 
     // The table view holds the same numbers.
     await s.page.click(".table-toggle");
@@ -327,6 +359,220 @@ try {
     check("board: the flagged-groups table holds the chart's numbers",
       tableBars.length === flagged.length && tableBars.every((r, k) => r.id === flagged[k].id && close9(r.value, flagged[k].opportunity) && r.cell === eur(flagged[k].opportunity)), JSON.stringify(tableBars.slice(0, 2)));
     await close(w, "board (sweep)");
+  }
+
+  if (wanted("keyboard-run")) {
+    // AC-19: scenario 1 from Start agent to Done by keyboard alone, every focused control visibly so.
+    const s = await open({ viewport: { width: 1920, height: 1080 } });
+    const { page } = s;
+    await ready(page);
+    const noFocusRing = new Set();
+    let stops = 0;
+    /** Presses Tab until `test` holds for the focused element (at most `max` presses), checking each stop's focus indicator. */
+    const tabTo = async (test, max = 260) => {
+      for (let i = 0; i < max; i += 1) {
+        await page.keyboard.press("Tab");
+        stops += 1;
+        const st = await page.evaluate((src) => {
+          const el = document.activeElement;
+          if (!el || el === document.body) return { name: "body", ring: true, hit: false };
+          // The focus indicators the app and Vici draw: an outline or a shadow on the control; on a card's
+          // link, the card's outline; on Vici's hexagonal icon button, its ::after ring in the focus colour;
+          // on a ladder row, its band's stroke; or an outline or shadow on a pseudo-element.
+          const visible = (() => {
+            const cs = getComputedStyle(el);
+            if (cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) >= 1) return true;
+            if (cs.boxShadow && cs.boxShadow !== "none") return true;
+            if (el.matches(".vc-card__link")) { const c = getComputedStyle(el.closest(".vc-card")); if (c.outlineStyle !== "none" && parseFloat(c.outlineWidth) >= 1) return true; }
+            if (el.matches(".vc-icon-button")) { const a = getComputedStyle(el, "::after"); if (a.content !== "none" && Number(a.opacity) >= 0.9 && a.backgroundColor !== "rgba(0, 0, 0, 0)") return true; }
+            if (el.matches(".ladder-row")) { const b = getComputedStyle(el.querySelector(".row-band")); return b.stroke !== "none" && parseFloat(b.strokeWidth) >= 1; }
+            for (const pseudo of ["::before", "::after"]) { const p = getComputedStyle(el, pseudo); if (p.content !== "none" && ((p.outlineStyle !== "none" && parseFloat(p.outlineWidth) >= 1) || (p.boxShadow && p.boxShadow !== "none"))) return true; }
+            return false;
+          })();
+          // eslint-disable-next-line no-new-func
+          const hit = new Function("el", `return (${src})(el);`)(el);
+          return { name: `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""}${el.getAttribute("aria-label") ? `[${el.getAttribute("aria-label").slice(0, 40)}]` : ""} "${(el.innerText || "").trim().slice(0, 30)}"`, ring: visible, hit };
+        }, test.toString());
+        if (!st.ring) noFocusRing.add(st.name);
+        if (st.hit) return true;
+      }
+      return false;
+    };
+    const reachedSpeed = await tabTo((el) => el.getAttribute("aria-label") === "Replay speed ×4");
+    await page.keyboard.press("Enter");
+    const reachedTip = await tabTo((el) => el.matches('.scenario-pick__item[data-id="SC-GLOVES"]'));
+    await page.keyboard.press("Enter");
+    const reachedStart = await tabTo((el) => el.id === "btn-start");
+    await page.keyboard.press("Enter");
+    await page.waitForSelector(".mode-card", { timeout: 5000 });
+    const reachedSim = await tabTo((el) => !!el.closest('.mode-card[data-mode="simulation"]') && el.matches(".mode-cta button"), 20);
+    await page.keyboard.press("Enter");
+    await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { timeout: 90000 });
+    await page.waitForFunction(() => /Awaiting your decision/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 30000 });
+    const reachedApprove = await tabTo((el) => el.matches('.option-card[data-recommended="true"] [data-action="approve"]'));
+    await page.keyboard.press("Enter");
+    await page.waitForSelector('.action-card[data-status="pending"] [data-action="approve"]', { timeout: 60000 });
+    let drafts = 0;
+    for (let i = 0; i < 8; i += 1) {
+      if (!(await page.$('.action-card[data-status="pending"] [data-action="approve"]'))) break;
+      const ok = await tabTo((el) => el.matches('.action-card[data-status="pending"] [data-action="approve"]'), 120);
+      if (!ok) break;
+      await page.keyboard.press("Enter");
+      drafts += 1;
+      await page.waitForTimeout(300);
+    }
+    await page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 60000 }).catch(() => {});
+    const end = await page.$eval(".status-pill .text", (e) => e.textContent);
+    check("keyboard-run: Tab reaches the speed, the tip, Start agent and the Simulation card", reachedSpeed && reachedTip && reachedStart && reachedSim, JSON.stringify({ reachedSpeed, reachedTip, reachedStart, reachedSim }));
+    check("keyboard-run: Tab reaches the recommended option's Approve and every draft's Approve", reachedApprove && drafts >= 1, `${reachedApprove}, ${drafts} drafts`);
+    check("keyboard-run: the run ends Done by keyboard alone", /Done/.test(end), end);
+    check("keyboard-run: every control Tab reached showed a visible focus indicator", noFocusRing.size === 0, [...noFocusRing].slice(0, 8).join("; "));
+    check("keyboard-run: the run took a sensible number of Tab presses", stops > 10 && stops < 1200, String(stops));
+    await close(s, "keyboard-run");
+  }
+
+  if (wanted("motion")) {
+    // AC-19: with reduced motion, nothing pulses: no animation keeps running while the agent reads lines,
+    // waits for a decision or plays at all.
+    const context = await browser.newContext({ viewport: { width: 1600, height: 900 }, reducedMotion: "reduce" });
+    await context.addInitScript(SKIP_INTRO);
+    const outside = [];
+    await context.route(/^https?:\/\/(?!127\.0\.0\.1)/, (route) => { outside.push(route.request().url()); route.abort("blockedbyclient"); });
+    const page = await context.newPage();
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(String(e.message || e)));
+    await page.goto(server.base);
+    await ready(page);
+    const running = () => page.evaluate(() => document.getAnimations()
+      .filter((x) => x.playState === "running" && (x.effect?.getComputedTiming?.().iterations === Infinity || (x.effect?.getComputedTiming?.().duration || 0) > 50))
+      .map((x) => `${x.animationName || x.constructor.name} on ${x.effect?.target?.className?.baseVal ?? x.effect?.target?.className ?? "?"}`));
+    await page.click('.scenario-pick__item[data-id="SC-GLOVES"]');
+    await page.click("button[aria-label='Replay speed ×4']");
+    await page.click("#btn-start");
+    await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
+    const seen = new Set();
+    let samples = 0;
+    let sawChecking = false;
+    const t0 = Date.now();
+    while (Date.now() - t0 < 60000) {
+      for (const a of await running()) seen.add(a);
+      samples += 1;
+      if (await page.$('.ladder-line[data-mark="checking"], .ladder-row[data-state="checking"]')) sawChecking = true;
+      if (await page.$('.option-card[data-recommended="true"] [data-action="approve"]')) break;
+      await page.waitForTimeout(150);
+    }
+    for (const a of await running()) seen.add(a);
+    check("motion: the agent read lines on the board while the test watched", sawChecking);
+    check("motion: with reduced motion no pulse or other animation runs, sampled through the run", seen.size === 0 && samples > 20, `${[...seen].slice(0, 6).join(", ")} (${samples} samples)`);
+    const pulse = await page.evaluate(() => { const el = document.querySelector(".status-pill .dot"); return el ? getComputedStyle(el).animationIterationCount : null; });
+    check("motion: the status tag's dot does not repeat its pulse", pulse === null || pulse === "1", String(pulse));
+    check("motion: no page error and no request to another host", errors.length === 0 && outside.length === 0, [...errors, ...outside].join(" | "));
+    await context.close();
+  }
+
+  if (wanted("names")) {
+    // AC-19: every marker, row and bar of the board, and every control, has an accessible name; the
+    // marks the rows stand for are hidden from assistive technology.
+    const s = await open({ viewport: { width: 1920, height: 1080 } });
+    const { page } = s;
+    await ready(page);
+    const unnamed = () => page.evaluate(() => {
+      const nameOf = (el) => {
+        if (el.getAttribute("aria-label")) return el.getAttribute("aria-label").trim();
+        const by = el.getAttribute("aria-labelledby");
+        if (by) return by.split(/\s+/).map((id) => document.getElementById(id)?.textContent || "").join(" ").trim();
+        if (el.id && document.querySelector(`label[for="${el.id}"]`)) return document.querySelector(`label[for="${el.id}"]`).textContent.trim();
+        if (el.closest("label")) return el.closest("label").textContent.trim();
+        return (el.textContent || el.title || "").trim();
+      };
+      const sel = 'button, a[href], input, select, textarea, summary, [role="button"], [role="tab"], [role="group"], [role="img"], [role="menuitemradio"]';
+      return [...document.querySelectorAll(sel)].filter((el) => el.getClientRects().length && !el.closest("[aria-hidden='true'], [hidden]")).filter((el) => !nameOf(el)).map((el) => `${el.tagName.toLowerCase()}.${String(el.className?.baseVal ?? el.className).split(" ")[0]}`);
+    });
+    await startSimulationFor(page, "SC-GLOVES");
+    await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { timeout: 90000 });
+    await page.click(".drawer-toggle");
+    await page.waitForSelector('.ladder[data-compact="false"]', { timeout: 5000 });
+    const ladder = await page.evaluate(() => ({
+      svg: document.querySelector(".ladder")?.getAttribute("aria-label") || "",
+      rows: [...document.querySelectorAll(".ladder .ladder-row")].map((r) => ({ role: r.getAttribute("role"), label: r.getAttribute("aria-label") || "", tab: r.getAttribute("tabindex") })),
+      marksHidden: [...document.querySelectorAll(".ladder .ladder-line, .ladder .ladder-axis, .ladder .ladder-benchmark")].every((m) => m.getAttribute("aria-hidden") === "true")
+    }));
+    check("names: the ladder is a named group that says what its rows open", /Price ladder of .+: \d+ plant–supplier pairs/.test(ladder.svg) && /opens its lines and contract/.test(ladder.svg), ladder.svg);
+    check("names: every row is a button named with its plant, supplier, price and lines", ladder.rows.length > 0 && ladder.rows.every((r) => r.role === "button" && r.tab === "0" && /,.+: €[\d.,]+ per .+ delivered, .+ of the quantity/.test(r.label) && /\d+ lines?; opens them and the contract/.test(r.label)), JSON.stringify(ladder.rows[0]));
+    check("names: the line marks, the axis and the benchmark line are hidden from assistive technology (the rows and the tables carry them)", ladder.marksHidden);
+    check("names: every control and group on screen has a name (the ladder in view)", (await unnamed()).length === 0, (await unnamed()).join(", "));
+    await page.click('.ladder .ladder-row');
+    await page.waitForSelector(".board-pop .pop-line");
+    const pop = await page.evaluate(() => ({ dialog: document.querySelector(".board-pop")?.getAttribute("role"), label: document.querySelector(".board-pop")?.getAttribute("aria-label"), lines: [...document.querySelectorAll(".board-pop .pop-line")].map((b) => b.getAttribute("aria-label")) }));
+    check("names: a pair's popover is a named dialog whose line buttons say what they open", pop.dialog === "dialog" && /^Pair /.test(pop.label || "") && pop.lines.every((l) => /^Line .+: open its normalisation$/.test(l)), JSON.stringify(pop).slice(0, 300));
+    await page.keyboard.press("Escape");
+    await page.click('.board-tools button[data-view="portfolio"]');
+    const bars = await page.evaluate(() => [...document.querySelectorAll("#board .bar-row")].map((r) => (r.querySelector(".bar-label")?.textContent || "").trim() && (r.querySelector(".bar-value")?.textContent || "").trim()));
+    check("names: every bar of the portfolio has its label and its value as text", bars.length >= 4 && bars.every(Boolean), JSON.stringify(bars));
+    check("names: every control and group on screen has a name (the portfolio in view)", (await unnamed()).length === 0, (await unnamed()).join(", "));
+    await close(s, "names");
+  }
+
+  if (wanted("method")) {
+    // The Method dialog: the method, the parameters (changed between runs, logged, never applied to a
+    // simulation, locked while a run is in progress), the rates with their dates, the production path.
+    const s = await open({ viewport: { width: 1920, height: 1080 } });
+    const { page } = s;
+    await ready(page);
+    await page.click("#btn-method");
+    await page.waitForSelector(".method-modal", { timeout: 5000 });
+    const m = await page.evaluate(() => ({
+      heads: [...document.querySelectorAll(".method-modal .method-section h3")].map((h) => h.textContent),
+      params: [...document.querySelectorAll(".method-params tbody tr")].map((r) => ({ key: r.dataset.param, value: r.querySelector("input").value, disabled: r.querySelector("input").disabled })),
+      rates: [...document.querySelectorAll(".method-rates tbody tr")].map((r) => [...r.children].map((c) => c.textContent)),
+      path: [...document.querySelectorAll(".method-modal .method-path > li strong")].map((x) => x.textContent),
+      text: document.querySelector(".method-modal").textContent
+    }));
+    const { PARAMETERS, DEFAULTS } = await import("../js/params.js");
+    const want = ["Comparable groups", "A comparable price", "The benchmark", "Justified and unexplained", "Spread, index and materiality", "The options", "The value pipeline", "Parameters", "Exchange rates", "In production"];
+    check("method: the dialog explains the method in its ten sections", JSON.stringify(m.heads) === JSON.stringify(want), m.heads.join(" | "));
+    check("method: every parameter is listed with its default value, editable between runs",
+      m.params.length === PARAMETERS.length && m.params.every((p) => { const def = PARAMETERS.find((x) => x.key === p.key); const shown = Number(p.value); return def && !p.disabled && Math.abs((def.unit === "share" ? shown / 100 : shown) - DEFAULTS[p.key]) < 1e-12; }), JSON.stringify(m.params.slice(0, 3)));
+    const gbp = D.FX.currencies.GBP;
+    check("method: the rates table shows the window's mean GBP rate with its dates and quotes",
+      m.rates.length === 1 && m.rates[0][0] === "GBP" && m.rates[0][1] === gbp.mean_per_eur.toLocaleString("en-GB", { maximumFractionDigits: 5 }) && m.rates[0][3].includes("20 Nov 2025") && m.rates[0][4] === String(gbp.observations), JSON.stringify(m.rates));
+    check("method: the production path runs from SAP to Action", JSON.stringify(m.path) === JSON.stringify(["SAP S/4HANA or Ariba", "Microsoft Fabric", "AI agents", "Power BI", "Action"]), m.path.join(" → "));
+    check("method: the figures in its text come from the parameters (e.g. the 15.0% urgent allowance, €5,000 a year materiality)", m.text.includes("15.0%") && m.text.includes("€5,000 a year") && m.text.includes("8 hours"));
+    // A change between runs: logged in the audit log at once.
+    await page.fill('.method-params input[data-param="materiality_eur"]', "4000");
+    await page.keyboard.press("Enter");
+    const status = await page.textContent(".method-param-status");
+    check("method: a change is confirmed with its old and new value", /Materiality: opportunity: €5,000 a year → €4,000 a year/.test(status), status);
+    await page.keyboard.press("Escape");
+    await page.click("#tab-audit");
+    const logged = await page.evaluate(() => [...document.querySelectorAll('.audit-table tr[data-type="param_change"] td')].map((td) => td.textContent).join(" "));
+    check("method: the change is in the audit log", /materiality_eur: 5000 → 4000/.test(logged), logged);
+    // A simulation runs at the defaults, and the parameters are locked while it runs.
+    await page.click('.scenario-pick__item[data-id="SC-BOXES"]');
+    await page.click("button[aria-label='Replay speed ×4']");
+    await page.click("#btn-start");
+    await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
+    await page.waitForFunction(() => !/Idle/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 10000 });
+    await page.click("#btn-method");
+    await page.waitForSelector(".method-modal");
+    const locked = await page.evaluate(() => [...document.querySelectorAll(".method-params input")].every((i) => i.disabled) && /Locked while the agent runs/.test(document.querySelector(".method-param-note").textContent));
+    check("method: while a run is in progress the parameters are locked and say so", locked);
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => /Done|No findings/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 90000 });
+    const audit = await page.evaluate(async () => JSON.parse((await import("./js/audit.js")).buildAuditExport()));
+    check("method: the simulation ran at the defaults, whatever the person set for live runs",
+      audit.parameters.in_effect.materiality_eur === 5000 && audit.parameters.changed_from_defaults.length === 0 && audit.run.mode === "simulation", JSON.stringify(audit.parameters).slice(0, 200));
+    const outcome = audit.events.filter((e) => e.type === "report").pop()?.payload?.outcome;
+    check("method: scenario 4 still ends with nothing to propose (a lower threshold would have flagged it)", outcome === "nothing_found", outcome);
+    await page.click("#btn-method");
+    await page.waitForSelector(".method-modal");
+    const kept = await page.$eval('.method-params input[data-param="materiality_eur"]', (i) => ({ value: i.value, disabled: i.disabled }));
+    check("method: the person's value is kept for the next live run, editable again after the run", kept.value === "4000" && !kept.disabled, JSON.stringify(kept));
+    await page.click(".method-reset");
+    const reset = await page.$eval('.method-params input[data-param="materiality_eur"]', (i) => i.value);
+    check("method: Reset to the defaults restores them", reset === "5000", reset);
+    await page.keyboard.press("Escape");
+    await close(s, "method");
   }
 } finally {
   await server.close();

@@ -27,6 +27,8 @@ export function canRecord() {
   if (run.entry !== "scenario" || !run.scenario_id) return { ok: false, reason: "Only runs of a preset scenario can replace its simulation." };
   if (!["done", "no_findings"].includes(run.status)) return { ok: false, reason: run.status === "running" ? "Available when the run has completed." : "Only completed runs can be saved as a simulation." };
   if (!auditEvents().some((e) => e.type === "report")) return { ok: false, reason: "The run ended without a report." };
+  // A simulation always runs at the default parameters, so only a run at the defaults can become one.
+  if ((run.parameters_changed || []).length) return { ok: false, reason: `This run used changed parameters (${run.parameters_changed.map((c) => c.name).join(", ")}); simulations run at the defaults, so it cannot replace one.` };
   return { ok: true, reason: "" };
 }
 

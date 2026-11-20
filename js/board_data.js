@@ -89,7 +89,8 @@ export function ladderModel(world, analysis, { compared = false, marks = { lines
   const x = (price) => left + ((price - lo) / (hi - lo)) * (right - left);
   // A full row holds the pair's hexagon on its centre line and, above it, the lane of its lines; on a
   // short board the hexagons get smaller (down to 8 px) before the rows outgrow the canvas.
-  const rowH = compact ? Math.max(30, Math.min(44, ((size.height || 360) - top - 24) / Math.max(1, pairs.length))) : Math.max(58, Math.min(92, ((size.height || 480) - top - 30) / Math.max(1, pairs.length)));
+  // A row is a target, so it is at least 40 px high even in the compact ladder (which then scrolls).
+  const rowH = compact ? Math.max(44, Math.min(52, ((size.height || 360) - top - 24) / Math.max(1, pairs.length))) : Math.max(58, Math.min(92, ((size.height || 480) - top - 30) / Math.max(1, pairs.length)));
   const rMax = compact ? Math.min(PAIR_R_MAX, rowH / 2 - 3) : Math.max(8, Math.min(PAIR_R_MAX, rowH / 2 - 2 - LANE_ABOVE));
   const qMax = Math.max(...pairs.map((p) => p.quantity));
   const bench = analysis.benchmark;

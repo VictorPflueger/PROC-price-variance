@@ -35,9 +35,10 @@ export function openClusterDialog(req, { onAnswer, plantName = (id) => id, perso
       const box = h("input", { type: "checkbox", class: "vc-checkbox", id: `cl-${l.id}`, checked: true, dataset: { line: l.id } });
       box.addEventListener("change", update);
       boxes.set(l.id, box);
+      // The whole row is the checkbox's label: a target of at least 40 px.
       return h("li", { class: "cluster-line" },
-        box,
-        h("label", { for: `cl-${l.id}` },
+        h("label", { class: "cluster-line__label", for: `cl-${l.id}` },
+          box,
           h("span", { class: "cluster-line__qty vc-tabular" }, `${int(l.quantity)} ${l.order_unit}`),
           h("span", { class: "cluster-line__price vc-tabular" }, ` at ${l.currency === "EUR" ? "€" : l.currency === "GBP" ? "£" : `${l.currency} `}${Number(l.net_price).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per ${l.price_unit > 1 ? `${l.price_unit} ` : ""}${l.order_unit}`),
           h("span", { class: "vc-visually-hidden" }, `, line ${l.id}`)));

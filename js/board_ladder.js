@@ -2,8 +2,10 @@
 // normalised price sized by its quantity, its lines as small hexagons in a lane above it, the benchmark as an ink line with
 // its label, the unexplained part from the benchmark to each pair in the danger tone with a cross, the
 // justified part hatched in the warning tone with its reason, and the euros a year at the row's end.
-// Plants are told apart by the labels on their rows, never by colour. A line opens its normalisation
-// steps; a pair opens its lines and contract. The lines the agent reads pulse in a fjord outline.
+// Plants are told apart by the labels on their rows, never by colour. A row (its pair) opens its lines
+// and contract, and each line there opens its normalisation steps: the row is a target of at least
+// 40 px, the line's hexagon a mark too small to point at. The lines the agent reads pulse in a fjord
+// outline.
 // Everything round is a hexagon (Vici's hexagon rule); every colour comes from css/board.css.
 
 import { LINE_R } from "./board_data.js";
@@ -28,14 +30,14 @@ export function hexPoints(cx, cy, r) {
 }
 
 /**
- * The ladder as an SVG element. model: ladderModel(); handlers: { onLine(id, el), onPair(id, el) }.
+ * The ladder as an SVG element. model: ladderModel(); handlers: { onPair(id, el) }.
  */
-export function renderLadder(model, { onLine, onPair } = {}) {
+export function renderLadder(model, { onPair } = {}) {
   const { width, height, rows, left, right, top } = model;
   const root = svg("svg", {
     class: "ladder", width, height, viewBox: `0 0 ${width} ${height}`,
-    role: "group", "aria-label": `Price ladder of ${model.label}: ${rows.length} plant–supplier pairs, normalised prices in ${model.axisUnit}${model.benchmark ? `; benchmark ${model.benchmark.text}` : ""}`,
-    dataset: { group: model.groupId, compared: String(model.compared), compact: String(model.compact) }
+    role: "group", "aria-label": `Price ladder of ${model.label}: ${rows.length} plant–supplier pairs, normalised prices in ${model.axisUnit}${model.benchmark ? `; benchmark ${model.benchmark.text}` : ""}. Each row opens its lines and contract.`,
+    dataset: { group: model.groupId, compared: String(model.compared), compact: String(model.compact), plotLeft: left, plotRight: right }
   });
   root.append(svg("defs", {},
     svg("pattern", { id: "hatch-justified", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" },
@@ -56,15 +58,16 @@ export function renderLadder(model, { onLine, onPair } = {}) {
   // Rows.
   for (const r of rows) {
     const g = svg("g", {
-      class: "ladder-row", tabindex: 0, role: "button",
-      "aria-label": `${r.city}, ${r.supplierName}: ${r.priceText} delivered, ${r.shareText} of the quantity${r.isBenchmark && model.compared ? ", the benchmark" : ""}${r.above ? `, ${r.unexplainedText} a year unexplained${r.justified > 0 ? `, ${r.justifiedText} justified` : ""}` : ""}. Opens its lines and contract.`,
+      class: "ladder-row", tabindex: 0, role: "button", "aria-haspopup": "dialog",
+      "aria-label": `${r.city}, ${r.supplierName}: ${r.priceText} delivered, ${r.shareText} of the quantity${r.isBenchmark && model.compared ? ", the benchmark" : ""}${r.above ? `, ${r.unexplainedText} a year unexplained${r.justified > 0 ? `, ${r.justifiedText} justified` : ""}` : ""}${r.state === "approved" ? ", approved" : r.state === "justified" ? ", variance accepted" : ""}. ${r.lines.length} line${r.lines.length === 1 ? "" : "s"}; opens them and the contract.`,
       dataset: {
         pair: r.id, price: r.price, quantity: r.quantity, share: r.share, unexplained: r.unexplained, justified: r.justified,
-        benchmark: String(r.isBenchmark), highest: String(r.isHighest), state: r.state || ""
+        benchmark: String(r.isBenchmark), highest: String(r.isHighest), above: String(!!r.above), state: r.state || ""
       }
     });
     const yTop = r.cy - model.rowH / 2;
-    g.append(svg("rect", { class: "row-band", x: 0, y: yTop + 2, width, height: model.rowH - 4 }));
+    // The band is the row's target: its full height (at least 40 px), the hover and focus fill.
+    g.append(svg("rect", { class: "row-band", x: 0, y: yTop, width, height: model.rowH }));
     // Label: plant (bold), supplier, tags.
     const label = svg("text", { class: "row-label", x: 8, y: r.cy - (model.compact ? 0 : 5), "dominant-baseline": model.compact ? "middle" : "auto" },
       svg("tspan", { class: "row-plant" }, r.city), svg("tspan", { class: "row-supplier", dx: 6 }, r.supplierName));
@@ -76,19 +79,13 @@ export function renderLadder(model, { onLine, onPair } = {}) {
       if (r.unexplained > 0) g.append(svg("rect", { class: "gap-unexplained", x: r.xb, y: r.cy - h / 2, width: Math.max(1, r.xSplit - r.xb), height: h }));
       if (r.justified > 0) g.append(svg("rect", { class: "gap-justified", x: r.xSplit, y: r.cy - h / 2, width: Math.max(1, r.x - r.xSplit), height: h }));
     }
-    // Lines as small hexagons, then the pair's hexagon sized by quantity.
+    // Lines as small hexagons in their lane (marks: the row is their target), then the pair's hexagon
+    // sized by quantity.
     if (!model.compact) {
       for (const l of r.lines) {
-        const lg = svg("g", {
-          class: "ladder-line", tabindex: 0, role: "button",
-          "aria-label": `Line ${l.id}: ${l.priceText}${l.urgent ? ", urgent with a reason" : ""}. Opens its normalisation.`,
-          dataset: { line: l.id, price: l.price, mark: l.mark || "" }
-        },
-        svg("polygon", { class: "line-pulse", points: hexPoints(l.x, l.y, LINE_R + 2.75) }),
-        svg("polygon", { class: "line-hex", points: hexPoints(l.x, l.y, LINE_R) }));
-        lg.addEventListener("click", (e) => { e.stopPropagation(); onLine?.(l.id, lg); });
-        lg.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onLine?.(l.id, lg); } });
-        g.append(lg);
+        g.append(svg("g", { class: "ladder-line", "aria-hidden": "true", dataset: { line: l.id, price: l.price, mark: l.mark || "" } },
+          svg("polygon", { class: "line-pulse", points: hexPoints(l.x, l.y, LINE_R + 2.25) }),
+          svg("polygon", { class: "line-hex", points: hexPoints(l.x, l.y, LINE_R) })));
       }
     }
     g.append(svg("polygon", { class: "pair-pulse", points: hexPoints(r.x, r.cy, r.r + 4) }), svg("polygon", { class: "pair-hex", points: hexPoints(r.x, r.cy, r.r) }));

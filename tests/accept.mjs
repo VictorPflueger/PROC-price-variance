@@ -1,16 +1,30 @@
-// Acceptance checks of the key's lifecycle and the honesty rules around it (AC-08).
-//   key   the key is asked for only in Live (Simulation never asks); it is checked with the free
-//         GET /v1/models call; a rejected key is not kept; it lives in this tab's session storage under
-//         pv.anthropic.key and never in local storage, the audit export, a recording, the console or the
-//         page; Forget key removes it; the key dialog refuses to work inside a frame
+// Acceptance checks of the key's lifecycle and the honesty rules around it (AC-08), and of the exports
+// (AC-16):
+//   key      the key is asked for only in Live (Simulation never asks); it is checked with the free
+//            GET /v1/models call; a rejected key is not kept; it lives in this tab's session storage
+//            under pv.anthropic.key and never in local storage, the audit export, a recording, the
+//            console or the page; Forget key removes it; the key dialog refuses to work inside a frame;
+//            the live audit export validates against its schema
+//   exports  a simulated run's report (.md), group analysis (.csv) and audit log (.json), downloaded:
+//            their names, their content, the figures against the engine, the JSON against AuditExport
+//            with the app's own validator, and a broken copy refused
 // Usage: node tests/accept.mjs [case…]
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { createFakeClaude } from "./lib/fake-claude.mjs";
 import { APP_ROOT, ONLY, outDir, wanted, launchBrowser, serveStatic, CORS, MOCK_KEY, NETWORK_NOISE, SKIP_INTRO, KEYS } from "./lib/harness.mjs";
 import { MODELS } from "../js/config.js";
+import { validate, formatErrors } from "../js/schema.js";
+import { SCHEMAS } from "../js/schemas.js";
+import { parseCsv, ANALYSIS_COLUMNS } from "../js/exports.js";
+import { analyseWorld, ratesOf } from "../js/world.js";
+import { DEFAULTS } from "../js/params.js";
+import vm from "node:vm";
 
 const OUT = await outDir("accept");
+const CASES = ["key", "exports"];
+const unknownCases = ONLY.filter((c) => !CASES.includes(c));
+if (unknownCases.length) { console.error(`Unknown case(s): ${unknownCases.join(", ")}. Cases: ${CASES.join(", ")}`); process.exit(2); }
 const PORT = 8773;
 const { base: BASE, close } = await serveStatic(APP_ROOT, PORT);
 const browser = await launchBrowser();
@@ -118,6 +132,8 @@ if (wanted("key")) {
     expect("key", "the audit export is named price-variance-…-LIVE-audit.json", /^price-variance-run-.*-LIVE-audit\.json$/.test(download.suggestedFilename()), download.suggestedFilename());
     expect("key", "the audit export never holds the key", !exported.includes(MOCK_KEY) && !KEY_RE.test(exported));
     expect("key", "the audit export shows model, usage, rates and cost", /"model": \{/.test(exported) && /"usage": \{/.test(exported) && /"rates": \{/.test(exported) && /"cost": \{/.test(exported));
+    const liveCheck = validate(JSON.parse(exported), "AuditExport", { defs: SCHEMAS });
+    expect("key", "the live audit export validates against AuditExport with the app's validator (AC-16)", liveCheck.ok, formatErrors(liveCheck.errors).join("; "));
     const [rec] = await Promise.all([t.page.waitForEvent("download"), t.page.click('#console button:has-text("Save run as simulation")')]);
     const recText = await readFile(await rec.path(), "utf8");
     expect("key", "a recording never holds the key", !recText.includes(MOCK_KEY) && !KEY_RE.test(recText));
@@ -152,9 +168,89 @@ if (wanted("key")) {
   }
 }
 
+
+if (wanted("exports")) {
+  // AC-16: the three exports of a simulated run of scenario 1, downloaded as a person would: the report
+  // as Markdown, the group analysis as CSV and the audit log as JSON, each named price-variance-…, each
+  // with its stated content, the figures equal to the engine's, the JSON valid against its schema.
+  const sandbox = { window: {} };
+  vm.createContext(sandbox);
+  for (const f of ["fx.js", "world.js", "reference_cases.js"]) vm.runInContext(await readFile(path.join(APP_ROOT, "data", f), "utf8"), sandbox);
+  const D = sandbox.window;
+  const gid = D.REFERENCE_CASES.cases["SC-GLOVES"].group_id;
+  const a = analyseWorld(D.WORLD, ratesOf(D.FX)).analyses.find((x) => x.id === gid);
+  const t = await newPage(null);
+  const { page } = t;
+  await page.goto(BASE);
+  await page.waitForSelector('html[data-boot="ready"]');
+  await page.click('.scenario-pick__item[data-id="SC-GLOVES"]');
+  await page.click("button[aria-label='Replay speed ×4']");
+  await page.click("#btn-start");
+  await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
+  await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { timeout: 90000 });
+  await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
+  for (let i = 0; i < 12; i += 1) {
+    const b = await page.waitForSelector('.action-card[data-status="pending"] [data-action="approve"]', { timeout: 5000 }).catch(() => null);
+    if (!b) break;
+    await b.click().catch(() => {});
+    await page.waitForTimeout(250);
+  }
+  await page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 60000 });
+  const runId = await page.evaluate(async () => (await import("./js/state.js")).getState().runId);
+  const save = async (download) => { const f = path.join(OUT, download.suggestedFilename()); await download.saveAs(f); return { name: download.suggestedFilename(), text: await readFile(f, "utf8") }; };
+
+  // The report.
+  await page.click('#console button:has-text("Open the report")');
+  await page.waitForSelector(".report-modal");
+  const report = await save((await Promise.all([page.waitForEvent("download"), page.click('.report-modal button:has-text("Download .md")')]))[0]);
+  await page.keyboard.press("Escape");
+  expect("exports", "the report is named price-variance-<run>-SIMULATION-report.md", report.name === `price-variance-${runId}-SIMULATION-report.md`, report.name);
+  expect("exports", "the report opens with the SIMULATION banner and keeps the authored footer", /^> SIMULATION: scripted replay, not a live analysis\./.test(report.text) && report.text.includes("Simulated run (authored script)"), report.text.slice(0, 160));
+  expect("exports", "the report names the engine's opportunity and benchmark", report.text.includes("€14,146") && report.text.includes("€6.90 per 100 EA"), report.text.slice(0, 300));
+
+  // The group analysis.
+  await page.click(".drawer-toggle").catch(() => {});
+  await page.click('.board-tools button[data-view="group"]').catch(() => {});
+  await page.waitForSelector(".csv-download:not([hidden])", { timeout: 5000 });
+  const csv = await save((await Promise.all([page.waitForEvent("download"), page.click(".csv-download")]))[0]);
+  expect("exports", "the analysis is named price-variance-<run>-SIMULATION-<group>-analysis.csv", csv.name === `price-variance-${runId}-SIMULATION-${gid}-analysis.csv`, csv.name);
+  const rows = parseCsv(csv.text);
+  const header = csv.text.replace(/^\uFEFF/, "").split("\r\n")[0].split(",");
+  expect("exports", "the CSV starts with a byte order mark and its header, lines end with CRLF", csv.text.startsWith("\uFEFFgroup_id,") && JSON.stringify(header) === JSON.stringify(ANALYSIS_COLUMNS) && csv.text.endsWith("\r\n"));
+  const included = rows.filter((r) => r.status === "included");
+  const excluded = rows.filter((r) => r.status === "excluded");
+  expect("exports", "one row per line of the group and one per excluded line", included.length === a.lines.length && excluded.length === a.excluded.length, `${included.length}/${a.lines.length}, ${excluded.length}/${a.excluded.length}`);
+  const bad = included.filter((r) => { const l = a.lines.find((x) => x.id === r.line_id); return !l || Math.abs(Number(r.normalised_price_eur_per_base_unit) - l.price) > 1e-9 || Math.abs(Number(r.unexplained_eur) - l.unexplained) > 1e-6 || Math.abs(Number(r.justified_eur) - l.justified) > 1e-6 || r.pair !== l.pair; });
+  expect("exports", "every line's normalised price, pair and gap split equal the engine's", bad.length === 0, JSON.stringify(bad[0] || {}).slice(0, 200));
+  const sum = included.reduce((x, r) => x + Number(r.unexplained_eur || 0), 0);
+  expect("exports", "the lines' unexplained euros add up to the engine's opportunity", Math.abs(sum - a.unexplained) < 1e-6, `${sum} vs ${a.unexplained}`);
+  expect("exports", "every row names the method's version and the rates' basis", rows.every((r) => r.method_version && /ECB/.test(r.rates)), rows[0]?.rates);
+
+  // The audit log.
+  await page.click("#tab-audit");
+  const audit = await save((await Promise.all([page.waitForEvent("download"), page.click('#panel-audit button:has-text("Export JSON")')]))[0]);
+  expect("exports", "the audit log is named price-variance-<run>-SIMULATION-audit.json", audit.name === `price-variance-${runId}-SIMULATION-audit.json`, audit.name);
+  const doc = JSON.parse(audit.text);
+  const v = validate(doc, "AuditExport", { defs: SCHEMAS });
+  expect("exports", "the audit export validates against AuditExport with the app's own validator", v.ok, formatErrors(v.errors).join("; "));
+  expect("exports", "the audit export says it is a simulation and documents an AI system", doc.mode === "simulation" && /^SIMULATION/.test(doc.mode_statement) && /AI system/.test(doc.ai_disclosure) && /Fictional company, no client data/.test(doc.company_note));
+  expect("exports", "the audit export records the parameters in effect (the defaults for a simulation)", JSON.stringify(doc.parameters.in_effect) === JSON.stringify(DEFAULTS) && doc.parameters.changed_from_defaults.length === 0);
+  expect("exports", "the audit export records the person's decisions with reviewer and time", doc.decisions.some((d) => d.type === "option_decision" && d.decision === "approved" && d.reviewer && d.ts) && doc.decisions.filter((d) => d.type === "action_decision").length >= 1);
+  expect("exports", "the audit export records the versions of the app, method, world and rates", doc.versions.app === doc.app_version && doc.versions.method && doc.versions.world && doc.versions.fx === D.FX.version);
+  // The validator is not a rubber stamp: a broken copy of this very export is refused.
+  const broken = JSON.parse(audit.text);
+  delete broken.ai_disclosure;
+  broken.mode = "LIVE?";
+  broken.events[0].ts = 5;
+  expect("exports", "a broken copy of the export is refused, each fault named", (() => { const r = validate(broken, "AuditExport", { defs: SCHEMAS }); const m = formatErrors(r.errors).join(" "); return !r.ok && /ai_disclosure/.test(m) && /mode/.test(m) && /events\[0\]\.ts/.test(m); })());
+  expect("exports", "every export's name starts with price-variance-", [report, csv, audit].every((f) => f.name.startsWith("price-variance-")));
+  expect("exports", "no page error, no request to another host", t.log.pageErrors.length === 0 && t.log.external.length === 0, [...t.log.pageErrors, ...t.log.external].join(" | "));
+  await t.context.close();
+}
+
 await browser.close();
 await close();
 for (const f of failures) console.log(`FAIL  ${f}`);
-const label = ONLY.length ? ONLY.join(" ") : "key";
+const label = ONLY.length ? ONLY.join(" ") : "key exports";
 if (failures.length) { console.log(`ACCEPT FAILED: ${failures.length} of ${checks} checks`); process.exit(1); }
 console.log(`ACCEPT OK: ${label} (${checks} checks)`);

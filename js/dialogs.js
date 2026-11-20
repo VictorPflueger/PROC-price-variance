@@ -9,6 +9,7 @@ import { ANTHROPIC } from "./config.js";
 import { getKey, setKey, forgetKey, hasKey, looksLikeKey, maskKey } from "./keystore.js";
 import { checkKey } from "./anthropic.js";
 import { aiLabel } from "./ai_label.js";
+import { exportFileName, reportFile } from "./exports.js";
 
 /**
  * Ask which mode to run in. Resolves "simulation" | "live" | "key" (change or forget the stored key) | null.
@@ -202,8 +203,8 @@ export function askCustomScenario(initial = "") {
   });
 }
 
-/** The run's report, full-screen, with copy and download. */
-export function showReport(markdown, { mode, simSource = null } = {}) {
+/** The run's report, full-screen, with copy and download (price-variance-<run>-<MODE>-report.md). */
+export function showReport(markdown, { mode, simSource = null, runId = null } = {}) {
   const replayNote = simSource === "recorded"
     ? "Replay of a recorded live run: figures recalculated by the engine, evidence recorded earlier."
     : "Simulated run: figures recalculated by the engine at playback; texts authored, open data representative.";
@@ -214,9 +215,7 @@ export function showReport(markdown, { mode, simSource = null } = {}) {
   });
   const dlBtn = h("button", { class: "vc-button", type: "button" }, icon("download", 18), "Download .md");
   dlBtn.addEventListener("click", () => {
-    const prefix = mode === "simulation" ? "SIMULATION-" : "";
-    const banner = simSource === "recorded" ? "> SIMULATION — replay of a recorded live run, not a live analysis." : "> SIMULATION — scripted replay, not a live analysis.";
-    downloadText(`price-variance-${prefix}report.md`, mode === "simulation" ? `${banner}\n\n${markdown}` : markdown, "text/markdown");
+    downloadText(exportFileName("report", { runId, mode }), reportFile(markdown, { mode, simSource }), "text/markdown");
   });
   return openModal({
     title: "Report",

@@ -54,8 +54,13 @@ function check(v, s, path, defs, errors, limit) {
     return;
   }
   if (s.anyOf) {
-    const ok = s.anyOf.some((alt) => { const e = []; check(v, alt, path, defs, e, 1); return e.length === 0; });
-    if (!ok) fail(`expected one of ${s.anyOf.length} alternatives, got ${show(v)}`);
+    const tries = s.anyOf.map((alt) => { const e = []; check(v, alt, path, defs, e, limit); return e; });
+    if (tries.some((e) => e.length === 0)) return;
+    // When the value has the type of exactly one alternative (its errors lie deeper than this field),
+    // that alternative's errors say what is wrong; otherwise the alternatives are named together.
+    const deeper = tries.filter((e) => e.some((x) => x.path !== path));
+    if (deeper.length === 1) { for (const x of deeper[0]) if (errors.length < limit) errors.push(x); return; }
+    fail(`expected one of ${s.anyOf.length} alternatives, got ${show(v)}`);
     return;
   }
   if (s.type !== undefined) {

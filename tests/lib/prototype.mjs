@@ -48,6 +48,21 @@ export const COLOUR_PAIRS = [
   ["Console: a tip's title and the chosen tip's ink frame", "text", "surface", "mark"],
   ["Console: a tip's number, muted", "text-muted", "surface", "text"],
   ["Console: the chosen tip's number (the person's choice: merlot)", "on-accent", "accent", "text"],
+  // A pair's popover (Vici's popover: the raised surface), its lines and their buttons.
+  ["Popover: a line's id, day and price", "text", "surface-raised", "text"],
+  ["Popover: a line's day, muted", "text-muted", "surface-raised", "text"],
+  ["Popover: read by the agent (fjord: checking)", "info-text", "info-bg", "text"],
+  ["Popover: a line button's hover", "text", "surface-hover", "text"],
+  ["Popover: a line button's focus ring", "focus", "surface-raised", "mark"],
+  // The Method dialog (the raised surface) and the production path's diagram.
+  ["Method: a parameter's default, subtle", "text-subtle", "surface-raised", "text"],
+  ["Method: a changed parameter's default (the person's choice: merlot)", "accent-text", "surface-raised", "text"],
+  ["Method: a rate fetched in the run (fjord: a labelled check)", "info-text", "surface-raised", "text"],
+  ["Method: an invalid value's border", "danger-solid", "surface-raised", "mark"],
+  ["Production path: a step's title on its tint", "text", "bg-subtle", "text"],
+  ["Production path: a step's text on its tint", "text-muted", "bg-subtle", "text"],
+  ["Production path: the arrow between two steps", "text-muted", "surface-raised", "mark"],
+  ["Audit: the note of an empty log", "text-muted", "surface", "text"],
   ["Header: the honesty line (fictional company, no client data)", "text-muted", "surface", "text"],
   ["Header: a tile's unit after its figure", "text-muted", "surface", "text"]
 ];

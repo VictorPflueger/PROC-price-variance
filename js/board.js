@@ -8,7 +8,7 @@
 // engine's results (pv_compare carries its full analysis for the board), so the ladder equals them.
 
 import { bus } from "./events.js";
-import { h, clear } from "./dom.js";
+import { h, clear, downloadText } from "./dom.js";
 import { icon } from "./icons.js";
 import { eur, pct, unitPrice } from "./format.js";
 import { ladderModel, portfolioModel } from "./board_data.js";
@@ -17,6 +17,7 @@ import { renderPortfolio } from "./board_portfolio.js";
 import { renderGroupTable, renderPortfolioTable } from "./board_table.js";
 import { openPop, closePop, normalisationContent, pairContent } from "./board_pop.js";
 import { indexOf } from "./erp.js";
+import { exportFileName, groupAnalysisCsv } from "./exports.js";
 
 /**
  * deps: { world, analyse(groupId, clusters) → analysis|null (the engine, for a group before its
@@ -34,7 +35,8 @@ export function createBoard(root, { world, analyse, pipeline }) {
     scanRows: null,
     pipeline: { ...pipeline, identified: null },
     sensitivity: null,
-    lastMatch: null
+    lastMatch: null,
+    run: { run_id: null, mode: null }
   };
 
   const title = h("strong", { class: "board-title", id: "board-title" }, "Price board");
@@ -43,6 +45,14 @@ export function createBoard(root, { world, analyse, pipeline }) {
   const groupBtn = h("button", { type: "button", "aria-pressed": "false", dataset: { view: "group" } }, icon("trendDown", 16), h("span", { class: "btn-text" }, "Group"));
   const portBtn = h("button", { type: "button", "aria-pressed": "true", dataset: { view: "portfolio" } }, icon("list", 16), h("span", { class: "btn-text" }, "Portfolio"));
   const tableBtn = h("button", { class: "vc-button vc-button--outline button-compact table-toggle", type: "button", "aria-pressed": "false", title: "Show the same numbers as a table" }, h("span", { class: "btn-text" }, "Table"));
+  // The group analysis as CSV (brief §9), once the engine has compared the group in focus.
+  const csvBtn = h("button", { class: "vc-button vc-button--outline button-compact csv-download", type: "button", title: "Download the group analysis as CSV: every line with its normalisation and gap", "aria-label": "Download the group analysis as CSV", hidden: true }, icon("download", 16), h("span", { class: "btn-text" }, "CSV"));
+  csvBtn.addEventListener("click", () => {
+    const g = st.groups.get(st.focus);
+    if (!g?.compared) return;
+    const fx = globalThis.FX;
+    downloadText(exportFileName("analysis", { runId: st.run.run_id, mode: st.run.mode, groupId: g.analysis.id }), groupAnalysisCsv(world, g.analysis, { compared: true, ratesLabel: fx?.label || "" }), "text/csv");
+  });
   groupBtn.addEventListener("click", () => setView("group"));
   portBtn.addEventListener("click", () => setView("portfolio"));
   tableBtn.addEventListener("click", () => { st.table = !st.table; render(); });
@@ -50,7 +60,7 @@ export function createBoard(root, { world, analyse, pipeline }) {
   root.append(
     h("div", { class: "board-head" },
       h("div", { class: "board-caption" }, title, sub, note),
-      h("div", { class: "board-tools" }, h("div", { class: "segmented", role: "group", "aria-label": "Board view" }, groupBtn, portBtn), tableBtn)),
+      h("div", { class: "board-tools" }, h("div", { class: "segmented", role: "group", "aria-label": "Board view" }, groupBtn, portBtn), tableBtn, csvBtn)),
     canvas);
 
   function setView(view) {
@@ -68,7 +78,7 @@ export function createBoard(root, { world, analyse, pipeline }) {
   };
 
   // ---- run events ---------------------------------------------------------------------------
-  bus.on("run_start", () => reset({ keepPipeline: true }));
+  bus.on("run_start", (ev) => { reset({ keepPipeline: true }); st.run = { run_id: ev.payload.run_id, mode: ev.payload.mode }; });
 
   bus.on("tool_result", (ev) => {
     const p = ev.payload;
@@ -167,6 +177,7 @@ export function createBoard(root, { world, analyse, pipeline }) {
     portBtn.setAttribute("aria-pressed", String(st.view === "portfolio"));
     groupBtn.setAttribute("aria-disabled", String(!st.focus && !st.candidate));
     tableBtn.setAttribute("aria-pressed", String(st.table));
+    csvBtn.hidden = !(st.view === "group" && !st.candidate && st.groups.get(st.focus)?.compared);
     root.dataset.view = st.view;
     root.dataset.table = String(st.table);
     caption();
@@ -183,10 +194,12 @@ export function createBoard(root, { world, analyse, pipeline }) {
     const rect = canvas.getBoundingClientRect();
     const compact = rect.height > 0 && rect.height < 300;
     const model = ladderModel(world, g.analysis, { compared: g.compared, marks: st.marks, size: { width: Math.max(420, rect.width - 8), height: Math.max(220, rect.height - 8), compact } });
-    canvas.append(renderLadder(model, {
-      onLine: (id, el) => openPop(el, `Line ${id}: its normalisation`, normalisationContent(world, g.analysis, id)),
-      onPair: (id, el) => openPop(el, `Pair ${id}`, pairContent(world, g.analysis, id))
+    // A row opens its pair's lines and contract; a line there opens its normalisation, with a way back.
+    const openPair = (id, el) => openPop(el, `Pair ${id}`, pairContent(world, g.analysis, id, {
+      marks: st.marks.lines,
+      onLine: (lineId) => openPop(el, `Line ${lineId}: its normalisation`, normalisationContent(world, g.analysis, lineId, { onBack: () => openPair(id, el) }))
     }));
+    canvas.append(renderLadder(model, { onPair: openPair }));
     if (g.analysis.excluded.length) {
       canvas.append(h("p", { class: "board-excluded" }, icon("alert", 16), `Excluded from every figure: ${g.analysis.excluded.map((e) => `line ${e.id} (${e.reason})`).join("; ")}.`));
     }
@@ -233,6 +246,7 @@ export function createBoard(root, { world, analyse, pipeline }) {
     st.scanRows = null;
     st.sensitivity = null;
     st.lastMatch = null;
+    st.run = { run_id: null, mode: null };
     if (!keepPipeline) st.pipeline = { ...pipeline, identified: null };
     else st.pipeline = { ...pipeline, identified: null };
     st.view = "portfolio";

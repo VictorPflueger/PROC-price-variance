@@ -8,6 +8,9 @@
 //                 "Awaiting your confirmation", and the rail never moving back
 //   words         in every state of every path played, no tile, card or label reads "saved", and
 //                 "realised" only as realised to date of the past case; approved savings read "a year"
+//   timing        for AC-21: the demo's scenario (the one marked "Start here") played at ×1, a person
+//                 answering at once: the decision within 45 s and the end within 150 s of Start, so the
+//                 five-minute demo of DEMO_SCRIPT.md leaves the rest of its time for the room
 // Usage: node tests/sims.mjs [case…]
 import path from "node:path";
 import vm from "node:vm";
@@ -213,9 +216,40 @@ if (wanted("words")) {
   checks += texts.length > 0 ? 0 : 0;
 }
 
+// ---- timing: AC-21 -----------------------------------------------------------------------------------
+if (wanted("timing")) {
+  const demo = D.SCENARIOS.find((x) => x.start_here);
+  expect("timing", "exactly one scenario is marked as the demo's start", D.SCENARIOS.filter((x) => x.start_here).length === 1 && !!demo);
+  const t = await newPage();
+  const { page } = t;
+  await page.click(`.scenario-pick__item[data-id="${demo.id}"]`);
+  const tag = await page.$eval(`.scenario-pick__item[data-id="${demo.id}"]`, (e) => e.textContent);
+  expect("timing", "the console marks it Start here", /Start here/.test(tag), tag);
+  await page.click("button[aria-label='Replay speed ×1']");
+  await page.click("#btn-start");
+  const t0 = Date.now();
+  await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
+  await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { timeout: 120000 });
+  const atDecision = (Date.now() - t0) / 1000;
+  await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
+  for (let i = 0; i < 20; i += 1) {
+    if (/Done/.test(await status(page))) break;
+    const b = await page.waitForSelector('.action-card[data-status="pending"] [data-action="approve"]', { timeout: 60000 }).catch(() => null);
+    if (b) await b.click().catch(() => {});
+    await page.waitForTimeout(300);
+  }
+  const end = await waitEnd(page, 180000);
+  const atEnd = (Date.now() - t0) / 1000;
+  expect("timing", "the run completes at ×1", /Done/.test(end), end);
+  expect("timing", `the decision waits within 45 s of Start (${atDecision.toFixed(1)} s)`, atDecision <= 45, atDecision.toFixed(1));
+  expect("timing", `the run ends within 150 s of Start (${atEnd.toFixed(1)} s)`, atEnd <= 150, atEnd.toFixed(1));
+  console.log(`timing: ${demo.id} at ×1: decision after ${atDecision.toFixed(1)} s, Done after ${atEnd.toFixed(1)} s`);
+  await done("timing", t);
+}
+
 await browser.close();
 await close();
 for (const f of failures) console.log(`FAIL  ${f}`);
-const label = ONLY.length ? ONLY.join(" ") : "paths confirmation words";
+const label = ONLY.length ? ONLY.join(" ") : "paths confirmation words timing";
 if (failures.length) { console.log(`SIMS FAILED: ${failures.length} of ${checks} checks`); process.exit(1); }
 console.log(ONLY.length === 1 && ONLY[0] === "paths" ? `SIMS OK: paths (${global.__runs} runs, ${checks} checks)` : `SIMS OK: ${label} (${checks} checks)`);
