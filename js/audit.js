@@ -25,7 +25,7 @@ bus.onAny((ev) => {
   // Streaming narration arrives as many partial updates; the audit keeps only final texts.
   if ((ev.type === "narration" || ev.type === "reasoning") && !ev.payload?.done) return;
   const copy = safeClone(ev.type === "tool_result" && ev.payload?.detail ? { ...ev, payload: { ...ev.payload, detail: undefined } } : ev);
-  if (["option_decision", "confirmation_decision", "action_decision"].includes(ev.type)) copy.reviewer = "Presenter (the person in charge)";
+  if (["option_decision", "confirmation_decision", "action_decision", "param_change"].includes(ev.type)) copy.reviewer = "Presenter (the person in charge)";
   events.push(copy);
   if (ev.type === "run_start") {
     run = {
@@ -157,7 +157,8 @@ export function buildAuditExport() {
     parameters: {
       in_effect: run?.parameters || null,
       changed_from_defaults: run?.parameters_changed || [],
-      changes: events.filter((e) => e.type === "param_change").map((e) => ({ ts: e.ts, ...e.payload }))
+      // Each change with the time the person made it (a change made between runs joins the next live run).
+      changes: events.filter((e) => e.type === "param_change").map((e) => ({ ts: e.payload.at || e.ts, name: e.payload.name, from: e.payload.from, to: e.payload.to }))
     },
     run,
     run_facts: run && run.status !== "running" ? safeFacts() : null,

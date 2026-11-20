@@ -15,6 +15,8 @@
 //            accepts and the player replays
 //   entries  G15: Live sweep starts from pv_scan without a tip (the portfolio equals the engine's scan);
 //            Custom what-if passes the person's words; both are Live only
+//   params   M3-2: a parameter changed in the Method dialog before a live run is the one that run's engine
+//            uses; the audit export records it; the run cannot be saved as a simulation
 // Usage: node tests/live.mjs [case…]
 import path from "node:path";
 import vm from "node:vm";
@@ -91,9 +93,11 @@ async function newPage(fake, { rates = { mode: "ok" }, routeData = null } = {}) 
   return { context, page, log };
 }
 
-async function startLive(page, { scenario = "SC-GLOVES", entry = "scenario", custom = "" } = {}) {
-  await page.goto(BASE);
-  await page.waitForSelector('html[data-boot="ready"]', { timeout: 20000 });
+async function startLive(page, { scenario = "SC-GLOVES", entry = "scenario", custom = "", reload = true } = {}) {
+  if (reload) {
+    await page.goto(BASE);
+    await page.waitForSelector('html[data-boot="ready"]', { timeout: 20000 });
+  }
   if (entry === "sweep") await page.click("#btn-scan");
   else {
     if (entry === "custom") {
@@ -451,10 +455,50 @@ if (wanted("entries")) {
   }
 }
 
+// ---- params: the Method dialog's parameters in a live run (M3-2) -------------------------------------
+if (wanted("params")) {
+  // The person sets the urgent allowance to 0 % before a live run: the engine's comparison in that run
+  // justifies nothing, so the unexplained part equals the whole gap; the audit export records the value in
+  // effect and the change; the run cannot become a simulation, whose scripts play at the defaults.
+  const a = A["20001001"];
+  const script = [
+    { usage: usage(), stop: "tool_use", blocks: [text("Check: I compare the gloves."), tool("p1", "pv_compare", { group_id: a.id })] },
+    { usage: usage(), stop: "tool_use", blocks: [tool("p2", "ui_final_report", { outcome: "nothing_found", markdown: "## Gloves\n\nThis test run stops after the comparison." })], expect: (req, { check }) => {
+      const r = lastResults(req)[0];
+      check(!!r && !r.isError && a.justified > 0 && Math.abs(r.json.justified) < 1e-9 && Math.abs(r.json.unexplained - a.gap) < 1e-6, `pv_compare used the person's urgent allowance of 0 % (justified ${r?.json?.justified}, unexplained ${r?.json?.unexplained}, gap ${a.gap}; ${a.justified} justified at the defaults)`);
+    } },
+    { usage: usage(), stop: "end_turn", blocks: [text("Done.")] }
+  ];
+  const fake = createFakeClaude(script);
+  const t = await newPage(fake);
+  await t.page.goto(BASE);
+  await t.page.waitForSelector('html[data-boot="ready"]');
+  await t.page.click("#btn-method");
+  await t.page.fill('.method-input[data-param="urgent_allowance"]', "0");
+  await t.page.press('.method-input[data-param="urgent_allowance"]', "Enter");
+  await t.page.keyboard.press("Escape");
+  // The parameters live in the page until it is reloaded, so the run starts on this page.
+  await startLive(t.page, { scenario: "SC-GLOVES", reload: false });
+  const end = await waitEnd(t.page);
+  expect("params", "the live run with a changed parameter completes", /Done/.test(end), end);
+  expect("params", "the model's comparison used the person's parameter", fake.violations.length === 0, fake.violations.join(" | "));
+  await t.page.click('#drawer [role="tab"]:has-text("Audit")').catch(() => {});
+  await t.page.waitForTimeout(300);
+  const [download] = await Promise.all([t.page.waitForEvent("download"), t.page.click('#panel-audit button:has-text("Export JSON")')]);
+  const doc = JSON.parse(await readFile(await download.path(), "utf8"));
+  const changed = doc.parameters?.changed_from_defaults || [];
+  expect("params", "the audit export records the value in effect and the change from the default",
+    doc.parameters?.in_effect?.urgent_allowance === 0 && changed.length === 1 && changed[0].name === "urgent_allowance" && changed[0].value === 0 && changed[0].default === DEFAULTS.urgent_allowance
+      && (doc.parameters?.changes || []).some((c) => c.name === "urgent_allowance" && c.to === 0), JSON.stringify({ changed, changes: doc.parameters?.changes }).slice(0, 600));
+  const save = await t.page.$eval('#panel-audit button:has-text("Save run as simulation")', (b) => ({ disabled: b.disabled || b.getAttribute("aria-disabled") === "true", why: b.getAttribute("title") || b.closest("[title]")?.getAttribute("title") || "" }));
+  expect("params", "a run with changed parameters cannot be saved as a simulation", save.disabled && /changed parameters/.test(save.why), JSON.stringify(save));
+  await finish("params", t, fake);
+}
+
 await browser.close();
 await close();
 const failed = results.filter((r) => r.failure);
 for (const f of failed) console.log(`FAIL  ${f.name}: ${f.failure}`);
-const label = ONLY.length ? ONLY.join(" ") : "guard rates caps record entries";
+const label = ONLY.length ? ONLY.join(" ") : "guard rates caps record entries params";
 if (failed.length) { console.log(`LIVE FAILED: ${failed.length} of ${checks} checks`); process.exit(1); }
 console.log(`LIVE OK: ${label} (${checks} checks)`);

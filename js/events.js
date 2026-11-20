@@ -21,7 +21,7 @@
 //   confirmation_request  { request_id, candidate_id, lines, evidence, base_units, proposed_base_unit, note }
 //   confirmation_decision { request_id, decision: "confirmed"|"split"|"rejected", cluster_id?, base_unit?, line_ids? }
 //   fx_sensitivity   { group_id, currency, date, per_eur, figures }   a refreshed rate, beside the window's
-//   param_change     { name, from, to }
+//   param_change     { name, from, to, at }   at: when the person made it (a change between runs joins the next live run)
 //   action_draft     { action_id, type, recipient, subject, body, status: "pending", unchecked?: [token] }
 //   action_decision  { action_id, decision: "approved"|"rejected", by: "user", label? }
 //   report           { markdown, outcome: "option_approved"|"variance_accepted"|"nothing_found"|"stopped" }

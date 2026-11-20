@@ -84,7 +84,9 @@ last 365 days, read as euros a year at the current volume.
 | --- | --- | --- |
 | Incoterms 2020: eleven rules in force since 1 January 2020; groups E (EXW), F (FCA, FAS, FOB), C (CPT, CIP, CFR, CIF), D (DAP, DPU, DDP) | ICC's Incoterms page and a German chamber of commerce's summary (read on 19 Nov 2026) | Verified |
 | Net price and price unit of a purchase-order item: EKPO-NETPR, EKPO-PEINH; order price unit EKPO-BPRME | SAP knowledge-base previews (19 Nov 2026) | Verified |
-| Order header and Incoterms (EKKO, EKKO-INCO1), unit conversions (MARM), manufacturer part number (MARA-MFRPN) | Typical source fields | Not verified yet; checked before version 1.0.0 |
+| Order header EKKO with its Incoterms EKKO-INCO1 ("Incoterms (Part 1)", three characters, checked against table TINC) and the place in EKKO-INCO2; an item may carry Incoterms of its own that differ from the header's, which is why the world keeps the rule on each order line | Third-party data-dictionary references (leanx.eu) and SAP's help and knowledge-base previews on item Incoterms (read on 20 Nov 2026) | Verified |
+| Unit conversions MARM: per material and alternative unit, numerator UMREZ and denominator UMREN to the base unit MARA-MEINS (the world's `conversions` per material) | Third-party data-dictionary references (leanx.eu, sapstack.com, read on 20 Nov 2026) | Verified |
+| Manufacturer part number MARA-MFRPN (40 characters) with the manufacturer's number MARA-MFRNR, an account of the supplier master (the world keeps the manufacturer's name and part number, `manufacturer` and `mpn`) | An SAP knowledge-base preview naming MARA-MFRPN, and data-dictionary references (read on 20 Nov 2026) | Verified |
 
 ## 7. What the app does not use
 

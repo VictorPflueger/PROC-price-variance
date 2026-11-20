@@ -45,6 +45,10 @@ export function initUI() {
   const params = createParams({ locked: false });
   let runParams = null;
   const activeParams = () => runParams || params.get();
+  // The parameter changes a person made since the last live run started. Each is a decision of that
+  // person, so the next live run's audit log carries it with the time it was made (resetting the log at
+  // the run's start would otherwise drop it); a simulation plays at the defaults and leaves them pending.
+  const pendingParamChanges = [];
   const engine = () => ({ world, fx, params: activeParams() });
   const analyse = (groupId, clusters = []) => {
     const ctx = contextOf(world, ratesOf(fx), activeParams());
@@ -110,7 +114,11 @@ export function initUI() {
     onMethod: () => openMethod({
       params,
       isRunning: () => isRunning(getState()),
-      onChange: (change) => bus.emit("param_change", change),
+      onChange: (change) => {
+        const made = { ...change, at: new Date().toISOString() };
+        pendingParamChanges.push(made);
+        bus.emit("param_change", made);
+      },
       fx,
       fetched: auditEvents().filter((e) => e.type === "tool_result" && e.payload?.name === "open_ecb_rate" && e.payload?.ok).map((e) => e.payload.result)
     }),
@@ -233,6 +241,7 @@ export function initUI() {
         ...(recorded ? { recorded_on: def.recorded?.at ? dateWithYear(def.recorded.at) : null, recorded_model: modelLabel(def.recorded?.model) } : {})
       } : {})
     });
+    if (mode === "live") for (const change of pendingParamChanges.splice(0)) bus.emit("param_change", change);
     if (mode === "simulation") {
       if (!def) {
         bus.emit("notice", { level: "error", text: `No simulation script found for “${scenario?.title}”. Check that data/sim_runs.js is complete, or run Diagnostics.` });

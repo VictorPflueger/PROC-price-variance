@@ -1,9 +1,10 @@
 # Technical notes
 
 Verified facts with their dates, the decisions taken with their reasons, and the records of each
-milestone. Version 0.2.0 (milestone M2): the live agent, the price board and the six simulations, on
-version 0.1.0's shell, world and engine. The verification log and the acceptance checklist grow with every
-milestone.
+milestone. Version 1.0.0 (milestone M3): the release, with the exports, the Method dialog, the layout and
+accessibility checks, the independent review and the documents, on version 0.2.0's live agent, price board
+and simulations and version 0.1.0's shell, world and engine. The verification log and the acceptance
+checklist hold every milestone's records.
 
 ## 1. Claude models and token prices (cost meter inputs)
 
@@ -185,9 +186,14 @@ Pure ES modules that run in the page and in Node, with no DOM, storage or fetch:
 | `js/figures.js` | The figure audit (brief section 7, rule 7) |
 | `js/schemas.js`, `js/schema.js` | The JSON Schemas of the data contracts and a validator without a dependency |
 | `js/world.js` | The engine's context at the bundled rates, the scan of the world and its value pipeline |
+| `js/exports.js` | The export file names, the report's simulation banner and a group's analysis as CSV (RFC 4180, a byte order mark, numbers to 1e-9) |
 
 The sixteen contracts of brief section 10 are in `js/schemas.js`, with CompanyCode, MaterialGroup and
-Buyer for the world's other products, and AnalysisLine and Pair for the parts of a group analysis.
+Buyer for the world's other products, AnalysisLine and Pair for the parts of a group analysis, and since
+1.0.0 Parameters and AuditExport, the contract of the audit log's JSON export (its run, parameters,
+decisions with their reviewer, rates, usage and events). Where a schema offers alternatives (`anyOf`) and
+only one of them gets past its type, the validator reports that alternative's own errors, so a broken
+export names the field that is wrong rather than "one of 2 alternatives".
 `tools/check_world.mjs` validates every record of every data product against them. The validator supports
 the keywords those schemas use and treats any other keyword as an error, so a schema never silently checks
 less than it says.
@@ -203,7 +209,7 @@ must exist; dates, times, version numbers and names with numbers are exempt.
 | # | Decision | Taken |
 | --- | --- | --- |
 | D1 | Product name "Price Variance Agent"; card subtitle "Procurement price variance" | The brief's default |
-| D2 | Page icon Vici's `trend-down` in a lilac cell, kind "prototype"; card text proposed in M3 | The brief's default |
+| D2 | Page icon Vici's `trend-down` in a lilac cell, kind "prototype"; the website's card, on its main branch since 20 Nov 2026 with the note "Work in progress.", gets its release note ("Free simulation, no API key needed. Fictional company, no client data.") in the website's pull request #5, proposed for Victor's approval | The brief's default; the card text in M3 |
 | D3 | No German interface in version 1 | The brief's default |
 | D4 | The method's parameters as brief section 6.6, labelled as assumptions | The brief's default |
 | D5 | One world with the Data Quality Agent, no runtime dependency | The brief's default, through N1 |
@@ -230,6 +236,13 @@ must exist; dates, times, version numbers and names with numbers are exempt.
 | M2-5 | A text the figure audit refuses twice is shown with an "Unchecked" tag naming the figures | 20 Nov 2026, Rebate Hunter's rule |
 | M2-6 | The ladder lays each pair's lines in a lane above its hexagon, nudged into a honeycomb ribbon where they share a price; with the drawer open the ladder is compact and shows the pairs only | 20 Nov 2026: every line of a contract pair has one price, so the lines hid under the pair's hexagon and could not be opened |
 | M2-7 | The value pipeline's bars use teal, apricot and the two greys in stage order; the flagged groups all teal | 20 Nov 2026, brief section 9 |
+| M3-1 | A ladder row is the target for its pair and its lines: a full-height band of at least 58 px (44 px on a compact ladder) opens a popover that lists every line as a button to its normalisation, with a way back; the line hexagons are marks, hidden from pointer and assistive technology | 20 Nov 2026: an 8 px line cannot be a 40 px target (AC-17) without covering its neighbours, and the row already names its lines |
+| M3-2 | The parameters are edited in the Method dialog between runs; a live run freezes the values it starts with, a simulation always plays at the defaults, every change is a `param_change` of the person, carried with the time it was made into the next live run's audit log, the audit export records the values in effect and those changed, a reload restores the defaults, and a live run with changed parameters cannot be saved as a simulation | 20 Nov 2026: a script's figures are the defaults' figures, and a recording at other values would replay figures the engine no longer gives |
+| M3-3 | Export names `price-variance-<run>-<MODE>-report.md`, `…-<group>-analysis.csv` and `…-audit.json`; a simulation's report starts with a SIMULATION banner; the CSV has one row per line, excluded lines with their reason | 20 Nov 2026, brief section 9 |
+| M3-4 | The audit export gets its own schema (AuditExport) and the accept and unit suites validate real exports with the app's validator, with planted faults that must be refused | 20 Nov 2026, AC-16 |
+| M3-5 | Scenario 1 is marked `start_here` in `data/scenarios.js`: the console tags it *Start here*, the demo script uses it and `tests/sims.mjs` timing plays it at ×1 | 20 Nov 2026, AC-21 |
+| M3-6 | Disclosure summaries, the cluster dialog's line choices and the board's small controls are 40 px targets; a checkbox counts with its label, and a link inside a sentence is prose | 20 Nov 2026, AC-17 |
+| M3-7 | The live-site test and workflow are the Timetable Translator's, adapted: the served files equal the commit's and scenario 1 runs to Done on the published site after every Pages build | 20 Nov 2026 |
 
 ## 9. Live-agent guardrails
 
@@ -292,6 +305,15 @@ before it is kept, and its open data replays as "recorded" (`tests/live.mjs` rec
 | 20 Nov 2026 | `node tests/accept.mjs` (the key) and `node tests/smoke.mjs board` (the board against the engine) | ACCEPT OK, 22 checks; SMOKE OK, board, 23 checks |
 | 20 Nov 2026 | `node tests/design.mjs series`, with ten planted bars in forbidden colours | DESIGN OK, 14 checks; every planted bar caught |
 | 20 Nov 2026 | `node tests/tokens.mjs` with the board's pairs | Three marks failed at first (the justified hatch in `--vc-warning-solid`, the cluster columns in `--vc-feature-border`); now drawn in `--vc-warning-text` and `--vc-feature-solid`, 83 pairs pass in both themes |
+| 20 Nov 2026 | M3, the exports: `node tests/unit.mjs exports` and `node tests/accept.mjs exports` | UNIT OK, exports, 19 checks (names, banner, the CSV of three groups against the engine, an audit export valid against AuditExport, nine planted faults refused); ACCEPT OK, key and exports, 41 checks (the report, the analysis and the audit log downloaded from the page). A fault planted inside an `anyOf` first gave only "one of 2 alternatives"; the validator now names the field (section 7) |
+| 20 Nov 2026 | M3, the layout: `node tests/layout.mjs viewports targets controls` | The first runs failed: compact ladder rows of 35 to 39 px, disclosure summaries of 20 to 26 px, the cluster dialog's checkboxes of 10 by 13 px (fixed, M3-1 and M3-6), and a false "control bar wraps" (the check counted rows by their top edges; it now compares vertical extents). Then LAYOUT OK, 176 checks: five sizes, both themes, every main state; the planted overflow, ellipsis and small target each caught |
+| 20 Nov 2026 | M3, the keyboard run: `node tests/smoke.mjs keyboard-run` | At first two stops (a dialog's close button, the Simulation card's button) showed "no focus ring": Vici draws those rings with `::after` and on the parent card, which the check did not read; it does now, with no change to the app. SMOKE OK, 8 checks: scenario 1 to Done by keyboard alone, a visible indicator at every stop |
+| 20 Nov 2026 | M3, reduced motion, names and the Method dialog: `node tests/smoke.mjs motion names method board` | SMOKE OK. An independent run of `motion` caught Vici's boot spinner, which keeps turning under reduced motion by Vici's design (2.4 s a turn) during the 400 ms the boot screen takes to leave; sampling now starts once it has left (three runs pass) |
+| 20 Nov 2026 | M3, the demo's timing: `node tests/sims.mjs timing` | Scenario 1 at ×1, every answer given at once: the decision after 27.6 s, Done after 92.6 s (limits 45 s and 150 s) |
+| 20 Nov 2026 | M3, the parameters in a live run: `node tests/live.mjs params` | First four failures: the test reloaded the page before the run, which restores the defaults (the parameters live in the page). Then one: the run's audit lost a change made before the run, because the log is reset when a run starts; the app now carries such changes into the next live run's log with the time they were made (M3-2). LIVE OK, params, 9 checks |
+| 20 Nov 2026 | M3, the live-site check: `tests/live_site.mjs` against this checkout served over http, and against a copy with `js/config.js` changed | Passes against the checkout (the files equal, scenario 1 to Done); fails against the changed copy, as it should |
+| 20 Nov 2026 | SAP field names of DATA_SOURCES.md section 6 (EKKO-INCO1, MARM, MARA-MFRPN), by web search | Verified in data-dictionary references and SAP's knowledge-base previews |
+| 20 Nov 2026 | M3, the page icon against the website's card: the shared `tests/page-icon.mjs` with the website at its pull request's head next to the app, and with the card's icon changed | Matches (`trend-down`, prototype); the changed icon is caught |
 
 ## 12. Acceptance checklist
 
@@ -313,4 +335,10 @@ before it is kept, and its open data replays as "recorded" (`tests/live.mjs` rec
 | AC-14 | The ladder and the portfolio chart equal the engine; every line opens its normalisation; the tables; series colours | M2 | `tests/smoke.mjs` board, `tests/live.mjs` entries, `tests/design.mjs` series |
 | AC-15 | No "saved"; approved savings "a year", realised "to date" | M2 | `tests/sims.mjs` words |
 | AC-20 | Victor runs one scenario live with his key; the audit export shows model, usage, rates and cost | M2 | Manual: Victor's run (the pull request lists the steps) |
-| AC-16 to AC-19, AC-21 to AC-23 | Exports, layout, design, accessibility, documents, review | M3 | Open |
+| AC-16 | The exports carry their names and content; the JSON exports validate against the schemas with the app's own validator | M3 | `tests/accept.mjs` exports, `tests/unit.mjs` exports |
+| AC-17 | 1920 × 1080 to 1280 × 720, both themes: no horizontal overflow, nothing on the board or the tiles cut to an ellipsis, every target at least 40 px | M3 | `tests/layout.mjs` viewports, targets and controls |
+| AC-18 | The four shared design tests: contrast in both themes, nothing round, the page icon matching the website's card, `vici/` as its release | M3 | `tests/tokens.mjs`, `tests/hexagon.mjs`, `tests/page-icon.mjs` (against the website's checkout in CI), `tests/vici-files.mjs` |
+| AC-19 | A run by keyboard alone with visible focus; reduced motion stops the pulses; markers and rows have accessible names | M3 | `tests/smoke.mjs` keyboard-run, motion and names |
+| AC-21 | Victor gives the five-minute demo at ×1 without help | M3 | Manual: Victor's demo with `DEMO_SCRIPT.md`; `tests/sims.mjs` timing measures the demo's run at ×1 |
+| AC-22 | An agent that did not build the prototype reviews figures, comparability, the honesty rules and the interface; no high or medium finding stays open | M3 | `REVIEW.md` part 2 |
+| AC-23 | README, DESIGN, TECH_NOTES, DATA_SOURCES and DEMO_SCRIPT complete; hygiene and the documents check pass | M3 | `tests/docs.mjs` --complete, `tests/hygiene.mjs` |

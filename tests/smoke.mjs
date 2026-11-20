@@ -1,4 +1,4 @@
-// Smoke test of version 0.2.0 in Chromium: the page boots from the data files with no page error, no
+// Smoke test of version 1.0.0 in Chromium: the page boots from the data files with no page error, no
 // policy violation and no request to another host; the idle board shows the value pipeline from the
 // value log; the scenarios, the intro, the drawer and the keyboard work; every storage key is the app's
 // own; a missing data file is named on the boot screen; and the price board (AC-14) equals the engine:
@@ -90,7 +90,7 @@ try {
     check("boot: the rail's five steps", JSON.stringify(head.rail) === JSON.stringify(["Spot", "Check", "Calculate", "Propose", "Prepare"]), head.rail.join(", "));
     check("boot: the drawer's three tabs", JSON.stringify(head.tabs) === JSON.stringify(["Options", "Outbox", "Audit"]), head.tabs.join(", "));
     const version = await s.page.evaluate(async () => (await import("./js/config.js")).APP.version);
-    check("boot: the app is version 0.2.0", version === "0.2.0", String(version));
+    check("boot: the app is version 1.0.0", version === "1.0.0", String(version));
     await close(s, "boot");
   }
 
@@ -137,7 +137,7 @@ try {
     check("scenarios: the menu offers Custom what-if, Live only", /Custom what-if/.test(custom) && /Live only/.test(custom), custom);
     await s.page.keyboard.press("Escape");
     const start = await s.page.evaluate(() => document.getElementById("btn-start").getAttribute("aria-disabled"));
-    check("scenarios: Start agent is ready in version 0.2.0", start !== "true", String(start));
+    check("scenarios: Start agent is ready in version 1.0.0", start !== "true", String(start));
     await s.page.click("#btn-start");
     await s.page.waitForSelector(".mode-card", { timeout: 5000 });
     const modes = await s.page.$$eval(".mode-card", (els) => els.map((e) => e.dataset.mode));
@@ -443,6 +443,10 @@ try {
     page.on("pageerror", (e) => errors.push(String(e.message || e)));
     await page.goto(server.base);
     await ready(page);
+    // The boot screen fades and leaves the page 400 ms after the start. Its spinner is Vici's, which keeps
+    // turning under reduced motion on purpose (slowed to 2.4 s a turn, as essential progress feedback), so
+    // sampling begins once the boot screen is gone: what AC-19 asks about is the run.
+    await page.waitForSelector("#boot", { state: "detached", timeout: 5000 });
     const running = () => page.evaluate(() => document.getAnimations()
       .filter((x) => x.playState === "running" && (x.effect?.getComputedTiming?.().iterations === Infinity || (x.effect?.getComputedTiming?.().duration || 0) > 50))
       .map((x) => `${x.animationName || x.constructor.name} on ${x.effect?.target?.className?.baseVal ?? x.effect?.target?.className ?? "?"}`));

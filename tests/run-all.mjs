@@ -21,7 +21,7 @@ const SUITES = [
   { id: "design", what: "series colours: no chart uses merlot, fjord, lilac, honey or a state colour (AC-14)", file: "tests/design.mjs", browser: true },
   { id: "accept", what: "the key: asked only for Live, checked, kept in this tab, never stored, exported or logged; the exports and their schema (AC-08, AC-16)", file: "tests/accept.mjs", browser: true },
   { id: "layout", what: "1920×1080 to 1280×720 in both themes: no overflow, no ellipsis, 40 px targets (AC-17)", file: "tests/layout.mjs", browser: true },
-  { id: "live", what: "the live agent against a scripted API stand-in: guardrails, rates, caps, recorder, entries (AC-09 to AC-11)", file: "tests/live.mjs", browser: true },
+  { id: "live", what: "the live agent against a scripted API stand-in: guardrails, rates, caps, recorder, entries, parameters (AC-09 to AC-11)", file: "tests/live.mjs", browser: true },
   { id: "sims", what: "the six simulations along every decision path, the cluster dialog, the words, the demo's timing at ×1 (AC-10, AC-12, AC-15, AC-21)", file: "tests/sims.mjs", browser: true }
 ];
 

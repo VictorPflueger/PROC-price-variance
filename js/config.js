@@ -4,7 +4,7 @@ export const APP = {
   id: "pv",
   name: "Price Variance Agent",
   fullName: "Procurement price variance",
-  version: "0.2.0"
+  version: "1.0.0"
 };
 
 export const ANTHROPIC = {
