@@ -15,6 +15,9 @@
 //            accepts and the player replays
 //   entries  G15: Live sweep starts from pv_scan without a tip (the portfolio equals the engine's scan);
 //            Custom what-if passes the person's words; both are Live only
+//   marks    review R1: the agent cannot mark pairs approved or accepted (only a person's decision does),
+//            nor mark "above" what the comparison does not put above the benchmark; each refusal a
+//            Guardrail line
 //   params   M3-2: a parameter changed in the Method dialog before a live run is the one that run's engine
 //            uses; the audit export records it; the run cannot be saved as a simulation
 // Usage: node tests/live.mjs [case…]
@@ -455,6 +458,37 @@ if (wanted("entries")) {
   }
 }
 
+// ---- marks: only a person's decision marks the board approved or accepted (review R1) ---------------
+if (wanted("marks")) {
+  const a = A["20001001"];
+  const script = [
+    { usage: usage(), stop: "tool_use", blocks: [text("Check: I compare the gloves."), tool("k1", "pv_compare", { group_id: a.id })] },
+    { usage: usage(), stop: "tool_use", blocks: [
+      tool("k2", "ui_mark_board", { state: "approved", group_id: a.id, pair_ids: ["3010 / 80002", "2010 / 80001"] }),
+      tool("k3", "ui_mark_board", { state: "justified", group_id: a.id, pair_ids: ["1020 / 30024"] }),
+      tool("k4", "ui_mark_board", { state: "above", group_id: a.id, pair_ids: [a.benchmark.pair] }),
+      tool("k5", "ui_mark_board", { state: "above", group_id: a.id, pair_ids: ["3010 / 80002"] })
+    ] },
+    { usage: usage(), stop: "tool_use", blocks: [tool("k6", "ui_final_report", { outcome: "nothing_found", markdown: "## Gloves\n\nThis test run stops after the board marks." })], expect: (req, { check }) => {
+      const r = lastResults(req);
+      check(r.length === 4 && r[0].isError && /schema/.test(r[0].json.error) && r[1].isError && /schema/.test(r[1].json.error), `approved and justified are refused by the schema (got ${r.map((x) => x.raw.slice(0, 80)).join(" | ")})`);
+      check(r[2]?.isError && /not above the benchmark/.test(r[2].json.error), `above on the benchmark pair is refused (got ${r[2]?.raw.slice(0, 160)})`);
+      check(r[3] && !r[3].isError, `above on Lyon's pair passes (got ${r[3]?.raw.slice(0, 160)})`);
+    } },
+    { usage: usage(), stop: "end_turn", blocks: [text("Done.")] }
+  ];
+  const fake = createFakeClaude(script);
+  const t = await newPage(fake);
+  await startLive(t.page, { scenario: "SC-GLOVES" });
+  const end = await waitEnd(t.page);
+  expect("marks", "the run completes", /Done/.test(end), end);
+  const lines = await guardLines(t.page);
+  expect("marks", "Guardrail lines: the board marks were refused, three times", lines.filter((l) => /board mark was refused/.test(l)).length === 3, lines.join(" | "));
+  const rows = await t.page.$$eval(".ladder .ladder-row", (els) => els.map((e) => ({ pair: e.dataset.pair, state: e.dataset.state, text: e.textContent })));
+  expect("marks", "no row reads approved or accepted, since nobody decided", rows.length > 0 && rows.every((r) => !["approved", "justified"].includes(r.state) && !/approved|accepted/.test(r.text)), JSON.stringify(rows.map((r) => [r.pair, r.state])));
+  await finish("marks", t, fake);
+}
+
 // ---- params: the Method dialog's parameters in a live run (M3-2) -------------------------------------
 if (wanted("params")) {
   // The person sets the urgent allowance to 0 % before a live run: the engine's comparison in that run
@@ -499,6 +533,6 @@ await browser.close();
 await close();
 const failed = results.filter((r) => r.failure);
 for (const f of failed) console.log(`FAIL  ${f.name}: ${f.failure}`);
-const label = ONLY.length ? ONLY.join(" ") : "guard rates caps record entries params";
+const label = ONLY.length ? ONLY.join(" ") : "guard rates caps record entries marks params";
 if (failed.length) { console.log(`LIVE FAILED: ${failed.length} of ${checks} checks`); process.exit(1); }
 console.log(`LIVE OK: ${label} (${checks} checks)`);

@@ -335,6 +335,28 @@ if (chosen.includes("GR")) {
     truthy("GR", "a material inside a part-number group points to that group", mpn.isError && /MPN:Brekholt:BH-7730-S3/.test(mpn.result.error));
   }
 
+  // The board (review R1): approved and accepted are a person's decisions, so only the code marks them
+  // (after the decision, as the decision's own board update); "above" only on the pairs and lines the
+  // latest comparison of their group puts above the benchmark.
+  {
+    const h = headless();
+    await refused(h, "ui_mark_board", { state: "approved", group_id: "20001001", pair_ids: ["3010 / 80002"] }, "input", "schema");
+    await refused(h, "ui_mark_board", { state: "justified", group_id: "20001001", pair_ids: ["1020 / 30024"] }, "input", "schema");
+    await refused(h, "ui_mark_board", { state: "above", group_id: "20001001", pair_ids: ["3010 / 80002"] }, "board", "pv_compare");
+    const a = (await h.call("pv_compare", { group_id: "20001001" })).result;
+    const bench = a.pairs.find((p) => p.pair === a.benchmark.pair);
+    await refused(h, "ui_mark_board", { state: "above", pair_ids: ["3010 / 80002"] }, "board", "group_id");
+    await refused(h, "ui_mark_board", { state: "above", group_id: "20001001", pair_ids: [a.benchmark.pair] }, "board", "not above");
+    await refused(h, "ui_mark_board", { state: "above", group_id: "20001001", pair_ids: ["1020 / 30062"] }, "board", "not above");
+    await refused(h, "ui_mark_board", { state: "above", group_id: "20001001", line_ids: [bench.lines[0]] }, "board", "not above");
+    await refused(h, "ui_mark_board", { state: "above", group_id: "20001001", pair_ids: ["1010 / 30135"] }, "board", "not a pair");
+    const ok = await h.call("ui_mark_board", { state: "above", group_id: "20001001", pair_ids: ["3010 / 80002", "2010 / 80001"] });
+    truthy("GR", "above passes for pairs the comparison puts above the benchmark", !ok.isError && ok.result.marked === 3, JSON.stringify(ok.result));
+    const reading = await h.call("ui_mark_board", { state: "checking", group_id: "20001001", line_ids: [bench.lines[0]] });
+    truthy("GR", "checking passes for any line of the group", !reading.isError, JSON.stringify(reading.result));
+    truthy("GR", "no board update painted a decision", !h.events.some((e) => e.t === "board_update" && ["approved", "justified"].includes(e.p.state)));
+  }
+
   // Rule 3: the verified alert, its evidence and what it says it checked.
   {
     const h = headless();

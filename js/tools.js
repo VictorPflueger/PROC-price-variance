@@ -42,7 +42,9 @@ export const REPORT_FOOTERS = {
   authored: "*Simulated run (authored script). GlobalCorp SE and its data are fictional; every figure was recomputed by the engine at playback.*",
   recorded: "*Recorded live run, replayed. GlobalCorp SE and its data are fictional; every figure was recomputed by the engine at playback.*"
 };
-const BOARD_STATES = ["checking", "above", "justified", "approved", "neutral"];
+// The states the agent may mark on the board. "approved" and "accepted" (justified) are a person's
+// decisions: only the code marks them, after the decision (review R1).
+const BOARD_STATES = ["checking", "above", "neutral"];
 
 // ---- schemas ----------------------------------------------------------------------------------------
 
@@ -107,7 +109,7 @@ const DEFINITIONS = [
   },
   {
     name: "ui_mark_board",
-    description: "Screen: highlights a group, pairs (\"1010 / 30024\") or lines on the price board. state: checking (what you are reading), above (paid above the benchmark), justified, approved or neutral.",
+    description: "Screen: highlights a group, pairs (\"1010 / 30024\") or lines on the price board. state: checking (what you are reading), above (paid above the benchmark: only pairs and lines the latest pv_compare of the named group puts above it) or neutral. The app marks approved and accepted pairs itself after a person's decision.",
     input_schema: obj({ state: { type: "string", enum: BOARD_STATES }, group_id: str("The group to show."), pair_ids: strings("Pairs, \"plant / supplier\"."), line_ids: strings("Order lines.") }, ["state"])
   },
   {
@@ -588,6 +590,17 @@ export function createToolbox(ctx) {
     const okLines = lines.filter((id) => ix.po_line.has(id)).slice(0, 60);
     const okPairs = pairs.filter((p) => /^\S+ \/ \S+$/.test(p) && ix.plant.has(p.split(" / ")[0]) && ix.supplier.has(p.split(" / ")[1])).slice(0, 20);
     const ignored = [...lines.filter((x) => !okLines.includes(x)), ...pairs.filter((x) => !okPairs.includes(x)), ...(gid && !knownGroup ? [gid] : [])];
+    if (i.state === "above") {
+      // "above" says a price is paid above the benchmark, so it needs the benchmark: only the pairs and
+      // lines the latest comparison of the named group puts above it (review R1).
+      if (!gid) return guard("state above needs the group (group_id) whose latest pv_compare puts these pairs or lines above the benchmark.", "board");
+      const a = run.compares.get(run.latestCompare.get(gid));
+      if (!a) return guard(`state above needs the benchmark of group ${gid}: compare it first (pv_compare), then mark what the comparison puts above the benchmark.`, "board");
+      const strangers = [...pairs.filter((p) => !a.pairs.some((x) => x.id === p)), ...lines.filter((l) => !a.lines.some((x) => x.id === l))];
+      if (strangers.length) return guard(`${strangers.slice(0, 5).join(", ")} ${strangers.length === 1 ? "is" : "are"} not a pair or line of group ${gid}'s latest comparison.`, "board");
+      const below = [...a.pairs.filter((p) => pairs.includes(p.id) && !(p.gap > 1e-9)).map((p) => `pair ${p.id}`), ...a.lines.filter((l) => lines.includes(l.id) && !(l.gap > 1e-9)).map((l) => `line ${l.id}`)];
+      if (below.length) return guard(`${below.slice(0, 5).join(", ")} ${below.length === 1 ? "is" : "are"} not above the benchmark of group ${gid} (${a.compare_id}); mark only what is paid above it.`, "board");
+    }
     emit("board_update", { view: knownGroup && run.candidates.has(gid) ? "candidate" : "group", ...(knownGroup ? { group_id: gid, focus: gid } : {}), pair_ids: okPairs, line_ids: okLines, state: i.state });
     return { ok: true, marked: okLines.length + okPairs.length + (knownGroup ? 1 : 0), ...(ignored.length ? { ignored_unknown_ids: ignored } : {}) };
   }
