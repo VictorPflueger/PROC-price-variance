@@ -259,8 +259,9 @@ error to the model, names the rule, and shows a Guardrail line in the console:
 | options | Options outside the latest `pv_compare` of the group, before its verified alert, for a group below materiality, fewer than two distinct applicable ones, or after a decision; a stale decision (a superseded option set, a rejected option) |
 | drafts | A draft before an approval, or of a kind the approved option does not allow; both footers are added in code |
 | report | A report before every decision and draft is settled, or an outcome the decision does not give |
+| value | An alert, option texts, a draft or a report that calls value saved or realised: "saved" or "saves" unless negated or conditional ("nothing is saved", "would save"), "realised" unless negated or conditional ("counts as realised only when later order lines show it") or "realised to date" for an amount the value pipeline returned as realised. Refused every time; the system prompt states the rule (review R5) |
 | board | A board mark of "above" without its group named, before the group's `pv_compare`, or on a pair or line that comparison does not put above the benchmark. Approved and accepted are not the agent's to mark: the tool's schema leaves them out, and the code marks them after a person's decision |
-| figures | A figure no tool returned (section 7), in the alert, the option texts, the cluster note, the drafts and the report: refused twice with the offending tokens, then shown with an "Unchecked" tag |
+| figures | A figure no tool returned (section 7), in the alert, the option texts, the cluster note, the drafts and the report: refused twice with the offending tokens, then shown with an "Unchecked" tag. Since the review (R2), labels and years cannot hide a figure, amounts and percentages in words are read, and an amount keeps its sign |
 
 Rebate Hunter's caps of 40 calls and €3 a run, the budget checked before every call (B8), and the
 recommended option's rule (P-5) hold in both modes.

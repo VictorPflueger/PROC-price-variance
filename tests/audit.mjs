@@ -8,11 +8,14 @@
 //             negative amounts, "per EA", the thousands rule, scales, unknown ids
 //   bypasses  the independent review's R2: a label or a year cannot swallow a figure, amounts and
 //             percentages in words are read, and a negative figure cannot be written as a gain
+//   value     the review's R5: a text may not call value saved or realised; "realised to date" only for
+//             a figure the value pipeline returned as realised
 // Usage: node tests/audit.mjs
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { APP_ROOT } from "./lib/harness.mjs";
 import { KnownFigures, auditText } from "../js/figures.js";
+import { valueClaims } from "../js/guards.js";
 import { DEFAULTS } from "../js/params.js";
 import { analyseGroup } from "../js/variance.js";
 import { realisedValue, valuePipeline } from "../js/pipeline.js";
@@ -124,6 +127,27 @@ for (const c of A.cases) {
   expect("R2d: a negative figure is not written as a gain (\"nets €779 a year\")", verdict("Option H nets €779 a year."), ["€779"]);
   expect("R2d: a negative figure with its sign, or as a loss, passes", [verdict("Option H nets -€779 a year."), verdict("Option H loses €779 in its first year."), verdict("It costs €200 more than it saves.")], [[], [], []]);
   expect("R2d: a positive figure with a minus sign fails", verdict("Option H nets -€12,501 a year."), ["-€12,501"]);
+}
+
+// ---- value words (review R5): nothing is saved or realised before later order lines show it ----------
+{
+  const k = new KnownFigures();
+  k.addResult({ pipeline: { approved: 11400, implemented: 8000, realised: 2100 } });
+  k.addAmount(12501.38);
+  const claims = (text) => valueClaims(text, k);
+  expect("R5: the reviewer's three texts are refused", [
+    claims("Option H: this saves €12,501 a year, realised at once."),
+    claims("This saved €12,501 a year."),
+    claims("We saved €12,501 a year, realised from today.")
+  ].map((x) => x.length > 0), [true, true, true]);
+  expect("R5: \"realised\" for a figure that is not realised is refused", [claims("€12,501 realised to date."), claims("Savings of €12,501 a year are realised.")].map((x) => x.length > 0), [true, true]);
+  expect("R5: honest wording passes", [
+    claims("Approved is a decision, not a saving: value counts as realised only when later order lines show it."),
+    claims("Nothing is saved yet; savings of €12,501 a year would follow once the change is in place."),
+    claims("The cable ties have realised €2,100 to date."),
+    claims("€2,100 realised to date, €8,000 implemented."),
+    claims("If approved, H would save €12,501 a year; nothing is realised before later orders show it.")
+  ], [[], [], [], [], []]);
 }
 
 for (const f of failures) console.log(`FAIL  ${f}`);

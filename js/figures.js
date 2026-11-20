@@ -96,6 +96,7 @@ export class KnownFigures {
     this.quantities = [];
     this.counts = new Set();
     this.rates = [];
+    this.realised = []; // amounts a tool returned as realised value (review R5: "realised to date")
     this.ids = new Set();
     this.codes = new Set();
     this.names = new Set();
@@ -220,6 +221,7 @@ export class KnownFigures {
 
   #addNumber(key, v, ctx) {
     if (key === null) return;
+    if ((key === "realised" || key === "realised_eur") && Number.isFinite(v)) this.realised.push(Math.abs(v));
     if (AMOUNT_KEYS.has(key)) this.addAmount(v);
     else if (PRICE_KEYS.has(key)) { if (ctx.base_unit) this.addPrice(v, ctx.display_quantity, ctx.base_unit); }
     else if (SHARE_KEYS.has(key)) this.addShare(v);

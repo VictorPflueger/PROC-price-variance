@@ -27,7 +27,7 @@ import { normaliseLine, METHOD_VERSION } from "./normalise.js";
 import { valuePipeline } from "./pipeline.js";
 import { contextOf, ratesOf } from "./world.js";
 import { validate, formatErrors } from "./schema.js";
-import { RunEvidence, FigureLedger, verifiedAlert, linesOutsideGroup, optionsError, decisionError, draftError, reportOutcome, OUTCOMES, OPTION_LETTERS } from "./guards.js";
+import { RunEvidence, FigureLedger, verifiedAlert, linesOutsideGroup, optionsError, decisionError, draftError, reportOutcome, valueClaims, OUTCOMES, OPTION_LETTERS } from "./guards.js";
 import { finalizeDraft, DRAFT_TYPES, DRAFTS_BY_OPTION, DRAFT_WORDS } from "./drafts.js";
 import { ACCEPT_REASONS, OPTION_TITLES } from "./options.js";
 import { summarizeToolResult, replayTag } from "./summaries.js";
@@ -616,6 +616,8 @@ export function createToolbox(ctx) {
     if (v.error) return guard(v.error, "alert");
     let title = String(i.title || "Price variance finding").trim().slice(0, 160);
     let summary = String(i.summary || "").trim().slice(0, 700);
+    const words = valueCheck(`${title}\n${summary}`, "alert", null, "ui_report_alert");
+    if (words) return words;
     const audit = figureCheck(`${title}\n${summary}`, "alert", null, "ui_report_alert");
     if (audit.reject) return audit.reject;
     if (audit.flag) { title = strike(title, audit.bad); summary = strike(summary, audit.bad); }
@@ -639,6 +641,8 @@ export function createToolbox(ctx) {
     const err = optionsError({ approved: run.approved, alert: run.alert, compare, latestCompareId: compare ? run.latestCompare.get(compare.id) : null, input: i });
     if (err) return guard(err, "options");
     const texts = i.options.flatMap((o) => [o.title, o.description, o.residual_risk]);
+    const words = valueCheck([...texts, i.reason].join("\n"), "options", compare.compare_id, "ui_propose_options");
+    if (words) return words;
     const audit = figureCheck([...texts, i.reason].join("\n"), "options", compare.compare_id, "ui_propose_options");
     if (audit.reject) return audit.reject;
     const fix = (s, n) => (audit.flag ? strike(String(s || "").slice(0, n), audit.bad) : String(s || "").slice(0, n));
@@ -731,6 +735,8 @@ export function createToolbox(ctx) {
     const subject = String(i.subject || "").trim().slice(0, 200);
     const raw = String(i.body || "").trim();
     if (!subject || !raw) return { error: "subject and body are required." };
+    const words = valueCheck(`${subject}\n${raw}`, "draft", run.optionsCompare, "ui_draft_action");
+    if (words) return words;
     const audit = figureCheck(`${subject}\n${raw}`, "draft", run.optionsCompare, "ui_draft_action");
     if (audit.reject) return audit.reject;
     const body = finalizeDraft(i.type, audit.flag ? `${raw}\n\nUnchecked figures (no tool returned them): ${audit.flag}. Check them against the option card before approving.` : raw);
@@ -767,6 +773,8 @@ export function createToolbox(ctx) {
     if (o.error) return guard(o.error, "report");
     let markdown = String(i.markdown || "").trim().slice(0, 19000);
     if (markdown.length < 40) return { error: "The report is empty. Write a short Markdown report." };
+    const words = valueCheck(markdown, "report", null, "ui_final_report");
+    if (words) return words;
     const audit = figureCheck(markdown, "report", null, "ui_final_report");
     if (audit.reject) return audit.reject;
     if (audit.flag) markdown = `${markdown}\n\n*Unchecked figures (no tool returned them): ${audit.flag}.*`;
@@ -797,6 +805,14 @@ export function createToolbox(ctx) {
     const where = { draft: "draft", report: "report", options: "option cards", alert: "alert", cluster: "cluster note" }[kind];
     emit("notice", { level: "warn", text: `The ${where} quote${kind === "options" ? "" : "s"} figures no tool returned (${list}); they are shown with an Unchecked tag.` });
     return { flag: list, bad };
+  }
+
+  // Value words (review R5): nothing is saved or realised before later order lines show it, so a text that
+  // says so is refused every time, whatever it says about figures.
+  function valueCheck(text, kind, compareId, tool) {
+    const bad = valueClaims(text, run.ledger.scope(kind, compareId));
+    if (!bad.length) return null;
+    return guard(`Nothing is saved or realised before later order lines show it: approved savings are a decision, written "a year" ("savings of €… a year", "would save"), and realised value is only what the value pipeline returned "to date". Reword: ${bad.map((x) => `"${x}"`).join("; ")}. Then call ${tool} again.`, "value");
   }
 
   function guardNotice(text) {
