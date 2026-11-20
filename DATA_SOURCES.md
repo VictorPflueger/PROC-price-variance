@@ -11,8 +11,12 @@ and order lines are invented; the exchange rates are the European Central Bank's
 | Anthropic's Messages API | The live agent's model calls, with the visitor's own key | `https://api.anthropic.com/v1/messages` | Version 0.2.0 |
 | ECB reference rates through Frankfurter | Today's or a dated rate as a labelled sensitivity (`open_ecb_rate`) | `https://api.frankfurter.dev/v1/` | Version 0.2.0 |
 
-The page's security policy allows exactly these two hosts (TECH_NOTES.md section 6). Version 0.1.0 makes
-no request to either: it has no run yet.
+The page's security policy allows exactly these two hosts (TECH_NOTES.md section 6). A live run calls the
+Messages API with the visitor's own key and Frankfurter when the agent asks for a rate; a rate fetched in a
+run is a labelled sensitivity and never replaces the window's rate. A simulation calls neither: its script
+replays the open data it holds, labelled. Scenario 5's script replays a rate of 1 EUR = 0.83581 GBP for
+19 Nov 2026, written for the simulation and shown as "representative", not the ECB's published value;
+a run saved with "Save run as simulation" replays the rate it fetched, shown as "recorded".
 
 ## 2. Exchange rates
 

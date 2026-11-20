@@ -289,9 +289,6 @@ html { font-size: clamp(93.75%, 0.48vw + 50%, 112.5%); }
 /* Approved savings names three stages in its second line: its tile takes the room for them. */
 .kpi--wide.vc-stat { max-width: 340px; }
 
-/* The scenario chooser of version 0.1.0: Vici's select at the control bar's height. */
-.control-field { display: flex; align-items: center; gap: 8px; }
-.scenario-select.vc-select { min-width: 18rem; }
 
 @media (max-width: 1300px) {
   .honesty { white-space: normal; max-width: 12rem; line-height: 1.2; }

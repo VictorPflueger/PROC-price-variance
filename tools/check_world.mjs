@@ -3,7 +3,7 @@
 // rules; every record fits its data contract; each scenario's pattern appears as planted, against its frozen
 // reference figures; scenario 4 stays unflagged within ±5 % of the rate; no background group is flagged; the
 // past case shows realised value and leakage, and its group is analysed only after the implementation day.
-// The simulation scripts join these checks in M2 (AC-13).
+// Every simulation script is played on every path under the live guardrails (AC-13).
 //
 // Usage: node tools/check_world.mjs        prints "WORLD OK (n checks)" or the failures
 import { readFileSync, existsSync } from "node:fs";
@@ -238,6 +238,26 @@ for (const s of SCENARIOS) {
   check("cancelled lines are left out of every figure", all.cancelled.length >= 1 && all.lines.every((l) => !L.find((x) => x.id === l.id).cancelled));
 }
 
+// ---- every simulation script, on every path, under the live guardrails (AC-13) --------------------------------
+// js/sim_check.js plays each script through the live toolbox (js/tools.js) with an automatic person:
+// approve the recommendation, approve each other option, reject then approve, reject all then accept,
+// accept; for the cluster also confirm, split and reject. A refused tool call, a figure the engine did
+// not return, an unresolved placeholder, a missing hypothesis or revision, fewer than eight tool calls
+// before the decision or an outcome that does not follow the decision fails the script.
+let scriptPaths = 0;
+let scriptCount = 0;
+{
+  check("data/sim_runs.js exists", existsSync(path.join(ROOT, "data", "sim_runs.js")));
+  const { SIM_RUNS } = load(["data/sim_runs.js"]);
+  const { checkSimRuns } = await import("../js/sim_check.js");
+  const r = await checkSimRuns(W, FX, DEFAULTS, SIM_RUNS || {}, SCENARIOS);
+  for (const c of r.checks) check(c.name, c.ok, c.ok ? "" : c.detail);
+  check("one script for each of the six scenarios", r.scripts === SCENARIOS.length && SCENARIOS.length === 6, `${r.scripts} scripts`);
+  check("every script is authored or recorded", Object.values(SIM_RUNS || {}).every((d) => ["authored", "recorded"].includes(d.source)));
+  scriptPaths = r.paths;
+  scriptCount = r.scripts;
+}
+
 for (const f of failures) console.log(`FAIL  ${f}`);
 if (failures.length) { console.log(`WORLD FAILED: ${failures.length} of ${checks} checks`); process.exit(1); }
-console.log(`WORLD OK (${checks} checks)${existsSync(path.join(ROOT, "data", "sim_runs.js")) ? "" : "; no simulation scripts yet (M2)"}`);
+console.log(`WORLD OK (${checks} checks); SCRIPTS OK (${scriptCount} scripts, ${scriptPaths} paths)`);

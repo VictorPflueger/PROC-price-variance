@@ -5,7 +5,11 @@
 //   format   display strings beyond the engine suite: cents, dates with and without the year, the clock
 //   schema   the validator of js/schema.js on planted good and bad records, and the data contracts
 //   static   AC-07: the security policy exactly as the brief's section 4, nothing from a third party,
-//            every storage key under "pv." apart from Vici's "vc-theme"
+//            every storage key under "pv." apart from Vici's "vc-theme"; the golden data of Diagnostics
+//            current with the fixtures
+//   tools    the sixteen tool schemas: within the strict-tool limits (TECH_NOTES §1), only supported
+//            keywords, every object closed; every tool's input checked by the app's own validator; a
+//            plain sentence and a result line for every tool
 // Usage: node tests/unit.mjs              (all groups)
 //        node tests/unit.mjs static       (only these groups)
 import assert from "node:assert/strict";
@@ -14,7 +18,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { APP_ROOT, ONLY } from "./lib/harness.mjs";
 
-const GROUPS = ["stream", "cost", "format", "schema", "static"];
+const GROUPS = ["stream", "cost", "format", "schema", "static", "tools"];
 const chosen = ONLY.length ? ONLY : GROUPS;
 const unknown = chosen.filter((g) => !GROUPS.includes(g));
 if (unknown.length) { console.error(`Unknown group(s): ${unknown.join(", ")}. Groups: ${GROUPS.join(", ")}`); process.exit(2); }
@@ -174,6 +178,56 @@ if (chosen.includes("schema")) {
   check("schema", "a run event of this app's new types passes; an unknown type does not", v(event, "RunEvent").ok && !v({ ...event, type: "rebate_found" }, "RunEvent").ok);
 }
 
+// ---- tools: the schemas sent with strict: true, and the validator in code ---------------------------
+if (chosen.includes("tools")) {
+  const { toolDefinitions, TOOL_NAMES, createToolbox } = await mod("js/tools.js");
+  const { toolPlain } = await mod("js/tool_plain.js");
+  const { summarizeToolResult } = await mod("js/summaries.js");
+  const tools = toolDefinitions();
+  const ALLOWED = new Set(["type", "properties", "required", "additionalProperties", "enum", "items", "description"]);
+  check("tools", "sixteen tools with unique names, as the brief's section 7 lists them", tools.length === 16 && new Set(TOOL_NAMES).size === 16 && ["erp_get_overview", "erp_query", "erp_get_record", "pv_scan", "pv_normalise", "pv_compare", "pv_match", "ui_confirm_cluster", "open_ecb_rate", "ui_mark_board", "ui_report_alert", "ui_propose_options", "ui_await_decision", "ui_draft_action", "ui_await_approvals", "ui_final_report"].every((n) => TOOL_NAMES.includes(n)), TOOL_NAMES.join(", "));
+  check("tools", "every tool is sent with strict: true, at most twenty strict tools", tools.every((t) => t.strict === true) && tools.length <= 20);
+  check("tools", "strict can be dropped (a 400 that names it)", toolDefinitions({ strict: false }).every((t) => !("strict" in t)));
+  let optional = 0;
+  let unions = 0;
+  const bad = [];
+  const walk = (schema, at) => {
+    for (const k of Object.keys(schema)) if (!ALLOWED.has(k)) bad.push(`${at}: keyword ${k}`);
+    if (Array.isArray(schema.type)) unions += 1;
+    if (schema.type === "object") {
+      if (schema.additionalProperties !== false) bad.push(`${at}: object not closed`);
+      const props = Object.keys(schema.properties || {});
+      for (const r of schema.required || []) if (!props.includes(r)) bad.push(`${at}: required ${r} is not a property`);
+      optional += props.filter((p) => !(schema.required || []).includes(p)).length;
+      for (const [k, v] of Object.entries(schema.properties || {})) walk(v, `${at}.${k}`);
+    }
+    if (schema.items) walk(schema.items, `${at}[]`);
+  };
+  for (const t of tools) walk(t.input_schema, t.name);
+  check("tools", "only keywords of the strict subset, every object closed, required fields declared", bad.length === 0, bad.join("; "));
+  check("tools", "at most 24 optional parameters across the strict tools (this app: 14)", optional <= 24 && optional === 14, String(optional));
+  check("tools", "no union-typed parameter", unions === 0, String(unions));
+  check("tools", "every tool has a description", tools.every((t) => typeof t.description === "string" && t.description.length > 30));
+  // Every input is checked against its tool's schema before anything runs.
+  globalThis.window = globalThis;
+  for (const f of ["fx", "world"]) await mod(`data/${f}.js`);
+  const tb = createToolbox({
+    world: globalThis.WORLD, fx: globalThis.FX, params: (await mod("js/params.js")).DEFAULTS, emit: () => {},
+    waitUntil: async () => { throw new Error("no person in this test"); }, takeDecision: () => null, drafts: new Map(),
+    onPhase: () => {}, getPhase: () => null, isEnded: () => false, ecbRate: async () => ({ ok: false, error: "offline" }), mode: "live", entry: "scenario"
+  });
+  const refusedInputs = [];
+  for (const t of tools) {
+    const out = await tb.execute(t.name, { unexpected_field: 1 });
+    if (!(out.isError && out.guard === "input" && /schema/.test(out.result.error))) refusedInputs.push(t.name);
+  }
+  check("tools", "every tool refuses an input that breaks its schema, with an instructive message", refusedInputs.length === 0, refusedInputs.join(", "));
+  const wrongType = await tb.execute("pv_normalise", { line_id: 4500010001 });
+  check("tools", "a wrong type names the field and what it expects", wrongType.isError && /line_id: expected string/.test(wrongType.result.error), wrongType.result.error);
+  check("tools", "a plain sentence for every tool call (js/tool_plain.js)", tools.every((t) => typeof toolPlain(t.name, {}, globalThis.WORLD) === "string"));
+  check("tools", "a result line for every tool (js/summaries.js)", tools.every((t) => summarizeToolResult(t.name, { ok: true }) !== "Result received"));
+}
+
 // ---- static: AC-07 ---------------------------------------------------------------------------------
 if (chosen.includes("static")) {
   const POLICY = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src https://api.anthropic.com https://api.frankfurter.dev; object-src 'none'; base-uri 'none'; form-action 'none'";
@@ -201,15 +255,35 @@ if (chosen.includes("static")) {
   check("static", "every storage key in js/config.js starts with pv.", Object.values(STORAGE).length >= 5 && Object.values(STORAGE).every((k) => k.startsWith("pv.")), JSON.stringify(STORAGE));
   const calls = [];
   for (const f of walk("js")) {
-    for (const m of read(f).matchAll(/\b(?:localStorage|sessionStorage)\s*\.\s*(?:getItem|setItem|removeItem)\(\s*([^,)]+)/g)) calls.push([f, m[1].trim()]);
-    if (/\b(?:localStorage|sessionStorage)\s*\[|\b(?:localStorage|sessionStorage)\.(?!getItem|setItem|removeItem)\w+\s*=/.test(read(f))) calls.push([f, "a key set without getItem/setItem"]);
+    const text = read(f);
+    for (const m of text.matchAll(/\b(?:localStorage|sessionStorage)\s*\.\s*(getItem|setItem|removeItem)\(\s*([^,)]+)/g)) calls.push({ f, text, key: m[2].trim(), method: m[1] });
+    if (/\b(?:localStorage|sessionStorage)\s*\[|\b(?:localStorage|sessionStorage)\.(?!getItem|setItem|removeItem|key\(|length)\w+\s*=/.test(text)) calls.push({ f, text, key: "a key set without getItem/setItem", method: "set" });
   }
-  const strays = calls.filter(([, k]) => !/^STORAGE\.\w+$/.test(k) && k !== '"vc-theme"' && k !== "'vc-theme'");
-  check("static", "every storage call in js/ uses a key from STORAGE or Vici's vc-theme", calls.length >= 4 && strays.length === 0, strays.map(([f, k]) => `${f}: ${k}`).join("; "));
+  // Allowed besides a STORAGE key and Vici's vc-theme: reading every key by its index (Diagnostics
+  // looks for a stray API key), and a helper's key parameter when every call of the helper, in any
+  // module, passes a STORAGE key.
+  const jsTexts = walk("js").map((g) => read(g));
+  const helperOk = (text, param, texts) => {
+    const helpers = [...text.matchAll(new RegExp(`function\\s+(\\w+)\\(\\s*${param}\\b`, "g"))].map((m) => m[1]);
+    const args = texts.flatMap((t) => helpers.flatMap((name) => [...t.matchAll(new RegExp(`\\b${name}\\(([^,)]*)`, "g"))].map((m) => m[1].trim()))).filter((a) => a !== param);
+    return helpers.length > 0 && args.length > 0 && args.every((a) => /^STORAGE\.\w+$/.test(a));
+  };
+  const allowed = ({ text, key, method }, texts = jsTexts) => /^STORAGE\.\w+$/.test(key) || key === '"vc-theme"' || key === "'vc-theme'"
+    || (method === "getItem" && /^(?:localStorage|sessionStorage)\.key\(/.test(key))
+    || (/^\w+$/.test(key) && helperOk(text, key, texts));
+  const strays = calls.filter((c) => !allowed(c));
+  check("static", "every storage call in js/ uses a key from STORAGE or Vici's vc-theme", calls.length >= 4 && strays.length === 0, strays.map((c) => `${c.f}: ${c.key}`).join("; "));
+  // The rule must be able to fail: a helper called with a key of its own, a literal key, a write by index.
+  const planted = "function store(key, v) { try { sessionStorage.setItem(key, v); } catch {} }\nstore(STORAGE.speed, 1);\nstore(\"rh.speed\", 2);";
+  check("static", "the storage rule catches a planted helper call, a literal key and a write by index",
+    !allowed({ text: planted, key: "key", method: "setItem" }, [...jsTexts, planted]) && !allowed({ text: "", key: '"rh.speed"', method: "setItem" }) && !allowed({ text: "", key: "localStorage.key(0)", method: "setItem" }));
   const viciJs = read("vici/dist/vici.js");
   const viciKeys = [...viciJs.matchAll(/storage(?:Get|Set)\(\s*([^,)]+)/g)].map((m) => m[1].trim()).filter((k) => k !== "key");
   check("static", "Vici's script stores only vc-theme", /STORAGE_KEY = 'vc-theme'/.test(viciJs) && viciKeys.every((k) => k === "STORAGE_KEY"), viciKeys.join(", "));
   check("static", "the key's storage is this tab's session storage, under pv.anthropic.key", STORAGE.apiKey === "pv.anthropic.key" && /sessionStorage\.setItem\(STORAGE\.apiKey/.test(read("js/keystore.js")) && !/localStorage[^\n]*STORAGE\.apiKey/.test(read("js/keystore.js")));
+  // Diagnostics runs the golden cases in the browser from js/golden_data.js: it must be the fixtures'.
+  const { goldenText } = await import(pathToFileURL(path.join(APP_ROOT, "tools", "build_golden.mjs")).href);
+  check("static", "js/golden_data.js is current with tests/fixtures (node tools/build_golden.mjs writes it)", read("js/golden_data.js") === goldenText());
 }
 
 for (const f of failures) console.log(`FAIL  ${f}`);

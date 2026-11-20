@@ -10,26 +10,44 @@ export const NAME = "Price Variance Agent";
  * Colour pairs only this prototype draws (the shared shell's pairs are in tests/tokens.mjs):
  * [what, foreground token, background token, kind]. kind "text" needs 4.5:1, "mark" (a line, an icon,
  * a control's border, a bar) 3:1 (WCAG 2.2, 1.4.3 and 1.4.11). Tokens are Vici's, without "--vc-".
- * Version 0.1.0 draws the board's engine check, the console's idle content and the header's honesty
- * line; the price ladder's and the portfolio's pairs join with them in version 0.2.0.
  */
 export const COLOUR_PAIRS = [
-  // The board's canvas (bg-sunken): its title, explanation and the note on the scenario in focus.
-  ["Board: the title and the note on the scenario in focus, on the canvas", "text", "bg-sunken", "text"],
-  ["Board: the explanation under the title, on the canvas", "text-muted", "bg-sunken", "text"],
-  ["Board: the count of flagged groups, a plain tag", "neutral-text", "neutral-bg", "text"],
-  // The engine check's table (surface).
-  ["Engine check: group names and figures", "text", "surface", "text"],
-  ["Engine check: ids, quantities, lines and the index under a figure", "text-muted", "surface", "text"],
-  ["Engine check: the scenario in focus, framed in 2 px of ink", "text", "surface", "mark"],
-  ["Engine check: a flagged group's tag (word and icon) on its tint", "danger-text", "danger-bg", "text"],
-  ["Engine check: a flagged group's icon on its tint", "danger-text", "danger-bg", "mark"],
-  // The console's idle content (surface) and the header (surface).
-  ["Console: the version note, a neutral alert", "neutral-text", "neutral-bg", "text"],
+  // The board's caption card and tools (surface).
+  ["Board: the caption's title", "text", "surface", "text"],
+  ["Board: the caption's facts", "text-muted", "surface", "text"],
+  ["Board: the sensitivity note (fjord: a labelled check)", "info-text", "surface", "text"],
+  // The price ladder on the board's canvas (bg-sunken).
+  ["Ladder: a plant's name, the benchmark's label and line", "text", "bg-sunken", "text"],
+  ["Ladder: a supplier's name, the axis ticks, a row's tags", "text-muted", "bg-sunken", "text"],
+  ["Ladder: a pair's hexagon outline and the benchmark line", "text", "bg-sunken", "mark"],
+  ["Ladder: unexplained (danger) as words at the row's end", "danger-text", "bg-sunken", "text"],
+  ["Ladder: the unexplained bar's outline and cross", "danger-solid", "bg-sunken", "mark"],
+  ["Ladder: the cross inside the unexplained bar", "danger-solid", "danger-bg", "mark"],
+  ["Ladder: justified (warning) as words at the row's end", "warning-text", "bg-sunken", "text"],
+  ["Ladder: the justified hatch and its outline", "warning-text", "warning-bg", "mark"],
+  ["Ladder: the justified pair's outline", "warning-text", "bg-sunken", "mark"],
+  ["Ladder: approved (success) as words with the tick", "success-text", "bg-sunken", "text"],
+  ["Ladder: the approved pair's tick", "success-solid", "success-bg", "mark"],
+  ["Ladder: a line the agent reads, outlined in fjord", "info-solid", "bg-sunken", "mark"],
+  // The portfolio's bars (series colours only) and their labels.
+  ["Portfolio: a bar in teal (series 1)", "data-2", "bg-subtle", "mark"],
+  ["Portfolio: a bar in apricot (series 2)", "data-3", "bg-subtle", "mark"],
+  ["Portfolio: a bar in grey (series 3)", "data-7", "bg-subtle", "mark"],
+  ["Portfolio: a bar's label and value", "text", "bg-sunken", "text"],
+  ["Portfolio: a bar's spread, index and definitions", "text-muted", "bg-sunken", "text"],
+  // A proposed cluster (the AI's voice: lilac) and the dialog around it.
+  ["Cluster: the proposal's tag", "feature-text", "feature-bg", "text"],
+  ["Cluster: the agent's note on its tint", "text", "feature-bg", "text"],
+  ["Cluster: a column's outline, a candidate's dashed outline", "feature-solid", "surface", "mark"],
+  ["Cluster: the agent's note, its lilac bar", "feature-solid", "feature-bg", "mark"],
+  ["Cluster: words only some texts use (warning)", "warning-text", "surface", "text"],
+  // The drawer: the options' table and an option's one-off cost (fjord: money an option spends).
+  ["Options: the recommended row's letter", "accent-text", "surface", "text"],
+  ["Options: an option's one-off cost", "info-text", "surface", "text"],
+  // The console's scenario list and the header.
   ["Console: a tip's title and the chosen tip's ink frame", "text", "surface", "mark"],
-  ["Console: a tip's number in its hexagon, on the quiet fill", "text", "bg-subtle", "text"],
-  ["Console: the chosen tip's number, inverted", "surface", "text", "text"],
-  ["Console: a tip's words, muted", "text-muted", "surface", "text"],
+  ["Console: a tip's number, muted", "text-muted", "surface", "text"],
+  ["Console: the chosen tip's number (the person's choice: merlot)", "on-accent", "accent", "text"],
   ["Header: the honesty line (fictional company, no client data)", "text-muted", "surface", "text"],
   ["Header: a tile's unit after its figure", "text-muted", "surface", "text"]
 ];
@@ -39,13 +57,17 @@ export const COLOUR_PAIRS = [
  * The test reports how far apart they stay under colour-vision deficiency; it does not fail on them.
  */
 export const SEPARATIONS = [
-  ["Engine check: a flagged tag (danger) against the focus frame (ink)", "danger-solid", "text"]
+  ["Ladder: unexplained (danger) against justified (warning)", "danger-solid", "warning-text"],
+  ["Ladder: unexplained (danger) against approved (success)", "danger-solid", "success-solid"],
+  ["Ladder: the benchmark (ink) against unexplained (danger)", "text", "danger-solid"],
+  ["Portfolio: teal against apricot", "data-2", "data-3"]
 ];
 
 /**
- * The hexagon test's tour of the app (tests/hexagon.mjs): the states version 0.1.0 has. The page has
- * just been opened, without SKIP_INTRO, so the intro opens by itself. visit(name, { settle }) checks
- * the page as it is, settle ms (250) after the step.
+ * The hexagon test's tour of the app (tests/hexagon.mjs). The page has just been opened, without
+ * SKIP_INTRO, so the intro opens by itself. visit(name, { settle }) checks the page as it is, settle ms
+ * (250) after the step. Scenario 2 is played in Simulation at ×4 to its cluster confirmation, its
+ * decision and its end, which shows the ladder, the dialog, the options, the outbox and the tables.
  */
 export async function hexagonTour(page, visit) {
   await page.waitForSelector('html[data-boot="ready"]', { timeout: 20000 });
@@ -53,19 +75,37 @@ export async function hexagonTour(page, visit) {
   await visit("start screen with the intro");
   await page.keyboard.press("Escape");
   await page.waitForSelector(".intro-modal", { state: "detached", timeout: 5000 });
-  await visit("idle board");
-  await page.click('.scenario-pick[data-scenario="SC-CONSULT"]');
-  await visit("scenario 2 chosen: no group before a confirmation");
-  await page.click('.scenario-pick[data-scenario="SC-SHOES"]');
-  await visit("scenario 6 chosen: the group of two material numbers in focus");
-  await page.click("#tab-options");
-  await page.waitForSelector("#panel-options:not([hidden])", { timeout: 5000 });
-  await visit("drawer open: options");
-  await page.click("#tab-outbox");
-  await visit("drawer open: outbox");
+  await visit("idle: the portfolio and the value pipeline");
+  await page.click('.scenario-pick__item[data-id="SC-CONSULT"]');
+  await page.click("button[aria-label='Replay speed ×4']");
+  await page.click("#btn-start");
+  await page.waitForSelector(".mode-card", { timeout: 5000 });
+  await visit("the mode dialog");
+  await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
+  await page.waitForSelector(".cluster-modal", { timeout: 60000 });
+  await visit("the cluster confirmation");
+  await page.click('.cluster-modal [data-action="confirm"]');
+  await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { timeout: 60000 });
+  await visit("a decision waiting: the ladder and the options");
+  await page.click(".ladder .ladder-row");
+  await visit("a pair's popover");
+  await page.keyboard.press("Escape");
+  await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
+  await page.waitForSelector('.action-card[data-status="pending"]', { timeout: 30000 });
+  await visit("the outbox with a draft");
+  for (const b of await page.$$('.action-card[data-status="pending"] [data-action="approve"]')) await b.click();
+  await page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 60000 });
+  await visit("the run's end");
+  await page.click(".table-toggle");
+  await visit("the group's tables");
+  await page.click('.board-tools button[data-view="portfolio"]');
+  await visit("the portfolio's tables");
   await page.click("#tab-audit");
   await visit("drawer open: audit");
-  await page.click(".drawer-toggle");
+  await page.click("#btn-diagnostics");
+  await page.waitForSelector(".diag-table", { timeout: 5000 });
+  await visit("Diagnostics", { settle: 600 });
+  await page.keyboard.press("Escape");
   await page.click("#btn-about");
   await page.waitForSelector(".intro-modal", { timeout: 5000 });
   await visit("How it works, opened from the header");

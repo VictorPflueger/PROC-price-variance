@@ -1,8 +1,9 @@
 # Technical notes
 
 Verified facts with their dates, the decisions taken with their reasons, and the records of each
-milestone. Version 0.1.0 (milestone M1): the shell, the world and the engine. Sections 9 and 10 grow in
-milestone M2, the verification log and the acceptance checklist with every milestone.
+milestone. Version 0.2.0 (milestone M2): the live agent, the price board and the six simulations, on
+version 0.1.0's shell, world and engine. The verification log and the acceptance checklist grow with every
+milestone.
 
 ## 1. Claude models and token prices (cost meter inputs)
 
@@ -65,12 +66,35 @@ Probed on 19 Nov 2026 between 19:19 and 19:30 UTC (PLAN.md section 1.4, P1 to P1
 - Thinking: `{type: "adaptive", display: "summarized"}`, because `display` defaults to `"omitted"` on the
   newest models.
 - Strict tools: at most 20 strict tools, 24 optional parameters and 16 union-typed parameters across a
-  request's strict schemas; the planned 16 tools have 12 optional parameters and no union types. The list
-  of supported keywords was not readable, so every input is also validated in code (`js/schema.js`).
+  request's strict schemas; the 16 tools have 14 optional parameters and no union types, and use only
+  `type`, `properties`, `required`, `additionalProperties: false`, `enum`, `items` and `description`
+  (`tests/unit.mjs`, group `tools`). The list of supported keywords was not readable, so every input is
+  also validated in code (`js/schema.js`) and refused with the guardrail "input" when it breaks its schema.
 
 The shared `js/anthropic.js` and `js/keystore.js` are Rebate Hunter's, unchanged. The key is requested only
-for Live, checked with `GET /v1/models`, kept in this tab's session storage under `pv.anthropic.key` and
-removed by "Forget key"; the live agent arrives in M2 (AC-08).
+for Live, checked with `GET /v1/models`, kept in this tab's session storage under `pv.anthropic.key`, sent
+only to `api.anthropic.com` and removed by "Forget key"; the key dialog refuses to work inside a frame
+(AC-08, `tests/accept.mjs`).
+
+### The agent loop (`js/agent.js`, `js/prompt.js`)
+
+A live run sends the system prompt (the method, the rules, the tools' order of use) and one opening
+message: a scenario's tip, the Live sweep's instruction to start from `pv_scan` without a tip, or the
+person's own words in Custom what-if. Each call carries the 16 tools with `strict: true`, adaptive thinking
+with `display: "summarized"`, the model's effort (section 1) and `max_tokens` 128,000. Stop reasons:
+
+- `tool_use`: every tool runs in the browser and every `tool_use` is answered, an error included;
+- `max_tokens`: a cut tool call is retried once with more room, otherwise the run continues;
+- `end_turn`: the run ends, unless the agent stopped before its report (two nudges at most);
+- `refusal` and `model_context_window_exceeded`: the run ends and says why.
+
+Rebate Hunter's caps hold: at most 40 model calls a run, the retry included, and €3 a run, checked before
+every call (none starts once €3 is spent, B8) and after each; 90 seconds without streamed data count as a
+failed request. A 400 that names `strict` drops it once and says so in the console. The rail's steps follow
+the run's phases: Spot (scanning, diagnosing), Check (verifying), Calculate (simulating), Propose (the
+options and the decision), Prepare (the drafts, their approval and the report). *Your decision* waits on
+Propose, *Your approval* on Prepare, and *Your confirmation* of a cluster on the furthest step reached
+(Check in the scripted runs), all in merlot; the rail never moves back (`js/progress.js`).
 
 ## 4. Open data: the ECB's reference rates
 
@@ -97,11 +121,15 @@ branch `fx/2026-11-19-2`, which the M1 branch took as it was.
 TECH_NOTES section 4 observed through Frankfurter's v1 on 14 Oct 2026, 1 EUR = 0.84385 GBP, labelled on
 screen as one day's rate, not a window mean.
 
-**Frankfurter for live runs (M2).** `open_ecb_rate` keeps Frankfurter's v1 API
+**Frankfurter in live runs.** `open_ecb_rate` (`js/opendata.js`) keeps Frankfurter's v1 API
 (`https://api.frankfurter.dev/v1/...`), which serves the ECB's reference rates only and "remains available
-indefinitely"; the v2 API blends 112 sources unless asked for `providers=ecb`. Its CORS behaviour was not
-probed from this environment; Rebate Hunter's notes quote "CORS is open and there's no key to leak"
-(14 Oct 2026), and PLAN.md Appendix A holds a one-line browser-console check.
+indefinitely"; the v2 API blends 112 sources unless asked for `providers=ecb`. A rate fetched in a run is a
+labelled sensitivity (`pv_compare` with `at_rate_of`, shown on the board as "Sensitivity …"): the tiles,
+the options and every figure keep the window's rate. A failing or blocked request leaves the bundled
+rates in use and says so in the console; a failure of the source is remembered for the session, and
+Diagnostics tests it again (AC-10, `tests/live.mjs` rates). Its CORS behaviour was not probed from this
+environment; Rebate Hunter's notes quote "CORS is open and there's no key to leak" (14 Oct 2026), and
+PLAN.md Appendix A holds a one-line browser-console check. Victor's live run (AC-20) shows it.
 
 ## 5. The world: GlobalCorp SE's data products
 
@@ -194,22 +222,55 @@ must exist; dates, times, version numbers and names with numbers are exempt.
 | M1-2 | Scenario 4 planted smaller than the Phase 0 sizing (B10): Birmingham 18,000 EA at £1.62, Lyon 120,000, Frankfurt 80,000 at €1.90, Duisburg 40,000 at €1.91; Birmingham under 10 % of the quantity, so it never sets the benchmark | 19 Nov 2026: not flagged at the rate, nor 5 % below or above it |
 | M1-3 | The past cases: Duisburg's cable ties (H approved day −120 for €8,000 a year, implemented day −90, one leakage line) and Lyon's stretch film (H approved day −12 for €3,400 a year, not implemented) | 19 Nov 2026 |
 | M1-4 | The shoe's manufacturer "Brekholt" and part number "BH-7730-S3" are invented; a web search on 19 Nov 2026 found no maker of that name | 19 Nov 2026 |
-| M1-5 | Version 0.1.0's board shows the engine's check of every group (a table), until the board of M2 replaces it | 19 Nov 2026 |
+| M1-5 | Version 0.1.0's board shows the engine's check of every group (a table), until the board of M2 replaces it | 19 Nov 2026; replaced in 0.2.0 |
+| M2-1 | A simulation is a scripted model: every scripted tool call runs through the live toolbox (`js/tools.js`), so the engine recomputes every figure at playback and every guardrail applies as in Live | 20 Nov 2026 |
+| M2-2 | Scripts name the engine's figures as placeholders (`{{opportunity}}`, `js/sim_vars.js`) filled at playback; a script with a typed figure fails the checker | 20 Nov 2026 |
+| M2-3 | Three guards beyond the brief's: options only after a verified alert of the same group; none for a group below materiality; one alert group per run | 20 Nov 2026: each closes a way to propose options the alert never showed |
+| M2-4 | The figure audit's scopes: the facts of the run's tool results, each comparison on its own, and a sensitivity's figures only in the alert and the report | 20 Nov 2026 |
+| M2-5 | A text the figure audit refuses twice is shown with an "Unchecked" tag naming the figures | 20 Nov 2026, Rebate Hunter's rule |
+| M2-6 | The ladder lays each pair's lines in a lane above its hexagon, nudged into a honeycomb ribbon where they share a price; with the drawer open the ladder is compact and shows the pairs only | 20 Nov 2026: every line of a contract pair has one price, so the lines hid under the pair's hexagon and could not be opened |
+| M2-7 | The value pipeline's bars use teal, apricot and the two greys in stage order; the flagged groups all teal | 20 Nov 2026, brief section 9 |
 
 ## 9. Live-agent guardrails
 
-Arrive in milestone M2 with the live agent (a guards module shared by the tools and the script checker, AC-09): only the engine compares; a verified
-alert needs a `pv_compare` result, three normalised lines (one of the benchmark pair, one of the highest
-pair) and the benchmark supplier's contract looked up; options from the latest comparison; drafts only of
-the kinds the approved option allows, with both footers added in code; the report only after every
-decision; the figure audit (section 7) on every text; Rebate Hunter's caps of 40 calls and €3, the budget
-also checked before every call (B8).
+In code, in `js/tools.js` with the policy in `js/guards.js`, shared by the live loop, the simulation player
+and the script checker (AC-09, `tests/live.mjs` guard, `tests/engine.mjs` GR). A refused call returns an
+error to the model, names the rule, and shows a Guardrail line in the console:
+
+| Rule | Refused |
+| --- | --- |
+| input | An input that breaks its tool's schema (`js/schema.js`) |
+| groups | A comparison of a material group, a candidate or two groups at once; an alert naming lines of another group; a second alert group in one run |
+| cluster | A cluster nobody confirmed; free-text lines become comparable only through `ui_confirm_cluster` |
+| alert | A verified alert without its `pv_compare` result, without three normalised lines (one of the benchmark pair, one of the highest pair among them) or without the benchmark supplier's contract looked up |
+| options | Options outside the latest `pv_compare` of the group, before its verified alert, for a group below materiality, fewer than two distinct applicable ones, or after a decision; a stale decision (a superseded option set, a rejected option) |
+| drafts | A draft before an approval, or of a kind the approved option does not allow; both footers are added in code |
+| report | A report before every decision and draft is settled, or an outcome the decision does not give |
+| figures | A figure no tool returned (section 7), in the alert, the option texts, the cluster note, the drafts and the report: refused twice with the offending tokens, then shown with an "Unchecked" tag |
+
+Rebate Hunter's caps of 40 calls and €3 a run, the budget checked before every call (B8), and the
+recommended option's rule (P-5) hold in both modes.
 
 ## 10. Simulation scripts and recorded runs
 
-Arrive in milestone M2: six authored scripts in Rebate Hunter's format (`"source": "authored"`), every
-figure a placeholder the engine fills at playback, held to the live guardrails by
-`tools/check_world.mjs` (AC-13). Scenario 4's script ends with `nothing_found`.
+`data/sim_runs.js` holds six authored scripts (`"source": "authored"`), one per scenario, in steps the
+player (`js/simulation.js`) runs: `say` and `think` for narration, `tool` for any engine or ERP tool, `open`
+for a rate with its representative result, `board`, `alert`, `confirm` with a branch per answer of the
+person (confirmed, split, rejected), `propose` with the option texts and the decision loop, `draft`,
+`awaitApprovals`, `report`, `if` on a filled variable, and `expect: "refused"` on a step that shows a
+guardrail at work (scenario 3's first alert). Every figure is a placeholder the engine fills at playback
+(M2-2); open data is replayed and labelled "representative". Scenario 4 ends with `nothing_found`.
+
+`tools/check_world.mjs` and `tests/engine.mjs` (group S) play every script on every path with an automatic
+person through the live toolbox (AC-13): approving the recommendation, rejecting it and approving another,
+accepting the variance, and each answer to scenario 2's cluster. A script fails when a step is refused that
+should not be, a placeholder stays unresolved, a figure is typed, the alert comes before its evidence,
+the contract lookup or the hypothesis is missing, or fewer than eight calls precede the decision; the
+group S cases plant each fault and must catch it.
+
+"Save run as simulation" in the Audit tab turns a completed live run of a preset scenario into a recorded
+script (`"source": "recorded"`, `js/recorder.js`): the key never enters it, the checker must accept it
+before it is kept, and its open data replays as "recorded" (`tests/live.mjs` record).
 
 ## 11. Verification log
 
@@ -223,6 +284,14 @@ figure a placeholder the engine fills at playback, held to the live guardrails b
 | 19 Nov 2026 | First run of `fx-snapshot.yml` | Snapshot built; failed in the engine suite, which picked a cancelled line in pounds as the line to check the rate on; the test now takes a line that is not cancelled |
 | 19 Nov 2026 | Second run of `fx-snapshot.yml` | Passed; pushed `fx/2026-11-19-2` |
 | 19 Nov 2026 | Negative controls: a planted error in each of the world checker, the parity test, the static checks and the smoke test | Each fails as it should |
+| 20 Nov 2026 | `node tools/check_world.mjs`: the world and the six scripts on every path | WORLD OK, 77 checks; SCRIPTS OK, 6 scripts, 38 paths |
+| 20 Nov 2026 | `node tests/engine.mjs` with GR (the guardrails call by call) and S (the scripts, with planted faults) | ENGINE OK, 388 checks |
+| 20 Nov 2026 | `node tests/unit.mjs`: the tool schemas within the strict limits, the storage rule with a planted control, the golden data current | UNIT OK, 58 checks |
+| 20 Nov 2026 | `node tests/live.mjs` against the scripted stand-ins: guard, rates, caps, record, entries | Every case passes; no request reaches a real host |
+| 20 Nov 2026 | `node tests/sims.mjs`: 16 runs along every decision path, the cluster dialog's three answers, the words | SIMS OK; every run offline, without a key |
+| 20 Nov 2026 | `node tests/accept.mjs` (the key) and `node tests/smoke.mjs board` (the board against the engine) | ACCEPT OK, 22 checks; SMOKE OK, board, 23 checks |
+| 20 Nov 2026 | `node tests/design.mjs series`, with ten planted bars in forbidden colours | DESIGN OK, 14 checks; every planted bar caught |
+| 20 Nov 2026 | `node tests/tokens.mjs` with the board's pairs | Three marks failed at first (the justified hatch in `--vc-warning-solid`, the cluster columns in `--vc-feature-border`); now drawn in `--vc-warning-text` and `--vc-feature-solid`, 83 pairs pass in both themes |
 
 ## 12. Acceptance checklist
 
@@ -235,5 +304,13 @@ figure a placeholder the engine fills at playback, held to the live guardrails b
 | AC-05 | The world: deterministic, 124 accounts, the scenarios with frozen figures, scenario 4 unflagged, the past case | M1 | `tools/check_world.mjs` |
 | AC-06 | Parity with exactly two adapted modules listed in REVIEW.md; the four shared tests with this app's values | M1 | `tests/parity.mjs`, `tests/tokens.mjs`, `tests/page-icon.mjs`, `tests/vici-files.mjs`, `tests/hexagon.mjs` |
 | AC-07 | The security policy, nothing from a third party, `pv.` storage keys | M1 | `tests/unit.mjs` static, `tests/smoke.mjs` storage |
-| AC-08 to AC-15, AC-20 | The live agent, the board, the simulations | M2 | Open |
+| AC-08 | The key: asked only for Live, checked, kept in this tab, never stored, exported, recorded or logged; Forget key; no frame | M2 | `tests/accept.mjs` key |
+| AC-09 | Every guardrail refused with a Guardrail line, against the scripted API stand-in | M2 | `tests/live.mjs` guard, `tests/engine.mjs` GR |
+| AC-10 | *Your confirmation* in merlot on Check, the rail never moving back; a failing or blocked rate leaves the bundled rates; a refreshed rate a labelled sensitivity | M2 | `tests/sims.mjs` confirmation, `tests/live.mjs` rates |
+| AC-11 | Never a 41st call, none once €3 is spent; the cost meter within 1e-9 | M2 | `tests/live.mjs` caps |
+| AC-12 | The six simulations offline without a key, on every decision path; scenario 4 ends with nothing to propose | M2 | `tests/sims.mjs` paths |
+| AC-13 | Every simulation script passes under the live guardrails | M2 | `tools/check_world.mjs`, `tests/engine.mjs` S |
+| AC-14 | The ladder and the portfolio chart equal the engine; every line opens its normalisation; the tables; series colours | M2 | `tests/smoke.mjs` board, `tests/live.mjs` entries, `tests/design.mjs` series |
+| AC-15 | No "saved"; approved savings "a year", realised "to date" | M2 | `tests/sims.mjs` words |
+| AC-20 | Victor runs one scenario live with his key; the audit export shows model, usage, rates and cost | M2 | Manual: Victor's run (the pull request lists the steps) |
 | AC-16 to AC-19, AC-21 to AC-23 | Exports, layout, design, accessibility, documents, review | M3 | Open |
