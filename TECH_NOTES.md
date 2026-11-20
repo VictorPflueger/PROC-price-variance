@@ -321,6 +321,9 @@ before it is kept, and its open data replays as "recorded" (`tests/live.mjs` rec
 | 20 Nov 2026 | M3, the live-site check: `tests/live_site.mjs` against this checkout served over http, and against a copy with `js/config.js` changed | Passes against the checkout (the files equal, scenario 1 to Done); fails against the changed copy, as it should |
 | 20 Nov 2026 | SAP field names of DATA_SOURCES.md section 6 (EKKO-INCO1, MARM, MARA-MFRPN), by web search | Verified in data-dictionary references and SAP's knowledge-base previews |
 | 20 Nov 2026 | M3, the page icon against the website's card: the shared `tests/page-icon.mjs` with the website at its pull request's head next to the app, and with the card's icon changed | Matches (`trend-down`, prototype); the changed icon is caught |
+| 20 Nov 2026 | M3, the ladder's line marks: `node tests/smoke.mjs board` with a click on each pair's first mark | At first the benchmark line took the clicks meant for the marks under it; it now lets them through, and a click on a mark opens that line (M3-1). SMOKE OK, board, 26 checks |
+| 20 Nov 2026 | M3, the independent review (AC-22): an agent that did not build the prototype reviewed commit `eb7a1b4` | 18 findings: 2 high, 11 medium, 5 low; its run of `run-all` passed 15 of 17 suites (R17, R18). Every finding fixed, each with its own test (REVIEW.md part 2) |
+| 20 Nov 2026 | M3, the review's fixes taken away one at a time: each fix's own app changes reversed on the branch's head, every other fix kept, and its tests run | Every named test failed without its fix, R1 to R17 (for example `tests/engine.mjs` GR 9 of 70, `tests/audit.mjs` R2a to R2d, `tests/layout.mjs` the decision, the tables, the cluster dialog and the bundle). `tools/check_world.mjs` does not read scenario 2's texts, so R4's guard is the S group; R12 was reversed by hand; R18's motion case passed three runs in a row |
 
 ## 12. Acceptance checklist
 
