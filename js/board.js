@@ -23,6 +23,15 @@ import { exportFileName, groupAnalysisCsv } from "./exports.js";
  * deps: { world, analyse(groupId, clusters) → analysis|null (the engine, for a group before its
  * pv_compare), pipeline (the value pipeline of the world's value log) }
  */
+// The width of a ladder label as the page draws it (the ladder's own font), for the label column.
+let measureCtx = null;
+function textWidth(text, px, bold) {
+  measureCtx ||= document.createElement("canvas").getContext("2d");
+  const family = getComputedStyle(document.documentElement).getPropertyValue("--vc-font-text").trim() || "sans-serif";
+  measureCtx.font = `${bold ? 600 : 400} ${px}px ${family}`;
+  return measureCtx.measureText(String(text)).width;
+}
+
 export function createBoard(root, { world, analyse, pipeline }) {
   const st = {
     view: "portfolio",
@@ -193,7 +202,7 @@ export function createBoard(root, { world, analyse, pipeline }) {
     if (st.table) { canvas.append(renderGroupTable(world, g.analysis, { compared: g.compared })); return; }
     const rect = canvas.getBoundingClientRect();
     const compact = rect.height > 0 && rect.height < 300;
-    const model = ladderModel(world, g.analysis, { compared: g.compared, marks: st.marks, size: { width: Math.max(420, rect.width - 8), height: Math.max(220, rect.height - 8), compact } });
+    const model = ladderModel(world, g.analysis, { compared: g.compared, marks: st.marks, size: { width: Math.max(420, rect.width - 8), height: Math.max(220, rect.height - 8), compact, textWidth } });
     // A row opens its pair's lines and contract; a line there opens its normalisation, with a way back.
     // A click on a line's mark opens that line at once, with the same way back to its pair's lines.
     const openLine = (id, el, lineId) => openPop(el, `Line ${lineId}: its normalisation`, normalisationContent(world, g.analysis, lineId, { onBack: () => openPair(id, el) }));

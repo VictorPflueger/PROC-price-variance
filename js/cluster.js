@@ -95,14 +95,17 @@ export function openClusterDialog(req, { onAnswer, plantName = (id) => id, perso
     size: "wide",
     className: "cluster-modal",
     dismissible: false,
+    // What decides the answer comes first: the agent's note, the evidence and the base unit, so they are
+    // in view with the buttons on a 1280 × 720 screen; the lines follow, each column whole (review R10).
     body: [
       h("div", { class: "cluster-proposal" }, h("span", { class: "vc-tag vc-tag--feature" }, "Proposed by the agent"), aiLabel("cluster")),
       req.note ? renderInline(req.note, h("p", { class: "cluster-note" })) : null,
-      h("div", { class: "cluster-cols" }, columns),
       h("h3", { class: "cluster-sub" }, "Evidence"),
       evidence,
       h("fieldset", { class: "cluster-base" }, h("legend", {}, "Base unit for the comparison"), radios),
-      msg
+      msg,
+      h("h3", { class: "cluster-sub" }, "The lines, by plant"),
+      h("div", { class: "cluster-cols" }, columns)
     ],
     footer: [reject, confirmSome, confirmAll]
   });

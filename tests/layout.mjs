@@ -1,17 +1,22 @@
 // Layout checks for a room and a laptop (AC-17), in both themes:
 //   viewports  at 1920×1080, 1600×900, 1536×864, 1366×768 and 1280×720, in every main state (idle; a
 //              decision waiting with the drawer open; the full ladder with a pair's lines and a line's
-//              normalisation open; the outbox; the run's end with the report; the tables; scenario 2's
-//              cluster dialog; the portfolio after a sweep; the Method dialog): no horizontal overflow;
-//              nothing on the board or the tiles cut to an ellipsis or a clamp; the ladder's texts inside
-//              the ladder, its row labels clear of the plot and its values clear of the marks; the header's
-//              badges clear of the tiles, the header within 140 px and the control bar on one row
+//              normalisation open; the outbox; the run's end with the report; the tables, the drawer open
+//              and hidden; scenario 2's cluster dialog; the portfolio after a sweep; the Method dialog;
+//              scenario 5's decision and its tender approved): no horizontal overflow, and nothing on the
+//              board or the tiles scrolling sideways; nothing on the board or the tiles cut to an ellipsis
+//              or a clamp; the ladder's texts inside the ladder, its row labels clear of the plot and its
+//              values clear of the marks; the header's badges clear of the tiles, the header within 140 px
+//              and the control bar on one row; at a decision, the recommended Approve in view and every
+//              showing card's actions with it; in the cluster dialog, the evidence, the base unit and the
+//              buttons in view (the review's R7 to R10)
 //   targets    every visible interactive element at least 40 px high and wide at 1920×1080 and
 //              1280×720, in every state above plus the intro, the scenario menu, the mode and key
 //              dialogs, the audit tab and Diagnostics (a checkbox inside its label counts as the label;
 //              a link inside a sentence is part of the prose)
-//   controls   the negative control: a planted overflow, a planted ellipsis on the board and a planted
-//              small target are each caught by the same measurements
+//   controls   the negative control: a planted overflow, a planted ellipsis on the board, a planted small
+//              target, a table scrolling sideways on the board, a decision and the cluster dialog's
+//              evidence pushed out of view are each caught by the same measurements
 // Usage: node tests/layout.mjs [case…]
 import path from "node:path";
 import { writeFile } from "node:fs/promises";
@@ -72,6 +77,48 @@ function layoutProblems() {
       const ellipsis = cs.textOverflow === "ellipsis" && cs.overflowX !== "visible" && el.scrollWidth > el.clientWidth + 1;
       const clamp = cs.webkitLineClamp && cs.webkitLineClamp !== "none" && el.scrollHeight > el.clientHeight + 1;
       if (ellipsis || clamp) out.push(`${name(el)} cut (${ellipsis ? "ellipsis" : "clamp"}): "${el.textContent.trim().replace(/\s+/g, " ").slice(0, 60)}"`);
+    }
+  }
+  // Nothing on the board or the tiles scrolls sideways: a table wider than its board hides figures behind a
+  // scroll (review R8).
+  for (const root of [document.getElementById("board"), document.getElementById("kpis")]) {
+    if (!root) continue;
+    for (const el of [root, ...root.querySelectorAll("*")]) {
+      if (el instanceof SVGElement || !shown(el)) continue;
+      if (/(auto|scroll)/.test(getComputedStyle(el).overflowX) && el.scrollWidth > el.clientWidth + 1) out.push(`${name(el)} scrolls sideways (${el.scrollWidth} px in ${el.clientWidth} px)`);
+    }
+  }
+  // A control in view: its centre on screen and not covered by anything else.
+  const inView = (el) => {
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return false;
+    const x = r.left + r.width / 2; const y = r.top + r.height / 2;
+    if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) return false;
+    const hit = document.elementFromPoint(x, y);
+    return !!hit && (hit === el || el.contains(hit));
+  };
+  // A decision waiting: the recommended option's Approve is in view, and so are the actions of every
+  // option card that shows at all (review R9).
+  const drawerBody = document.querySelector('#drawer[data-open="true"] .drawer-body');
+  const optionsPanel = document.getElementById("panel-options");
+  if (drawerBody && optionsPanel && shown(optionsPanel)) {
+    const B = drawerBody.getBoundingClientRect();
+    const pending = [...optionsPanel.querySelectorAll('.option-card[data-status=""]')];
+    const rec = optionsPanel.querySelector('.option-card[data-recommended="true"][data-status=""] [data-action="approve"]');
+    if (rec && !inView(rec)) out.push("decision: the recommended option's Approve is out of view");
+    for (const card of pending) {
+      const r = card.getBoundingClientRect();
+      if (r.bottom <= B.top + 1 || r.top >= B.bottom - 1) continue;
+      for (const b of card.querySelectorAll('.option-actions button, .option-actions select')) if (!inView(b)) out.push(`decision: option ${card.dataset.option} shows but its "${(b.textContent || b.getAttribute("aria-label") || "").trim().slice(0, 20)}" is out of view`);
+    }
+  }
+  // The cluster dialog: the evidence, the base unit and the buttons are in view with the dialog's first
+  // screen, before any scrolling (review R10).
+  const cluster = document.querySelector(".cluster-modal");
+  if (cluster && shown(cluster)) {
+    for (const sel of [".cluster-evidence li:last-child", ".cluster-base .cluster-base__option:last-child", '[data-action="confirm"]', '[data-action="reject"]']) {
+      const el = cluster.querySelector(sel);
+      if (el && !inView(el)) out.push(`cluster dialog: ${sel} is out of view`);
     }
   }
   // The ladder: texts inside it, row labels clear of the plot, values clear of the row's marks.
@@ -227,6 +274,8 @@ try {
         await atEveryViewport(page, "run's end", theme);
         await page.click(".table-toggle");
         await atEveryViewport(page, "group tables", theme);
+        await hideDrawer(page);
+        await atEveryViewport(page, "group tables, drawer hidden", theme);
         await page.click('.board-tools button[data-view="portfolio"]');
         await atEveryViewport(page, "portfolio tables", theme);
         await page.click(".table-toggle");
@@ -248,6 +297,19 @@ try {
         await sweep(s.page);
         await atEveryViewport(s.page, "portfolio after a sweep", theme);
         await done(s, `${theme} sweep`);
+      }
+      {
+        // A tender approved: the approved savings tile names its bundle discount (review R7).
+        const s = await newPage({ theme });
+        await startSimulation(s.page, "SC-PALLETS");
+        await s.page.waitForSelector('.option-card[data-option="B"] [data-action="approve"]', { timeout: 90000 });
+        await atEveryViewport(s.page, "scenario 5's decision (drawer open)", theme);
+        await s.page.click('.option-card[data-option="B"] [data-action="approve"]');
+        await s.page.waitForFunction(() => /bundle discount/.test(document.getElementById("kpi-approved-sub")?.textContent || ""), null, { timeout: 30000 });
+        const sub = await s.page.$eval("#kpi-approved-sub", (e) => e.textContent);
+        check(`${theme} bundle approved: the bundle discount is part of the approved figure, named before the later stages`, /^incl\. €[\d,]+ bundle discount; €[\d,]+ implemented · €[\d,]+ realised to date$/.test(sub), sub);
+        await atEveryViewport(s.page, "bundle approved", theme);
+        await done(s, `${theme} scenario 5`);
       }
     }
   }
@@ -349,7 +411,34 @@ try {
     await page.evaluate(() => document.getElementById("planted-cut").remove());
     await page.evaluate(() => { const b = document.createElement("button"); b.id = "planted-small"; b.textContent = "x"; Object.assign(b.style, { width: "20px", height: "20px", padding: "0" }); document.querySelector(".controls").appendChild(b); });
     check("controls: a planted small target is caught", (await small(page)).some((p) => /20×20/.test(p)));
+    await page.evaluate(() => document.getElementById("planted-small").remove());
+    // The review's checks: a table scrolling sideways on the board, a decision out of view, the cluster
+    // dialog's evidence pushed out of view.
+    await page.evaluate(() => {
+      const box = document.createElement("div");
+      box.id = "planted-scroll";
+      Object.assign(box.style, { overflowX: "auto", width: "200px" });
+      const wide = document.createElement("div");
+      Object.assign(wide.style, { width: "400px", height: "4px" });
+      box.appendChild(wide);
+      document.querySelector("#board .board-caption").appendChild(box);
+    });
+    check("controls: a planted table scrolling sideways on the board is caught", (await measure(page)).some((p) => /scrolls sideways/.test(p)));
+    await page.evaluate(() => document.getElementById("planted-scroll").remove());
+    await toDecision(page);
+    await settle(page);
+    check("controls: at a decision the recommended Approve is in view", !(await measure(page)).some((p) => /^decision:/.test(p)), (await measure(page)).join("; "));
+    await page.evaluate(() => { document.querySelector('#drawer .drawer-body').scrollTop = 0; const pad = document.createElement("div"); pad.id = "planted-pad"; pad.style.height = "900px"; document.getElementById("panel-options").prepend(pad); });
+    check("controls: a decision pushed out of view is caught", (await measure(page)).some((p) => /^decision: the recommended option's Approve is out of view/.test(p)));
     await done(s, "controls");
+    const c = await newPage({ width: 1280, height: 720 });
+    await startSimulation(c.page, "SC-CONSULT");
+    await c.page.waitForSelector(".cluster-modal", { timeout: 90000 });
+    await settle(c.page);
+    check("controls: the cluster dialog shows its evidence, base unit and buttons at 1280 × 720", !(await measure(c.page)).some((p) => /^cluster dialog/.test(p)), (await measure(c.page)).join("; "));
+    await c.page.evaluate(() => { const pad = document.createElement("div"); pad.style.height = "900px"; document.querySelector(".cluster-modal .cluster-proposal").before(pad); });
+    check("controls: the cluster dialog's evidence pushed out of view is caught", (await measure(c.page)).some((p) => /^cluster dialog: \.cluster-evidence/.test(p)));
+    await done(c, "controls (cluster)");
   }
 } finally {
   await browser.close();

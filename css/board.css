@@ -138,6 +138,9 @@
 .board-table caption { text-align: left; padding: 6px 0; font-weight: var(--vc-weight-semibold); color: var(--vc-text); }
 .board-table :is(th, td) { padding: 6px 9px; vertical-align: top; }
 .board-table .num { text-align: end; white-space: nowrap; }
+/* Headers wrap at spaces on a narrow board, so the table fits it instead of scrolling sideways; the
+   figures themselves never wrap (review R8: at 1280 × 720 the unexplained column was cut). */
+.board-table thead th, .board-table thead th.num { white-space: normal; overflow-wrap: normal; }
 
 /* ---- popovers: a line's normalisation, a pair's lines -------------------------------------------- */
 .board-pop { position: fixed; z-index: 900; max-height: calc(100vh - 24px); overflow: auto; padding: 12px 14px; box-shadow: var(--vc-shadow-lg); }
@@ -177,7 +180,7 @@
 .cluster-col__supplier { margin: 0 0 6px; color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); }
 .cluster-col__texts { margin: 0 0 6px; padding-left: 1.1em; font-size: var(--vc-font-size-sm); }
 .cluster-col__sum { margin: 0 0 6px; color: var(--vc-text-muted); font-size: var(--fs-xs); }
-.cluster-col__lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 150px; overflow: auto; }
+.cluster-col__lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .cluster-line { font-size: var(--fs-xs); }
 .cluster-line__label { display: flex; align-items: center; gap: 8px; min-height: 40px; width: 100%; cursor: pointer; }
 .cluster-line__label .vc-checkbox { flex: none; }
@@ -302,3 +305,7 @@
 :is(.alert-more, .report-full, .run-facts, .reasoning, .diag-section) > summary { display: flex; align-items: center; gap: 6px; min-height: 40px; cursor: pointer; list-style: none; }
 :is(.alert-more, .report-full, .run-facts, .diag-section) > summary::-webkit-details-marker { display: none; }
 :is(.alert-more, .report-full, .run-facts)[open] > summary > .vc-icon:first-child { transform: rotate(90deg); }
+
+/* The decision stays in view: a card taller than the drawer keeps its Approve and Reject (or the reason
+   and Accept) at the drawer's lower edge while any part of it shows (review R9). */
+.option-card > .option-actions { position: sticky; bottom: 0; z-index: 1; background-color: inherit; padding-block: 8px 2px; }

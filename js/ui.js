@@ -49,6 +49,19 @@ export function initUI() {
   // person, so the next live run's audit log carries it with the time it was made (resetting the log at
   // the run's start would otherwise drop it); a simulation plays at the defaults and leaves them pending.
   const pendingParamChanges = [];
+  // Opens the options and brings the recommended card into view: on a laptop the cards sit in two rows
+  // and are taller than the drawer, so its Approve could start out of sight (review R9).
+  const recommendedIntoView = () => document.querySelector('#panel-options .option-card[data-recommended="true"][data-status=""]')?.scrollIntoView({ block: "nearest" });
+  const showOptions = () => {
+    drawer.show("options");
+    requestAnimationFrame(recommendedIntoView);
+  };
+  // The cards reflow when the window changes size; while a decision waits, the recommended one comes back.
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { if (document.getElementById("drawer")?.dataset.open === "true") recommendedIntoView(); }, 150);
+  });
   const engine = () => ({ world, fx, params: activeParams() });
   const analyse = (groupId, clusters = []) => {
     const ctx = contextOf(world, ratesOf(fx), activeParams());
@@ -67,7 +80,7 @@ export function initUI() {
     scenarios,
     onPickScenario: (id) => pickScenario(id),
     onRunScenario: (id) => { pickScenario(id); start("scenario"); },
-    onOpenOptions: () => drawer.show("options"),
+    onOpenOptions: () => showOptions(),
     onOpenOutbox: () => drawer.show("outbox"),
     onOpenReport: (md) => showReport(md, { mode: getState().mode, simSource: getState().simSource, runId: getState().runId }),
     onOpenConfirmation: () => { if (openRequest && !confirmDialog) showConfirmation(openRequest); },
@@ -171,7 +184,7 @@ export function initUI() {
     confirmDialog?.close();
     confirmDialog = null;
   });
-  bus.on("options", () => drawer.show("options"));
+  bus.on("options", () => showOptions());
   bus.on("action_draft", () => drawer.show("outbox"));
   bus.on("confirmation_request", (ev) => { openRequest = ev.payload; showConfirmation(ev.payload); });
   bus.on("confirmation_decision", () => { openRequest = null; confirmDialog = null; });

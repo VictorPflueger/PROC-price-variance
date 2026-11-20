@@ -286,8 +286,23 @@ html { font-size: clamp(93.75%, 0.48vw + 50%, 112.5%); }
 /* A tile's unit after its figure ("a year"), smaller than the figure, so the figure keeps its size. */
 .kpi-unit { font-size: var(--vc-font-size-sm); font-weight: var(--vc-weight-medium); color: var(--vc-text-muted); margin-left: 4px; letter-spacing: 0; }
 
-/* Approved savings names three stages in its second line: its tile takes the room for them. */
+/* Approved savings names three stages in its second line: its tile takes the room for them. Its
+   second line wraps and is never cut; a bundle discount, part of the approved figure, takes a line of
+   its own above the later stages (review R7). */
 .kpi--wide.vc-stat { max-width: 340px; }
+#kpi-approved-sub.kpi-sub.vc-stat__note { white-space: normal; overflow: visible; text-overflow: clip; display: block; -webkit-line-clamp: none; line-clamp: none; }
+#kpi-approved-sub .kpi-sub-line { display: block; }
+#kpi-approved-sub .kpi-stage { white-space: nowrap; }
+@media (min-width: 1440px) and (max-width: 1700px) {
+  /* Room for "incl. €8,370 bundle discount" on one line, so the tile's second line takes three lines at
+     most and the header keeps its height. */
+  .kpi--wide.vc-stat { min-width: 205px; }
+}
+@media (max-width: 1439px) {
+  /* Narrower still, the header has no room to give: the line reads "incl. €8,370 bundle" on screen and
+     keeps "discount" for screen readers (the option card and the tile's tooltip say it in full). */
+  #kpi-approved-sub .kpi-bundle-word { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+}
 
 
 @media (max-width: 1300px) {

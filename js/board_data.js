@@ -70,7 +70,12 @@ export function lineLane(lines, x, cy, compact = false, rMax = PAIR_R_MAX) {
 export function ladderModel(world, analysis, { compared = false, marks = { lines: new Map(), pairs: new Map() }, size = {} } = {}) {
   const width = Math.max(420, size.width || 900);
   const compact = !!size.compact;
-  const labelW = Math.round(Math.min(300, Math.max(170, width * 0.27)));
+  // The label column fits its longest row label (the plant in 14 px semibold, the supplier in 12.5 px):
+  // measured by the page when it can (size.textWidth), estimated in Node; never more than 45 % of the width.
+  const textW = size.textWidth || ((text, px, bold) => text.length * px * (bold ? 0.6 : 0.55));
+  const ixL = indexOf(world);
+  const labelNeed = Math.max(0, ...analysis.pairs.map((p) => 8 + textW(city(world, p.plant), 14, true) + 6 + textW(ixL.supplier.get(String(p.supplier))?.name || String(p.supplier), 12.5, false) + 10));
+  const labelW = Math.round(Math.min(Math.max(300, width * 0.45), Math.max(170, width * 0.27, labelNeed)));
   const valueW = compact ? 150 : 176;
   const left = labelW + 12;
   const right = width - valueW - 12;
