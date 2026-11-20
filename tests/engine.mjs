@@ -508,6 +508,11 @@ if (chosen.includes("S")) {
     const whole = await playPath(D.WORLD, D.FX, DEFAULTS, S["SC-CONSULT"], { confirm: "confirmed", option: "recommended" });
     const h2 = whole.events.filter((e) => e.type === "options").pop()?.payload?.options?.find((o) => o.id === "H");
     truthy("S", "scenario 2 confirmed whole: option H names Birmingham as the plant it cannot move", !!h2 && /Birmingham stays as it is/.test(h2.residual_risk || ""), JSON.stringify(h2).slice(0, 200));
+    // The buyer notice of option H must not tell every moved plant that nothing justifies its price
+    // (review R16): in scenario 1, Lyon's urgent orders with a recorded reason are partly justified.
+    const gloves = await playPath(D.WORLD, D.FX, DEFAULTS, S["SC-GLOVES"], { option: "recommended" });
+    const notice = gloves.events.find((e) => e.type === "action_draft" && e.payload.type === "buyer_notice")?.payload?.body || "";
+    truthy("S", "scenario 1's buyer notice does not deny the reasons Lyon's urgent orders carry", gloves.errors.length === 0 && notice.length > 0 && !/without a documented reason/.test(notice) && /documented reason/.test(notice), notice.slice(0, 200));
   }
 }
 
