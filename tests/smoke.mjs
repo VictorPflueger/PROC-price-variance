@@ -530,6 +530,26 @@ try {
     });
     await startSimulationFor(page, "SC-GLOVES");
     await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { timeout: 90000 });
+    // Review R15: every Approve and Reject says which option or draft it decides, its name starting
+    // with the word on the button (WCAG 2.5.3), and no two decision buttons share a name.
+    const decisionNames = () => page.evaluate(() => [...document.querySelectorAll('#drawer [data-action="approve"], #drawer [data-action="reject"], #drawer [data-action="accept"]')]
+      .filter((b) => b.getClientRects().length)
+      .map((b) => {
+        const text = b.textContent.trim();
+        const opt = b.closest(".option-card");
+        const draft = b.closest(".action-card");
+        const recipient = (draft?.querySelector(".action-meta > span:nth-child(2)")?.textContent || "").replace(/^To: /, "").trim();
+        return {
+          name: (b.getAttribute("aria-label") || text).trim(),
+          text,
+          want: opt ? (opt.dataset.option === "accept" ? "Accept the variance" : `${text} option ${opt.dataset.option}: ${opt.querySelector(".option-title")?.textContent.trim()}`)
+            : draft ? `${text} draft: ${draft.querySelector(".action-subject")?.textContent.trim()} (to ${recipient})` : null
+        };
+      }));
+    const namedRight = (list) => list.length > 0 && list.every((b) => b.name === b.want && b.name.startsWith(b.text)) && new Set(list.map((b) => b.name)).size === list.length;
+    const optionNames = await decisionNames();
+    check("names: every option's Approve and Reject names its letter and title, starting with the word on the button, and no two share a name",
+      namedRight(optionNames) && optionNames.filter((b) => / option [A-Z]: /.test(b.name)).length >= 4, JSON.stringify(optionNames.slice(0, 3)));
     await page.click(".drawer-toggle");
     await page.waitForSelector('.ladder[data-compact="false"]', { timeout: 5000 });
     const ladder = await page.evaluate(() => ({
@@ -550,6 +570,13 @@ try {
     const bars = await page.evaluate(() => [...document.querySelectorAll("#board .bar-row")].map((r) => (r.querySelector(".bar-label")?.textContent || "").trim() && (r.querySelector(".bar-value")?.textContent || "").trim()));
     check("names: every bar of the portfolio has its label and its value as text", bars.length >= 4 && bars.every(Boolean), JSON.stringify(bars));
     check("names: every control and group on screen has a name (the portfolio in view)", (await unnamed()).length === 0, (await unnamed()).join(", "));
+    await page.click(".drawer-toggle");
+    await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
+    // Option H drafts a change request and a buyer notice: both wait for a decision at once.
+    await page.waitForFunction(() => document.querySelectorAll('.action-card[data-status="pending"] [data-action="approve"]').length >= 2, null, { timeout: 60000 });
+    const draftNames = (await decisionNames()).filter((b) => / draft: /.test(b.want || ""));
+    check("names: every draft's Approve and Reject names its subject and recipient, and no two share a name",
+      namedRight(draftNames) && draftNames.length >= 4, `${draftNames.length} buttons: ${JSON.stringify(draftNames).slice(0, 400)}`);
     await close(s, "names");
   }
 

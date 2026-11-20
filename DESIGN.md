@@ -151,6 +151,10 @@ The aim is a run that anyone can follow and complete without a mouse, without co
   because the rows and the Table view carry the same facts as text. The pair's popover is a named dialog;
   its line buttons say that they open the normalisation. Every bar of the portfolio and the value pipeline
   has its label and value as text (`tests/smoke.mjs` names).
+- **Every decision says what it decides.** An option's Approve and Reject are named with the option's
+  letter and title ("Approve option H: …"), a draft's with its subject and recipient ("Approve draft: …
+  (to …)"). Each name starts with the word on the button (WCAG 2.5.3), and no two decision buttons share
+  a name (`tests/smoke.mjs` names).
 - **Colour is never alone.** Every state has a word and a form of its own (section 3); contrast is checked
   for every pair the app draws in both themes (`tests/tokens.mjs`).
 - **Text that can grow.** The page is English (`lang="en"`); **Larger text** in the console's header
