@@ -287,7 +287,7 @@ export function createToolbox(ctx) {
   /** A tool call with its run events (tool_call, then tool_result), for either producer. */
   async function call(callId, name, input = {}) {
     if (!UI_BLOCKING_TOOLS.has(name)) ctx.onPhase(phaseForTool(name, ctx.getPhase(), ctx.entry));
-    emit("tool_call", { call_id: callId, name, input, plain: toolPlain(name, input, world), server: false });
+    emit("tool_call", { call_id: callId, name, input, plain: toolPlain(name, input, world, ctx.mode), server: false });
     if (ctx.beforeExecute) await ctx.beforeExecute(name);
     const out = await execute(name, input);
     if (ctx.isEnded?.()) throw ABORT;

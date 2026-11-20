@@ -228,6 +228,9 @@ if (chosen.includes("tools")) {
   const wrongType = await tb.execute("pv_normalise", { line_id: 4500010001 });
   check("tools", "a wrong type names the field and what it expects", wrongType.isError && /line_id: expected string/.test(wrongType.result.error), wrongType.result.error);
   check("tools", "a plain sentence for every tool call (js/tool_plain.js)", tools.every((t) => typeof toolPlain(t.name, {}, globalThis.WORLD) === "string"));
+  // A replay fetches no rate, so its console line says it replays one (review R14).
+  const rateLines = ["live", "authored", "recorded"].map((m) => toolPlain("open_ecb_rate", { currency: "GBP" }, globalThis.WORLD, m));
+  check("tools", "a rate request reads Fetches in Live, Replays a representative or recorded rate in a simulation", /^Fetches .* through Frankfurter$/.test(rateLines[0]) && /^Replays a representative .*not fetched/.test(rateLines[1]) && /^Replays .*recorded, not fetched again/.test(rateLines[2]) && !/Fetches/.test(rateLines[1] + rateLines[2]), rateLines.join(" | "));
   check("tools", "a result line for every tool (js/summaries.js)", tools.every((t) => summarizeToolResult(t.name, { ok: true }) !== "Result received"));
 }
 

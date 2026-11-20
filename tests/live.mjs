@@ -482,12 +482,20 @@ if (wanted("marks")) {
   ];
   const fake = createFakeClaude(script);
   const t = await newPage(fake);
+  // Every text the status pill shows during the run.
+  await t.context.addInitScript(() => {
+    window.__pill = new Set();
+    new MutationObserver(() => { const e = document.querySelector(".status-pill .text"); if (e) window.__pill.add(e.textContent); })
+      .observe(document, { subtree: true, childList: true, characterData: true });
+  });
   await startLive(t.page, { scenario: "SC-GLOVES" });
   const end = await waitEnd(t.page);
   expect("marks", "the run completes", /Done/.test(end), end);
   const lines = await guardLines(t.page);
   expect("marks", "Guardrail lines: the board marks were refused, three times", lines.filter((l) => /board mark was refused/.test(l)).length === 3, lines.join(" | "));
   const rows = await t.page.$$eval(".ladder .ladder-row", (els) => els.map((e) => ({ pair: e.dataset.pair, state: e.dataset.state, text: e.textContent })));
+  const pills = await t.page.evaluate(() => [...(window.__pill || [])]);
+  expect("marks", "a live run's status reads Calculating while the engine compares, never Simulating (review R6)", pills.includes("Calculating") && !pills.some((x) => /Simulating/.test(x)), pills.join(" | "));
   expect("marks", "no row reads approved or accepted, since nobody decided", rows.length > 0 && rows.every((r) => !["approved", "justified"].includes(r.state) && !/approved|accepted/.test(r.text)), JSON.stringify(rows.map((r) => [r.pair, r.state])));
   await finish("marks", t, fake);
 }

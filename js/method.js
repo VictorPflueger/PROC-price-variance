@@ -29,13 +29,19 @@ const fromInput = (p, text) => {
 };
 
 /**
- * Opens the dialog. deps: { params (js/params.js createParams), isRunning(), onChange(change) for the
- * audit, fx (window.FX), fetched: rates fetched in the current run [{ currency, date, per_eur, rate_to_eur, source }] }.
+ * Opens the dialog. deps: { params (js/params.js createParams), isRunning(), onScreen() → the parameters of
+ * the run on screen { values, mode } or null, onChange(change) for the audit, fx (window.FX), fetched:
+ * rates fetched in the current run [{ currency, date, per_eur, rate_to_eur, source }] }.
  */
-export function openMethod({ params, isRunning = () => false, onChange = () => {}, fx = globalThis.FX, fetched = [] } = {}) {
+export function openMethod({ params, isRunning = () => false, onScreen = () => null, onChange = () => {}, fx = globalThis.FX, fetched = [] } = {}) {
   const P = () => params.get();
-  const v = (key) => paramText(PARAMETERS.find((p) => p.key === key), P()[key]);
   const locked = isRunning();
+  // The method's text names the values the figures on screen were computed with: a run's own (a
+  // simulation's are the defaults), otherwise the person's for the next live run (review R11).
+  const run = onScreen();
+  const shown = run?.values || P();
+  const v = (key) => paramText(PARAMETERS.find((p) => p.key === key), shown[key]);
+  const differs = run ? PARAMETERS.filter((p) => run.values[p.key] !== P()[p.key]).length : 0;
 
   const section = (id, title, ...body) => h("section", { class: "method-section", "aria-labelledby": `method-${id}` }, h("h3", { id: `method-${id}` }, title), ...body);
   const list = (...items) => h("ul", { class: "method-list" }, items.map((t) => h("li", {}, t)));
@@ -133,10 +139,14 @@ export function openMethod({ params, isRunning = () => false, onChange = () => {
     refresh();
   });
   refresh();
+  const runNote = !run ? null
+    : run.mode === "simulation"
+      ? `${locked ? "This simulation runs" : "The simulation on screen ran"} at the defaults its script was written for, and the text above names them${differs ? `; the values below apply to the next live run` : ""}.`
+      : `${locked ? "This live run keeps" : "The live run on screen used"} the values it started with, and the text above names them${differs ? `; the values below apply to the next live run` : ""}.`;
   const paramsSection = section("params", "Parameters",
     h("p", { class: "method-param-note" }, locked
-      ? "Locked while the agent runs: a run keeps the values it started with."
-      : "Change a value and press Enter. A live run uses these values; a simulation always runs at the defaults its script was written for. Every change goes into the audit log, and the next run records the values it used."),
+      ? `Locked while the agent runs. ${runNote}`
+      : `Change a value and press Enter. A live run uses these values; a simulation always runs at the defaults its script was written for. Every change goes into the audit log, and the next run records the values it used.${runNote ? ` ${runNote}` : ""}`),
     table, h("div", { class: "method-param-actions" }, resetBtn, status));
 
   // ---- the exchange rates --------------------------------------------------------------------------------

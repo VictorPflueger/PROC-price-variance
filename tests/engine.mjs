@@ -491,6 +491,24 @@ if (chosen.includes("S")) {
     const r = await checkSimRun(D.WORLD, D.FX, DEFAULTS, make());
     truthy("S", `the checker catches ${what}`, r.errors.some((e) => expect.test(e)), r.errors.slice(0, 2).join(" | ") || "no error");
   }
+  // Scenario 2's texts follow the person's answer (review R4): confirmed in hours, the narration and the
+  // alert say the hour; split without Birmingham, option H no longer says Birmingham stays as it is.
+  {
+    const { playPath } = await import("../js/sim_check.js");
+    const texts = (r) => r.events.filter((e) => ["alert", "options", "report"].includes(e.type)).map((e) => JSON.stringify(e.payload)).join(" ");
+    const hour = await playPath(D.WORLD, D.FX, DEFAULTS, S["SC-CONSULT"], { confirm: "confirmed:other-unit", option: "recommended" });
+    const decided = hour.events.find((e) => e.type === "tool_result" && e.payload.name === "ui_confirm_cluster")?.payload?.result?.base_unit;
+    const said = JSON.stringify(S["SC-CONSULT"].steps);
+    truthy("S", "scenario 2 confirmed in hours: the alert says the hour, never the person-day, and the narration names the unit chosen", hour.errors.length === 0 && decided === "H" && /the hour/.test(texts(hour)) && !/person-day/.test(texts(hour)) && !/with the person-day as its base unit/.test(said), `${decided}; ${hour.errors.join(" | ")}; ${(texts(hour).match(/.{0,60}person-day.{0,40}/) || [""])[0]}`);
+    const req = hour.events.find((e) => e.type === "confirmation_request")?.payload;
+    const brum = req ? req.evidence.plants.indexOf("2010") : -1;
+    const split = await playPath(D.WORLD, D.FX, DEFAULTS, S["SC-CONSULT"], { confirm: `split:${brum}`, option: "recommended" });
+    const h = split.events.filter((e) => e.type === "options").pop()?.payload?.options?.find((o) => o.id === "H");
+    truthy("S", "scenario 2 split without Birmingham: option H says every plant moves, not that Birmingham stays", brum >= 0 && split.errors.length === 0 && !!h && !/Birmingham/.test(JSON.stringify(h)) && /Every plant above the benchmark moves/.test(h.residual_risk || ""), JSON.stringify(h || split.errors).slice(0, 240));
+    const whole = await playPath(D.WORLD, D.FX, DEFAULTS, S["SC-CONSULT"], { confirm: "confirmed", option: "recommended" });
+    const h2 = whole.events.filter((e) => e.type === "options").pop()?.payload?.options?.find((o) => o.id === "H");
+    truthy("S", "scenario 2 confirmed whole: option H names Birmingham as the plant it cannot move", !!h2 && /Birmingham stays as it is/.test(h2.residual_risk || ""), JSON.stringify(h2).slice(0, 200));
+  }
 }
 
 for (const f of failures) console.log(`FAIL  ${f}`);

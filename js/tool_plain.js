@@ -11,8 +11,11 @@ const PRODUCT_WORDS = {
   value_log: "approved options of the value log"
 };
 
-/** The sentence for one tool call, or null for a tool without one (the console then shows the name only). */
-export function toolPlain(name, input = {}, world = null) {
+/**
+ * The sentence for one tool call, or null for a tool without one (the console then shows the name only).
+ * mode: "live", "authored" or "recorded"; a replay fetches no rate, so it says what it replays (review R14).
+ */
+export function toolPlain(name, input = {}, world = null, mode = "live") {
   const i = input && typeof input === "object" ? input : {};
   const ix = world ? indexOf(world) : null;
   const plant = (id) => (ix?.plant.get(String(id))?.city || String(id)).replace(" am Main", "");
@@ -59,6 +62,8 @@ export function toolPlain(name, input = {}, world = null) {
     case "ui_confirm_cluster":
       return "Asks you to confirm whether these lines are the same service, and in which unit";
     case "open_ecb_rate":
+      if (mode === "authored") return `Replays a representative ECB reference rate for ${i.currency || "the currency"}${i.date ? ` of ${i.date}` : ""} (not fetched: a simulation calls no host)`;
+      if (mode === "recorded") return `Replays the ECB reference rate for ${i.currency || "the currency"}${i.date ? ` of ${i.date}` : ""} that the live run fetched (recorded, not fetched again)`;
       return `Fetches the ECB reference rate for ${i.currency || "the currency"}${i.date ? ` of ${i.date}` : ""} through Frankfurter`;
     case "ui_mark_board":
       return "Marks what it is looking at on the price board";

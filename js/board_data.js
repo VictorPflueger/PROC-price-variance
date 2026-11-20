@@ -12,7 +12,8 @@ import { unitPrice, eur, pct, qty } from "./format.js";
 import { indexOf } from "./erp.js";
 import { INCOTERM_GROUPS } from "./normalise.js";
 
-const groupOf = (incoterm) => Object.entries(INCOTERM_GROUPS).find(([, rules]) => rules.includes(incoterm))?.[0] || null;
+/** The Incoterms 2020 group of a rule (INCOTERM_GROUPS maps each rule to its group: FCA → F). */
+const groupOf = (incoterm) => INCOTERM_GROUPS[String(incoterm || "").toUpperCase()] || null;
 const city = (world, id) => (indexOf(world).plant.get(String(id))?.city || String(id)).replace(" am Main", "");
 
 /** Nice axis ticks for a range: about `count` ticks at 1, 2 or 5 times a power of ten. */

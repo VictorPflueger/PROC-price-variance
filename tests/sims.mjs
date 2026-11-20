@@ -51,7 +51,7 @@ async function newPage() {
         const yours = steps.find((s) => s.dataset.state === "yours");
         window.__rail.push({ reached, yours: yours ? `${yours.dataset.step}:${yours.textContent}` : null });
       }
-      for (const el of document.querySelectorAll(".kpi, .option-card, .action-card .action-meta, .bar-row, .board-caption, .ladder .row-value, .status-pill, .alert-card .alert-sev")) window.__texts.add(el.textContent.replace(/\s+/g, " ").trim());
+      for (const el of document.querySelectorAll(".kpi, .option-card, .action-card .action-meta, .bar-row, .board-caption, .ladder .row-value, .status-pill, .alert-card .alert-sev, #console .phase")) window.__texts.add(el.textContent.replace(/\s+/g, " ").trim());
       void order;
     };
     new MutationObserver(snap).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-state"] });
@@ -213,6 +213,9 @@ if (wanted("words")) {
   expect("words", "the approved savings tile always reads a year and realised to date", approvedTiles.length > 0 && approvedTiles.every((x) => /a year/.test(x) && /realised to date/.test(x)), approvedTiles.slice(0, 2).join(" | "));
   const cards = texts.filter((x) => /Savings a year/.test(x));
   expect("words", "option cards state savings a year", cards.length > 0);
+  // The run state of Calculate reads "Calculating": "Simulating" would name the replay mode (review R6).
+  const simulating = texts.filter((x) => /\bSimulating\b/.test(x));
+  expect("words", "no status or phase line reads Simulating; Calculate reads Calculating", simulating.length === 0 && texts.some((x) => /Calculating/.test(x)), simulating.slice(0, 2).join(" | "));
   checks += texts.length > 0 ? 0 : 0;
 }
 

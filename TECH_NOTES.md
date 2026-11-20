@@ -274,11 +274,16 @@ for a rate with its representative result, `board`, `alert`, `confirm` with a br
 person (confirmed, split, rejected), `propose` with the option texts and the decision loop, `draft`,
 `awaitApprovals`, `report`, `if` on a filled variable, and `expect: "refused"` on a step that shows a
 guardrail at work (scenario 3's first alert). Every figure is a placeholder the engine fills at playback
-(M2-2); open data is replayed and labelled "representative". Scenario 4 ends with `nothing_found`.
+(M2-2); open data is replayed and labelled "representative", and the console says a replayed rate is
+replayed, not fetched. Scenario 4 ends with `nothing_found`. Since the review (R4) a text may depend on the
+person's answer, `{ if: "<placeholder>", then: "…", else: "…" }`: scenario 2 names the base unit the person
+chose (`{{cluster.base_unit_name}}`) and words option H's residual risk by the plants it cannot move
+(`{{option.H.not_covered}}`, empty when it moves them all).
 
 `tools/check_world.mjs` and `tests/engine.mjs` (group S) play every script on every path with an automatic
 person through the live toolbox (AC-13): approving the recommendation, rejecting it and approving another,
-accepting the variance, and each answer to scenario 2's cluster. A script fails when a step is refused that
+accepting the variance, and each answer to scenario 2's cluster: confirmed in each base unit offered, split
+without each plant in turn, rejected (62 paths since the review's R4). A script fails when a step is refused that
 should not be, a placeholder stays unresolved, a figure is typed, the alert comes before its evidence,
 the contract lookup or the hypothesis is missing, or fewer than eight calls precede the decision; the
 group S cases plant each fault and must catch it.

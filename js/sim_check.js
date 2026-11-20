@@ -10,7 +10,7 @@
 //     calls before the first decision (or before the report, for an honest negative);
 //   - the run ends with a report whose outcome follows the person's decision.
 // Paths: approve the recommendation, approve each other option, reject the recommendation then approve
-// the next, reject every option then accept, accept; for a cluster also the confirmed, split and
+// the next, reject every option then accept, accept; for a cluster also the confirmed (in either base unit), split (without each plant in turn) and
 // rejected answers. Pure module: no DOM, no network.
 
 import { createToolbox } from "./tools.js";
@@ -20,7 +20,10 @@ import { bestByNet } from "./guards.js";
 
 export const MIN_CALLS_BEFORE_DECISION = 8;
 const OPTION_PLANS = ["recommended", "other:0", "other:1", "reject-then-approve", "reject-all-then-accept", "accept"];
-const CONFIRM_PLANS = ["confirmed", "split", "rejected"];
+// The person's answers to a cluster: confirmed in the proposed base unit and in the other one offered
+// (review R4: hours, not person-days), split leaving out each plant in turn (a split without the plant an
+// option cannot cover changes what the option may say), and rejected.
+const CONFIRM_PLANS = ["confirmed", "confirmed:other-unit", "split:0", "split:1", "split:2", "split:3", "rejected"];
 
 /** Checks every preset scenario's script. Returns { checks: [{ name, ok, detail }], paths, scripts }. */
 export async function checkSimRuns(world, fx, params, simRuns = {}, scenarios = []) {
@@ -78,8 +81,8 @@ export async function checkSimRun(world, fx, params, def) {
 
 const describe = (plan) => [plan.confirm ? `cluster ${plan.confirm}` : null, `options ${plan.option}`].filter(Boolean).join(", ");
 
-/** One path through a script, with an automatic person. */
-async function playPath(world, fx, params, def, plan) {
+/** One path through a script, with an automatic person (exported for the tests). */
+export async function playPath(world, fx, params, def, plan) {
   const errors = [];
   const events = [];
   const drafts = new Map();
@@ -128,11 +131,17 @@ async function playPath(world, fx, params, def, plan) {
       const c = confirmation;
       confirmation = null;
       if (plan.confirm === "rejected") return { type: "confirmation_decision", payload: { request_id: c.request_id, decision: "rejected" } };
-      if (plan.confirm === "split") {
-        // Leave out the lines of the last plant the candidate lists (a presenter's typical split).
-        const drop = c.evidence.plants[c.evidence.plants.length - 1];
+      if (String(plan.confirm).startsWith("split:")) {
+        // Leave out the lines of one plant the candidate lists (a plan beyond its plants is skipped).
+        const drop = c.evidence.plants[Number(plan.confirm.split(":")[1])];
+        if (!drop) skipped = true;
         const keep = c.lines.filter((l) => l.plant !== drop).map((l) => l.id);
         return { type: "confirmation_decision", payload: { request_id: c.request_id, decision: "split", base_unit: c.proposed_base_unit, line_ids: keep } };
+      }
+      if (plan.confirm === "confirmed:other-unit") {
+        const other = (c.base_units || []).find((u) => u !== c.proposed_base_unit);
+        if (!other) skipped = true;
+        return { type: "confirmation_decision", payload: { request_id: c.request_id, decision: "confirmed", base_unit: other || c.proposed_base_unit } };
       }
       return { type: "confirmation_decision", payload: { request_id: c.request_id, decision: "confirmed", base_unit: c.proposed_base_unit } };
     }

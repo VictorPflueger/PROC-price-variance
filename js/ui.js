@@ -114,6 +114,9 @@ export function initUI() {
     onMethod: () => openMethod({
       params,
       isRunning: () => isRunning(getState()),
+      // The parameters of the run on screen (running or finished), so the method's text names the values
+      // its figures were computed with (review R11).
+      onScreen: () => (runParams ? { values: runParams, mode: getState().mode } : null),
       onChange: (change) => {
         const made = { ...change, at: new Date().toISOString() };
         pendingParamChanges.push(made);
@@ -177,7 +180,8 @@ export function initUI() {
     const ix = indexOf(world);
     confirmDialog = openClusterDialog(req, {
       plantName: (id) => `${(ix.plant.get(id)?.city || id).replace(" am Main", "")} (${id})`,
-      personDayHours: params.get().person_day_hours,
+      // The run's own value: a simulation runs at the defaults, whatever the person set for live runs (review R11).
+      personDayHours: activeParams().person_day_hours,
       onAnswer: (answer) => {
         confirmDialog = null;
         if (!isRunning(getState())) return notice("warn", "This run has ended. Start a new run to confirm a cluster.");

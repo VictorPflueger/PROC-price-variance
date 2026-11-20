@@ -256,6 +256,16 @@ try {
     check("board: the ladder has the engine's pairs", rows.length === a.pairs.length && a.pairs.every((p) => rows.some((r) => r.pair === p.id)), `${rows.length} vs ${a.pairs.length}`);
     const badPairs = rows.filter((r) => { const p = a.pairs.find((x) => x.id === r.pair); return !p || !close9(p.price, r.price) || !close9(p.unexplained, r.unexplained); });
     check("board: every pair's price and unexplained euros equal the engine's", badPairs.length === 0, JSON.stringify(badPairs.slice(0, 3)));
+    // Each row names the Incoterms rules of its lines that leave the main carriage unpaid (groups E and F),
+    // as the data has them (review R3: Birmingham's FCA was missing).
+    const tagRows = await s.page.$$eval(".ladder .ladder-row", (els) => els.map((e) => ({ pair: e.dataset.pair, tags: e.querySelector(".row-tags")?.textContent || "" })));
+    const lineRule = new Map(D.WORLD.po_line.map((l) => [l.id, l.incoterm]));
+    const wrongTags = a.pairs.map((p) => {
+      const rules = [...new Set(p.lines.map((id) => lineRule.get(id)).filter((r) => ["E", "F"].includes(INCOTERMS_2020[r])))];
+      const shown = tagRows.find((r) => r.pair === p.id)?.tags || "";
+      return rules.every((r) => shown.includes(r)) && !/null|undefined/.test(shown) ? null : `${p.id}: "${shown}" lacks ${rules.join(", ")}`;
+    }).filter(Boolean);
+    check("board: every row names the E and F Incoterms rules of its lines", wrongTags.length === 0 && a.pairs.some((p) => p.lines.some((id) => INCOTERMS_2020[lineRule.get(id)] === "F")), wrongTags.join(" | "));
     const bench = await s.page.$eval(".ladder .ladder-benchmark", (e) => ({ price: e.dataset.price, pair: e.dataset.pair }));
     check("board: the benchmark line is the engine's benchmark", close9(bench.price, a.benchmark.price) && bench.pair === a.benchmark.pair, JSON.stringify(bench));
     const above = a.pairs.filter((p) => p.unexplained > 0);
@@ -587,6 +597,9 @@ try {
     await page.waitForSelector(".method-modal");
     const locked = await page.evaluate(() => [...document.querySelectorAll(".method-params input")].every((i) => i.disabled) && /Locked while the agent runs/.test(document.querySelector(".method-param-note").textContent));
     check("method: while a run is in progress the parameters are locked and say so", locked);
+    // The text names the values the run on screen uses: a simulation's defaults (review R11).
+    const during = await page.evaluate(() => ({ text: [...document.querySelectorAll(".method-modal .method-section:not([aria-labelledby='method-params'])")].map((x) => x.textContent).join(" "), note: document.querySelector(".method-param-note").textContent }));
+    check("method: during a simulation the text names the defaults it runs at, and says so", /€5,000 a year/.test(during.text) && !/€4,000 a year/.test(during.text) && /This simulation runs at the defaults/.test(during.note) && /next live run/.test(during.note), `${during.note} | ${(during.text.match(/Flagged:[^.]*/) || [""])[0]}`);
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => /Done|No findings/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 90000 });
     const audit = await page.evaluate(async () => JSON.parse((await import("./js/audit.js")).buildAuditExport()));
@@ -598,10 +611,23 @@ try {
     await page.waitForSelector(".method-modal");
     const kept = await page.$eval('.method-params input[data-param="materiality_eur"]', (i) => ({ value: i.value, disabled: i.disabled }));
     check("method: the person's value is kept for the next live run, editable again after the run", kept.value === "4000" && !kept.disabled, JSON.stringify(kept));
+    const after = await page.evaluate(() => document.querySelector(".method-param-note").textContent);
+    check("method: after the run it says the figures on screen came at the defaults", /The simulation on screen ran at the defaults/.test(after), after);
     await page.click(".method-reset");
     const reset = await page.$eval('.method-params input[data-param="materiality_eur"]', (i) => i.value);
     check("method: Reset to the defaults restores them", reset === "5000", reset);
+    // The cluster dialog of a simulation offers the person-day the simulation uses, not the person's value.
+    await page.fill('.method-params input[data-param="person_day_hours"]', "10");
+    await page.keyboard.press("Enter");
     await page.keyboard.press("Escape");
+    await page.click("#btn-reset");
+    await page.click('.scenario-pick__item[data-id="SC-CONSULT"]');
+    await page.click("#btn-start");
+    await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
+    await page.waitForSelector(".cluster-modal .cluster-base__option", { timeout: 90000 });
+    const unit = await page.$$eval(".cluster-modal .cluster-base__option", (els) => els.map((e) => e.textContent.trim()));
+    check("method: a simulation's cluster dialog offers its own person-day (8 hours), not the person's 10 (review R11)", unit.some((u) => /person-day \(8 hours\)/.test(u)) && !unit.some((u) => /10 hours/.test(u)), unit.join(" | "));
+    await page.click('.cluster-modal [data-action="reject"]');
     await close(s, "method");
   }
 } finally {

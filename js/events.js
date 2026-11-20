@@ -36,7 +36,9 @@ export const RUN_STATES = {
   scanning: "Scanning",
   diagnosing: "Diagnosing",
   verifying: "Verifying",
-  simulating: "Simulating",
+  // The state keeps the shell's name (the rail maps it to Calculate); its label must not say "Simulating",
+  // which would read as the replay mode in a live run (review R6).
+  simulating: "Calculating",
   options: "Options",
   awaiting_approval: "Awaiting approval",
   executing: "Executing",
