@@ -152,7 +152,7 @@ give the same bytes (AC-05):
 
 The world holds the four plants, 132 suppliers (the 124 accounts and eight additions from 80001: seven in
 Birmingham invoicing in pounds and a distributor in Lyon), 12 buyers shown by role and team, 64 materials,
-24 contracts, 1,538 order lines (1,536 in the window, two of the baseline's before it) and two value-log
+24 contracts, 1,540 order lines (1,538 in the window, two of the baseline's before it) and two value-log
 entries. DATA_SOURCES.md section 4 lists each planted scenario.
 
 ## 6. Front-end, fonts and browser security

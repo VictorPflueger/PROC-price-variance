@@ -43,7 +43,7 @@ value.
 | 124 supplier accounts | Rebate Hunter's fictional vendor accounts outside its five real corporate groups, one per duplicate-name group (`tools/source/accounts.json`); ids, names, cities, countries, currencies and categories kept, tax ids and bank digits dropped |
 | Eight added accounts, ids from 80001 | Invented here: seven in the Birmingham area invoicing in pounds, and a distributor in Lyon |
 | Material groups (fifteen, two levels) | Invented here (`tools/source/material_groups.json`), shared with the Data Quality Agent |
-| 64 materials, 24 contracts, 1,538 order lines, 12 buyers | Invented by `tools/build_world.mjs` from a fixed seed; buyers by role and team, given name and initial only |
+| 64 materials, 24 contracts, 1,540 order lines, 12 buyers | Invented by `tools/build_world.mjs` from a fixed seed; buyers by role and team, given name and initial only |
 | Order texts | In the language of the plant that bought: German in Frankfurt and Duisburg, French in Lyon, English in Birmingham |
 | The shoe's manufacturer and part number (Brekholt, BH-7730-S3) | Invented; no maker of that name found on 19 Nov 2026 |
 
