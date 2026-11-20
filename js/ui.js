@@ -1,54 +1,271 @@
-// UI orchestrator of version 0.1.0: builds the header tiles, the control bar, the price board's engine
-// check, the console and the drawer, from the world, the rates and the engine running in the page.
-// Version 0.2.0 adds the run producers (the live agent and the simulation player) and their events.
+// UI orchestrator: builds the components, wires the controls and dialogs, starts the run producers (the
+// live agent and the simulation player) and turns run events into drawer and state changes. The board,
+// the console, the tiles and the drawer follow the run events themselves; the UI never branches on which
+// producer is running, and only the mode badge reads the mode (Rebate Hunter's orchestration).
 
-import { createKpis } from "./kpi.js";
-import { createControls } from "./controls.js";
+import { bus, newRunId } from "./events.js";
+import { getState, setState, subscribe, isRunning, isFinished } from "./state.js";
 import { createBoard } from "./board.js";
 import { createConsole } from "./console.js";
+import { createKpis } from "./kpi.js";
 import { createDrawer } from "./drawer.js";
+import { createOptionsPanel } from "./options_panel.js";
+import { createOutbox } from "./outbox.js";
+import { createAuditPanel } from "./audit_panel.js";
+import { resetAudit } from "./audit.js";
+import { createControls } from "./controls.js";
+import { chooseMode, askApiKey, askCustomScenario, showReport } from "./dialogs.js";
+import { openClusterDialog } from "./cluster.js";
+import { openDiagnostics } from "./diagnostics_view.js";
 import { openIntro, introSeen } from "./intro.js";
-import { scanWorld, worldPipeline } from "./world.js";
-import { DEFAULTS } from "./params.js";
-import { UI } from "./config.js";
+import { createSimulationPlayer } from "./simulation.js";
+import { createLiveAgent } from "./agent.js";
+import { hasKey, forgetKey } from "./keystore.js";
+import { worldPipeline, contextOf, ratesOf } from "./world.js";
+import { buildGroups } from "./groups.js";
+import { analyseGroup } from "./variance.js";
+import { createParams } from "./params.js";
+import { indexOf } from "./erp.js";
+import { MODELS } from "./config.js";
 import { h, withTooltip } from "./dom.js";
 import { icon } from "./icons.js";
+import { dateWithYear } from "./format.js";
+
+const modelLabel = (id) => MODELS.find((m) => m.id === id)?.label || id || null;
 
 export function initUI() {
   const world = window.WORLD;
   const fx = window.FX;
   const scenarios = window.SCENARIOS || [];
-  const { rows } = scanWorld(world, fx);
+  const byId = (id) => scenarios.find((s) => s.id === id);
+  // The method's parameters: the defaults, locked in Simulation (the Method panel edits them in Live, M3).
+  const params = createParams({ locked: false });
+  const engine = () => ({ world, fx, params: params.get() });
+  const analyse = (groupId, clusters = []) => {
+    const ctx = contextOf(world, ratesOf(fx), params.get());
+    const g = buildGroups(world, ctx, { clusters }).find((x) => x.id === groupId);
+    return g ? analyseGroup(g, ctx) : null;
+  };
   const pipeline = worldPipeline(world, fx);
+  setState({ keyPresent: hasKey() });
 
-  createKpis(document.getElementById("kpis"), { pipeline });
-  const board = createBoard(document.getElementById("board"), { rows, scenarios, fx, params: DEFAULTS });
-  let consoleUI = null;
-  const pick = (id) => { board.focus(id); consoleUI?.mark(id); };
-  const controls = createControls(document.getElementById("controls"), { scenarios, initial: UI.defaultScenario, onScenario: pick });
-  consoleUI = createConsole(document.getElementById("console"), { scenarios, onPick: (id) => controls.setScenario(id) });
-  pick(UI.defaultScenario);
+  // ---- components ------------------------------------------------------------------------------
+  const badge = document.getElementById("mode-badge");
+  const board = createBoard(document.getElementById("board"), { world, analyse, pipeline });
+  let confirmDialog = null;
+  let openRequest = null;
+  const consoleUI = createConsole(document.getElementById("console"), {
+    scenarios,
+    onPickScenario: (id) => pickScenario(id),
+    onRunScenario: (id) => { pickScenario(id); start("scenario"); },
+    onOpenOptions: () => drawer.show("options"),
+    onOpenOutbox: () => drawer.show("outbox"),
+    onOpenReport: (md) => showReport(md, { mode: getState().mode, simSource: getState().simSource }),
+    onOpenConfirmation: () => { if (openRequest && !confirmDialog) showConfirmation(openRequest); },
+    onSaveSimulation: async () => {
+      const r = await auditPanel.saveSimulation();
+      showBanner({ level: r.ok ? "info" : "warn", title: r.ok ? "Run saved as simulation" : "Could not save the run", text: r.message, timeout: r.ok ? 9000 : 0 });
+    }
+  });
+  const kpis = createKpis(document.getElementById("kpis"), { pipeline });
+  const drawer = createDrawer(document.getElementById("drawer"), { onToggle: () => setTimeout(() => board.invalidate(), 260) });
+  const optionsPanel = createOptionsPanel(drawer.panel("options"), {
+    onDecision: (d) => {
+      if (!isRunning(getState())) return notice("warn", "This run has ended. Start a new run to take a decision.");
+      bus.emit("option_decision", { ...d, by: "user" });
+    },
+    onCount: (n, attention) => drawer.setCount("options", n, attention)
+  });
+  const outbox = createOutbox(drawer.panel("outbox"), {
+    onDecision: (d) => {
+      if (!isRunning(getState())) return notice("warn", "This run has ended. Start a new run to approve drafts.");
+      bus.emit("action_decision", { ...d, by: "user" });
+    },
+    onCount: (n, attention) => drawer.setCount("outbox", n, attention)
+  });
+  const auditPanel = createAuditPanel(drawer.panel("audit"), { onCount: (n) => drawer.setCount("audit", n), getEngine: engine });
+  const player = createSimulationPlayer({ getSpeed: () => getState().speed, getWorld: () => world, getFx: () => fx, getParams: () => params.get() });
+  const agent = createLiveAgent({
+    getWorld: () => world, getFx: () => fx, getParams: () => params.get(),
+    onKeyRejected: () => { forgetKey(); setState({ keyPresent: false }); }
+  });
 
-  const drawer = createDrawer(document.getElementById("drawer"));
-  const empty = (title, text) => h("div", { class: "drawer-empty" }, h("p", { class: "drawer-empty-title" }, title), h("p", {}, text));
-  drawer.panel("options").append(empty("No options yet", "The options appear here once the agent has calculated a group: savings a year, one-off cost, days to the first saving and the variance left. The agent arrives in version 0.2.0."));
-  drawer.panel("outbox").append(empty("Draft. Nothing is sent.", "Drafts appear here only after you approve an option, and wait for your approval. Nothing ever leaves this page."));
-  drawer.panel("audit").append(empty("No run recorded", "Every event of a run, every model call and every decision is logged here and exports as JSON."));
+  const controls = createControls(document.getElementById("controls"), scenarios, {
+    onStart: () => start(getState().entry === "custom" ? "custom" : "scenario"),
+    onLiveScan: () => start("sweep"),
+    onSelectScenario: (id) => pickScenario(id),
+    onSelectCustom: async () => {
+      const text = await askCustomScenario(getState().customText);
+      if (text) setState({ entry: "custom", customText: text });
+    },
+    onSelectModel: (id) => setState({ model: id }),
+    onSpeed: (n) => setState({ speed: n }),
+    onAbort: () => abort("Stopped by the user."),
+    onReset: () => resetWorkspace(),
+    onDiagnostics: () => openDiagnostics({ params: params.get() })
+  });
 
-  // "How it works" in the header, beside the mode badge; on small laptops it keeps only its icon, and
-  // its tooltip names it.
+  function pickScenario(id) {
+    setState({ scenarioId: id, entry: "scenario" });
+    consoleUI.setScenario(id);
+  }
+  consoleUI.setScenario(getState().scenarioId);
+
+  // ---- intro window: "How it works" in the header, and once by itself on a first visit ---------
   const aboutBtn = h("button", {
     class: "vc-button vc-button--secondary about-btn", type: "button", id: "btn-about",
     title: "What the Price Variance Agent does, how it works and why it pays off"
   }, icon("info", 18), h("span", { class: "btn-text" }, "How it works"));
-  aboutBtn.addEventListener("click", () => openIntro());
-  document.getElementById("mode-badge").after(withTooltip(aboutBtn, "How it works", { below: true }));
-  return {
-    introOnFirstVisit() { if (!introSeen()) openIntro(); }
+  aboutBtn.addEventListener("click", () => showIntro());
+  badge.after(withTooltip(aboutBtn, "How it works", { below: true }));
+
+  function showIntro() {
+    const s = getState();
+    if (isRunning(s)) return openIntro({});
+    return openIntro({ startLabel: isFinished(s) ? "New run" : "Start agent", onStart: () => start(getState().entry === "custom" ? "custom" : "scenario") });
+  }
+
+  // ---- state → view ----------------------------------------------------------------------------
+  const render = (s) => {
+    controls.update(s, { scenarioLabel: byId(s.scenarioId)?.short || "Choose" });
+    badge.dataset.mode = s.mode || "none";
+    badge.className = s.mode === "live" ? "vc-tag vc-tag--solid mode-badge" : "vc-tag mode-badge";
+    badge.replaceChildren(...(s.mode === "live"
+      ? [h("span", { class: "mode-dot", "aria-hidden": "true" }), "LIVE"]
+      : s.mode === "simulation" ? ["SIMULATION"] : ["No run active"]));
+    badge.title = s.mode === "live" ? "Live agent: real model calls on your API key"
+      : s.mode === "simulation" ? "Simulation: authored replay, no model calls" : "Choose a mode with Start agent";
   };
+  subscribe(render);
+  render(getState());
+
+  // ---- run events → UI effects -------------------------------------------------------------------
+  bus.on("state_change", (ev) => setState({ runState: ev.payload.state }));
+  bus.on("run_end", (ev) => {
+    const st = ev.payload.status;
+    setState({ runState: st === "done" || st === "no_findings" ? "done" : st === "incomplete" ? "stopped" : st });
+    openRequest = null;
+    confirmDialog?.close();
+    confirmDialog = null;
+  });
+  bus.on("options", () => drawer.show("options"));
+  bus.on("action_draft", () => drawer.show("outbox"));
+  bus.on("confirmation_request", (ev) => { openRequest = ev.payload; showConfirmation(ev.payload); });
+  bus.on("confirmation_decision", () => { openRequest = null; confirmDialog = null; });
+
+  function showConfirmation(req) {
+    const ix = indexOf(world);
+    confirmDialog = openClusterDialog(req, {
+      plantName: (id) => `${(ix.plant.get(id)?.city || id).replace(" am Main", "")} (${id})`,
+      personDayHours: params.get().person_day_hours,
+      onAnswer: (answer) => {
+        confirmDialog = null;
+        if (!isRunning(getState())) return notice("warn", "This run has ended. Start a new run to confirm a cluster.");
+        bus.emit("confirmation_decision", { ...answer, by: "user" });
+      }
+    });
+  }
+
+  // ---- run control -------------------------------------------------------------------------------
+  async function start(entry) {
+    const s = getState();
+    if (isRunning(s)) return;
+    const scenario = byId(getState().scenarioId);
+    const runLabel = entry === "sweep" ? "Live sweep: every comparable group ranked, the first flagged one investigated (no tip)"
+      : entry === "custom" ? `Custom what-if: ${getState().customText}`
+        : `Scenario ${scenario?.number}: ${scenario?.title}`;
+    let mode = "live";
+    if (entry !== "sweep") {
+      mode = await chooseMode({ runLabel, simBlocked: entry === "custom" ? "Custom what-ifs need the live agent: free text has no scripted replay." : null });
+      if (!mode) return;
+    }
+    if (mode === "key") {
+      const ok = await askApiKey({});
+      setState({ keyPresent: hasKey() });
+      if (!ok) return;
+      mode = "live";
+    }
+    // The key is asked for only when a live run starts (AC-08).
+    if (mode === "live" && !hasKey()) {
+      const ok = await askApiKey({});
+      setState({ keyPresent: hasKey() });
+      if (!ok) return;
+    }
+    begin(mode, entry, scenario);
+  }
+
+  function begin(mode, entry, scenario) {
+    const s = getState();
+    const run_id = newRunId();
+    const model = MODELS.find((m) => m.id === s.model) || MODELS[0];
+    resetWorkspace({ keepMode: true, silent: true });
+    // Simulation keeps the parameters at their defaults, so the scripted runs stay valid.
+    if (mode === "simulation") params.reset();
+    setState({ mode, runState: "scanning", runId: run_id });
+    bus.beginRun({ run_id, mode });
+    const title = entry === "sweep" ? "Live sweep for unexplained price variance" : entry === "custom" ? "Custom what-if" : `Scenario ${scenario.number}: ${scenario.title}`;
+    const def = mode === "simulation" ? window.SIM_RUNS?.[scenario?.id] : null;
+    const recorded = def?.source === "recorded";
+    setState({ simSource: mode === "simulation" ? (recorded ? "recorded" : "authored") : null });
+    bus.emit("run_start", {
+      run_id, mode, entry, title,
+      scenario_id: entry === "scenario" ? scenario.id : null,
+      seed: entry === "scenario" ? scenario.seed : entry === "custom" ? s.customText : null,
+      model: mode === "live" ? model.id : null,
+      model_label: mode === "live" ? model.label : null,
+      ...(mode === "simulation" ? {
+        sim_source: recorded ? "recorded" : "authored",
+        ...(recorded ? { recorded_on: def.recorded?.at ? dateWithYear(def.recorded.at) : null, recorded_model: modelLabel(def.recorded?.model) } : {})
+      } : {})
+    });
+    if (mode === "simulation") {
+      if (!def) {
+        bus.emit("notice", { level: "error", text: `No simulation script found for “${scenario?.title}”. Check that data/sim_runs.js is complete, or run Diagnostics.` });
+        bus.emit("run_end", { status: "error", reason: "No simulation script for this scenario." });
+        return;
+      }
+      player.play(def, { scenario: scenario.id });
+      return;
+    }
+    agent.run({ entry, scenario, customText: s.customText, modelId: model.id });
+  }
+
+  function abort(reason) {
+    if (player.isActive()) player.abort(reason);
+    if (agent.isActive()) agent.abort(reason);
+  }
+
+  function resetWorkspace({ keepMode = false } = {}) {
+    if (player.isActive()) player.abort("Reset by the user.");
+    if (agent.isActive()) agent.abort("Reset by the user.");
+    bus.endRun();
+    confirmDialog?.close();
+    confirmDialog = null;
+    openRequest = null;
+    consoleUI.reset();
+    board.reset();
+    kpis.reset();
+    optionsPanel.reset();
+    outbox.reset();
+    resetAudit();
+    auditPanel.refresh();
+    drawer.setOpen(false);
+    setState({ runState: "idle", runId: null, ...(keepMode ? {} : { mode: null }) });
+  }
+
+  function notice(level, text) {
+    showBanner({ level, title: level === "warn" ? "Heads-up" : "Note", text, timeout: 6000 });
+  }
+
+  /** Opens the intro once per browser: called by main.js after the boot screen is gone. */
+  function introOnFirstVisit() {
+    if (!introSeen() && !document.querySelector("dialog[open]")) showIntro();
+  }
+
+  return { board, start, resetWorkspace, showIntro, introOnFirstVisit };
 }
 
-/** A banner at the top of the page: a Vici alert in the tone of its level, dismissible. */
+/** A banner under the header: a Vici alert in the tone of its level, dismissible. */
 export function showBanner({ level = "info", title = "", text = "", timeout = 0 } = {}) {
   const stack = document.getElementById("banners");
   if (!stack) return null;

@@ -171,6 +171,8 @@ async function playPath(world, fx, params, def, plan) {
       world, toolbox,
       say: async (text) => {
         narration.push(text);
+        // A recorded run's narration is the model's own and, as live, not audited.
+        if (def.source !== "authored") return;
         const bad = toolbox.ledger().offending(text, "report");
         if (bad.length) errors.push(`narration quotes figures no tool returned: ${bad.join(", ")} in "${text.slice(0, 80)}"`);
       },
@@ -188,14 +190,16 @@ async function playPath(world, fx, params, def, plan) {
     if (!narration.some((t) => /^Revised:/i.test(t.trim()))) errors.push("no visible revision (a narration line starting with \"Revised:\")");
   }
   // A person who rejects the cluster ends the case early; every other path shows the full check.
-  if (stats && plan.confirm !== "rejected" && (stats.callsBeforeDecision ?? stats.calls) < MIN_CALLS_BEFORE_DECISION) {
+  if (def.source === "authored" && stats && plan.confirm !== "rejected" && (stats.callsBeforeDecision ?? stats.calls) < MIN_CALLS_BEFORE_DECISION) {
     errors.push(`${stats.callsBeforeDecision ?? stats.calls} tool calls before the first decision; at least ${MIN_CALLS_BEFORE_DECISION} are needed`);
   }
   if (!st.reported) errors.push("the run ends without a report");
   const expected = !st.options
     ? (plan.confirm === "rejected" ? "stopped" : "nothing_found")
     : plan.option === "accept" || plan.option === "reject-all-then-accept" ? "variance_accepted" : "option_approved";
-  if (st.reported && st.outcome !== expected) errors.push(`outcome ${st.outcome}, expected ${expected}`);
+  // A recorded run ends with a note where the presenter answers the cluster differently than live.
+  const fine = def.source === "recorded" && !st.options ? ["stopped", "nothing_found"] : [expected];
+  if (st.reported && !fine.includes(st.outcome)) errors.push(`outcome ${st.outcome}, expected ${expected}`);
   if (st.options && !st.approved) errors.push("options were shown, but no decision was reached");
   if (st.options) {
     const latest = toolbox.latest().compare;

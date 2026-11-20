@@ -9,7 +9,8 @@ const REQUIRED_DATA = [
   ["FX", "data/fx.js"],
   ["WORLD", "data/world.js"],
   ["SCENARIOS", "data/scenarios.js"],
-  ["REFERENCE_CASES", "data/reference_cases.js"]
+  ["REFERENCE_CASES", "data/reference_cases.js"],
+  ["SIM_RUNS", "data/sim_runs.js"]
 ];
 
 boot().catch((err) => failBoot(err));
