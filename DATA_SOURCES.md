@@ -1,6 +1,7 @@
 # Data sources
 
-What the Price Variance Agent reads, what is invented and what is real, each with its date.
+What the Price Variance Agent reads, what is invented and what is real, each with its date. The world and its
+figures are version 1.0.0's, unchanged in 2.0.0.
 **Fictional company, no client data:** GlobalCorp SE, its plants, suppliers, materials, contracts, prices
 and order lines are invented; the exchange rates are the European Central Bank's.
 
@@ -11,12 +12,11 @@ and order lines are invented; the exchange rates are the European Central Bank's
 | Anthropic's Messages API | The live agent's model calls, with the visitor's own key | `https://api.anthropic.com/v1/messages` | Version 0.2.0 |
 | ECB reference rates through Frankfurter | Today's or a dated rate as a labelled sensitivity (`open_ecb_rate`) | `https://api.frankfurter.dev/v1/` | Version 0.2.0 |
 
-The page's security policy allows exactly these two hosts (TECH_NOTES.md section 6). A live run calls the
-Messages API with the visitor's own key and Frankfurter when the agent asks for a rate; a rate fetched in a
-run is a labelled sensitivity and never replaces the window's rate. A simulation calls neither: its script
-replays the open data it holds, labelled. Scenario 5's script replays a rate of 1 EUR = 0.83581 GBP for
-19 Nov 2026, written for the simulation and shown as "representative", not the ECB's published value;
-a run saved with "Save run as simulation" replays the rate it fetched, shown as "recorded".
+The page's security policy allows exactly these two hosts. A live run calls the Messages API with the
+visitor's own key, and Frankfurter when the agent asks for a rate; a rate fetched in a run is a labelled
+sensitivity and never replaces the window's rate. The simulation calls neither: its script replays the open
+data it holds, labelled. Scenario 5's script replays a rate of 1 EUR = 0.83581 GBP for 19 Nov 2026, written
+for the simulation and shown as "representative", not the ECB's published value.
 
 ## 2. Exchange rates
 
@@ -26,7 +26,7 @@ the mean of the ECB's daily reference quotes of that currency per euro over the 
 | Currency | Source | Window | Daily quotes | Mean per euro | Rate to EUR | Built |
 | --- | --- | --- | --- | --- | --- | --- |
 | GBP | ECB Data Portal, series `EXR.D.GBP.EUR.SP00.A`, cross-checked day by day against Frankfurter's v1 time series | 20 Nov 2025 to 19 Nov 2026 | 255 | 0.8613667843137256 | 1.1609456252677857 | 19 Nov 2026, workflow `fx-snapshot.yml` |
-| EUR | — | — | — | 1 | 1 | — |
+| EUR | none needed | | | 1 | 1 | |
 
 The ECB publishes its reference rates on working days at around 16:00 CET and discourages their use for
 transactions (ECB website, read on 19 Nov 2026); the method uses them as one comparable rate per window.
@@ -64,10 +64,8 @@ Figures at the default parameters and the snapshot rate, frozen in `data/referen
 | 5 | "Birmingham's pallet prices look high, but they are in pounds." | Frankfurt 9,000 and Duisburg 6,000 at €12.40 on contract; Lyon 4,000 at €12.65; Birmingham 3,500 at £14.80 delivered | Opportunity €17,737 a year, spread 38.6 %; flagged at the rate and 5 % either side |
 | 6 | "Our safety shoes are on two different material numbers." | A German material bought by Frankfurt (1,200) and Duisburg (500) at €61.50 on contract, a French material bought by Lyon (700) at €78.00, the same manufacturer and part number | One group of two material numbers; opportunity €11,550 a year, spread 26.8 %; flagged |
 
-The value pipeline's past cases: Duisburg's cable ties, moved from one supplier to another (option H,
-approved on day −120 for €8,000 a year, implemented on day −90), with one later line to a third supplier
-(leakage): €2,100 realised to date, €100 missed; the group is analysed only on the lines after day −90.
-Lyon's stretch film: option H approved on day −12 for €3,400 a year, not implemented.
+The world also holds two past cases for 1.0.0's value pipeline (Duisburg's cable ties and Lyon's stretch
+film, in `data/reference_cases.js`); version 2.0.0 does not show the pipeline.
 
 ## 5. Method assumptions
 

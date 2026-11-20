@@ -5,8 +5,8 @@
 //   G3    the group's totals, benchmark, spread, index and materiality, with every display string
 //   G4    the options H, R, B and accepting the variance, with H's moved plants and share, R's
 //         suppliers, B's bundle part, and the signs (the small fixture's options do not pay)
-//   G4b   H "not applicable" when the benchmark supplier delivers to no plant above it (PLAN.md B5)
-//   G5    realised value, leakage and the four stages; the window boundaries (PLAN.md B7)
+//   G4b   H "not applicable" when the benchmark supplier delivers to no plant above it (1.0.0's plan, B5)
+//   G5    realised value, leakage and the four stages; the window boundaries (1.0.0's plan, B7)
 //   N     normalisation: price units, the person-day, missing conversions, a currency without a rate,
 //         every Incoterms 2020 rule, and every unit conversion and currency of the world
 //   D     display rules: rounding to 1e-9 before Intl, the half-euro tie, unit prices per EA

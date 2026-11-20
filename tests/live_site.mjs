@@ -4,19 +4,19 @@
 //   files   index.html, the config, the engine, the tools, the world, the rates and the scripts as
 //           served equal this checkout (Pages caches for up to ten minutes, so it retries for up to
 //           twelve)
-//   run     scenario 1 in Simulation mode to the end: the engine's opportunity on the tile, the ladder's
-//           benchmark, the approval, the drafts approved, Done; no page error, nothing loaded from
-//           another host (up to three runs a minute apart, for a deployment the CDN is still taking up)
+//   run     the gloves case in the simulation, through its five steps: the engine's opportunity on the
+//           first figure, the best price on the gap chart, the recommended option approved, both drafts
+//           approved, the outcome; no page error, nothing loaded from another host (up to three runs a
+//           minute apart, for a deployment the CDN is still taking up)
 // In GitHub Actions every problem is also printed as an annotation (::error / ::warning).
-// Adapted from the Timetable Translator's test: this app's files, scenario and figures.
 // Usage: node tests/live_site.mjs [url]   (default: the repository's GitHub Pages address; LIVE_URL)
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { APP_ROOT, launchBrowser, SKIP_INTRO } from "./lib/harness.mjs";
+import { APP_ROOT, launchBrowser } from "./lib/harness.mjs";
 
 const URL_BASE = (process.argv[2] || process.env.LIVE_URL || "https://victorpflueger.github.io/PROC-price-variance/").replace(/\/?$/, "/");
-const FILES = ["index.html", "js/config.js", "js/tools.js", "js/variance.js", "data/fx.js", "data/world.js", "data/sim_runs.js"];
+const FILES = ["index.html", "css/app.css", "js/app.js", "js/story.js", "js/config.js", "js/tools.js", "js/variance.js", "data/fx.js", "data/world.js", "data/sim_runs.js"];
 const WAIT_MS = Number(process.env.LIVE_WAIT_MS || 12 * 60 * 1000);
 const sha = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
 const problems = [];
@@ -49,7 +49,6 @@ async function simulationRun() {
   const found = [];
   const browser = await launchBrowser();
   const context = await browser.newContext({ viewport: { width: 1600, height: 900 } });
-  await context.addInitScript(SKIP_INTRO);
   const page = await context.newPage();
   const errors = [];
   const hosts = new Set();
@@ -57,29 +56,24 @@ async function simulationRun() {
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
   page.on("request", (r) => { try { hosts.add(new URL(r.url()).host); } catch { /* data: URLs */ } });
   try {
-    await page.goto(URL_BASE, { waitUntil: "load" });
+    await page.goto(`${URL_BASE}?case=gloves&guide=0`, { waitUntil: "load" });
     await page.waitForSelector('html[data-boot="ready"]', { timeout: 30000 });
-    await page.click("#dd-scenario");
-    await page.click('.vc-menu__item[data-id="SC-GLOVES"]');
-    await page.click('button[aria-label="Replay speed ×4"]');
-    await page.click("#btn-start");
-    await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
-    await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout: 120000 });
-    const tile = (await page.locator("#kpi-identified-value").innerText()).replace(/\s+/g, " ");
-    if (!/€14,146 a year/.test(tile)) found.push(`the opportunity tile reads "${tile}"`);
-    const caption = await page.locator(".board-sub").innerText();
-    if (!/Benchmark €6\.90 per 100 EA/.test(caption)) found.push(`the board's caption reads "${caption}"`);
-    await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
-    for (let i = 0; i < 12; i += 1) {
-      if (/Done/.test(await page.locator(".status-pill").innerText())) break;
-      const b = await page.waitForSelector('.action-card[data-status="pending"] [data-action="approve"]', { timeout: 60000 }).catch(() => null);
-      if (b) await b.click().catch(() => {});
-      await page.waitForTimeout(300);
+    const tile = (await page.locator("#kpi-unexplained-value").innerText()).trim();
+    if (tile !== "€14,146") found.push(`the first figure reads "${tile}"`);
+    await page.keyboard.press("3");
+    const gap = await page.locator(".legend").innerText();
+    if (!/best price at volume, €6\.90 per 100 gloves/.test(gap)) found.push(`the gap chart's legend reads "${gap.replace(/\s+/g, " ")}"`);
+    await page.keyboard.press("4");
+    await page.click(".option[data-recommended='true'] .option-approve");
+    await page.keyboard.press("5");
+    await page.waitForFunction(() => document.querySelectorAll(".draft").length >= 2, null, { timeout: 60000 });
+    for (let i = 0; i < 2; i += 1) {
+      await page.locator(".draft[data-status='pending'] .draft-actions .vc-button:not(.vc-button--ghost)").first().click();
+      await page.waitForFunction((n) => document.querySelectorAll(".draft[data-status='pending']").length <= n, 1 - i, { timeout: 30000 });
     }
-    await page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill")?.innerText || ""), null, { timeout: 60000 }).catch(() => {});
-    const status = (await page.locator(".status-pill").innerText()).trim();
-    if (!/Done/.test(status)) found.push(`the run ends as "${status}"`);
-    if (!(await page.$('#console button:has-text("Open the report")'))) found.push("the run's report is not in the console");
+    await page.waitForSelector(".outcome", { timeout: 60000 });
+    const outcome = (await page.locator(".outcome").innerText()).trim();
+    if (!/^Report filed: .*approved\. Nothing was sent\.$/.test(outcome)) found.push(`the outcome reads "${outcome}"`);
   } catch (e) {
     found.push(`the run did not complete: ${String(e.message || e).split("\n")[0]}`);
   }
@@ -97,7 +91,7 @@ const annotate = (level, text) => { if (process.env.GITHUB_ACTIONS === "true") c
 if (!stale.length) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     const found = await simulationRun();
-    if (!found.length) { console.log(`PASS  run: scenario 1 in Simulation mode completes on the published site${attempt > 1 ? ` (run ${attempt})` : ""}`); break; }
+    if (!found.length) { console.log(`PASS  run: the gloves case runs through its five steps on the published site${attempt > 1 ? ` (run ${attempt})` : ""}`); break; }
     if (attempt === 3) { problems.push(...found); break; }
     for (const f of found) { console.log(`WARN  run ${attempt}: ${f}`); annotate("warning", `run ${attempt}: ${f}`); }
     await new Promise((r) => setTimeout(r, Number(process.env.LIVE_RETRY_MS || 60000)));

@@ -1,5 +1,5 @@
 // A scripted stand-in for POST /v1/messages that streams realistic SSE and checks every request
-// against the protocol rules the live agent must follow (TECH_NOTES §3): the headers, the sixteen tools
+// against the protocol rules the live agent must follow (1.0.0's technical notes, §3, in the git history): the headers, the sixteen tools
 // with strict (until a 400 names it), no server tools, every assistant turn echoed unchanged, every
 // tool_use answered with its tool_result first. Taken from the Timetable Translator.
 import { isDeepStrictEqual } from "node:util";

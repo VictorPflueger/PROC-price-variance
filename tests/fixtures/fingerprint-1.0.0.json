@@ -1,0 +1,3647 @@
+{
+ "files": {
+  "js/agent.js": "4a510984d4e9fa1c2745744e17cbadd9d995cdc792532d5fbc2b21e24d8e9bed",
+  "js/anthropic.js": "e1abe7627d58b4352aa77da297679c4f1593662f03ded3dc8520db63714a4a8a",
+  "js/audit.js": "3a8dafbd3ac74d01d886b733dd881151eebe3b270c211fd52b145dd2c0efc00c",
+  "js/clock.js": "a3ba8ff80aea253d327320b94bb28646924f2c32cbd7e4e6a3508145152e4785",
+  "js/cost.js": "21afb140e7c7cbcab7b7597cf504643a6b63eb3168d0650df79875b200a18d69",
+  "js/drafts.js": "4f7c618e1faf9081c769be710546f6efd39cb8b8ebbf3f3006184a461d2d6b39",
+  "js/erp.js": "f9e6cd07be2ec45d03125852a9053c9518fbe902241a22960c017aa8e7009437",
+  "js/events.js": "0ed3196284231d018b5cca6790887fb61ffccea3949a720f2ca199eb146d9e19",
+  "js/exports.js": "d0845f149c04082d7a0bc1bbda2362c20f7e31c95c1234d11f150aea446df759",
+  "js/figures.js": "33817b147474a2a2d89c6f38ce16c7d47867d68f8cacd56910814d8a92da9e24",
+  "js/format.js": "0e8753723229c2538a45c7101bed07807ea570c696c8b6372f0f8889448264af",
+  "js/groups.js": "da15c6dc96695bca8c7df7d29e07c0bbcd39787ff68b08e0eb8f577e0aac3ec6",
+  "js/guards.js": "e9add706c5ec2de7117639035ad5d3d06a2c37d8510ff0d3f708088c183f8ff5",
+  "js/keystore.js": "026d329c385f010267c071abaa1868f00850bd7810c8321236bde499ac16bd9b",
+  "js/labels.js": "db64dd46a5f26378e81699617f156f79cb5e8f5d3f115b919b5a12c09f5ec433",
+  "js/match.js": "b59131452376527512ddaf24c183f073d29471774dd4aa5a67150ffcb6e19940",
+  "js/normalise.js": "eb11568d6d3dbd150660a95fabf14baf78d2a96457c35e0e0975dae80b31f090",
+  "js/opendata.js": "70ac8d63b8e665ce1fe0da6c9e36d13f5f433a12d7483a58f53479323a36850f",
+  "js/options.js": "07d0d29386f9003e1f5f3c70670620b659cf8066ebe0f29ad608bf2ed368a84c",
+  "js/params.js": "a1e34fb1221c68b103f36ec36f55ba7b408fef635d32910eefbf92424ee9616e",
+  "js/pipeline.js": "84f7bd98db7c9848e9eca91e740b96160e1908649f00a72c2caee0c90b490eb0",
+  "js/prompt.js": "74a8abf6f70cafb7eeffdce3bd0d08cf9ea1ab895e97ed5af1496bb85c1ace03",
+  "js/run_facts.js": "1dca56255135efd5a74fb90dfc5759ccda8a7da5c620ea7001552a39f5da5f53",
+  "js/schema.js": "3a69fb945df66c7098a3c3abdfa51ebdae33e93f1b39511a9d7b9655f780c295",
+  "js/schemas.js": "d4ef5f57ad468c8f390a756511047695918d0734d3bfb9c57a692b874546bb0e",
+  "js/session.js": "47471d65f868e6a6dae358de848a8a804f802acfec45fca9191448c8c7ed4eee",
+  "js/sim_check.js": "b5f9b0c1e9f896cd271bda52ff0dee55dffb14ff167f1125f1653308d9c85e7f",
+  "js/sim_vars.js": "1db94beb75fd7aed26fc8b3168f6746ac3ba3d3b0bd85d3ed4b95ef4bff80e22",
+  "js/similarity.js": "5c782831ba3c28dddec173bc11c99f29b95eb28bc227f2a609ce6f7c2b26ba7e",
+  "js/simulation.js": "edf512a01344948dbb0aa35d3387d1bded275f131458d19ad78de49181a7b9ed",
+  "js/source_health.js": "2b5922dc7b320f053c34f853f2d87b0c446d168f42b079ad38dd50eab77c9031",
+  "js/sse.js": "56c0ab34b2f7041129700c0e99c8e37aa663529b8c3c57bb0247937519330fab",
+  "js/summaries.js": "478255c5d1e744b4267482e88e6142e21afbf683644802d519ea0e86a0329383",
+  "js/theme.js": "1241175350a2fbdc7eab4ee1f727d9da420574d37db95425fdc235815264feb3",
+  "js/tool_plain.js": "bad6e91be2f2009297d39d47f5e93a59a472c824fd38c7408fca7c7a108ecd56",
+  "js/tools.js": "3eb854b5c4a208ad59c548deb7f428ed4b2db685462e28b07b4d356e051ec251",
+  "js/variance.js": "95879da40ebb9bd901860658bf8f62cec86d29a3dbe7960e6552f037334bc14d",
+  "js/world.js": "5441c3980f7136f0baf6ededf83c75c8ce48f4cf94dcedf89114983da7311354",
+  "data/fx.js": "62755641367adfd010e223842cb498140d02016aaa6e7cec0e750abf0e9c50a8",
+  "data/reference_cases.js": "09aca2fc93224e7957756bf78fc6a57f2071a93d30f2b1db68f184ba0d783252",
+  "data/scenarios.js": "4e92983732466ccaf0057e01183b95dd9b68554195506d7d02ba7dc7e31aeaf6",
+  "data/sim_runs.js": "36e6d666a9cfe3cc07e9839ba2bb69f28a914e5dfbe7fa2b1c1fca874013a9d4",
+  "data/world.js": "167b524caceceb03f16f8f62435f0e37e0101b279a3a1ece780ecf9388428f8c",
+  "tools/build_fx.mjs": "57f66eafc8f7e498574c807bc806c05bf3dbc94ff07433b1bda9908bd430b377",
+  "tools/build_world.mjs": "24ebff7b72a193982d0a471d85f1f5746536f7e53005784df30271c7f0889e07",
+  "tools/check_world.mjs": "d9abb3d6bb6986fef5bddb4a892961158f1e5e934ab09a1998a3a5eb20883fce",
+  "tools/extract_accounts.mjs": "cc1ee26b25d1cb5daf6b8a30cd3001ac18da249c7d90823bc41934db8ad658e2",
+  "tools/source/accounts.json": "4bfc2b2154a8e23ea25b9ea087fd577078913bdd8c5fa405a08c5d8675c8c2bd",
+  "tools/source/material_groups.json": "3554a56cacc78b6e58b1c360898cf7de3e0eac99042ef28e30dff1a4540c94c0",
+  "js/config.js (version masked)": "2086742ad6dcd427160d6609cc0fd6e69d83c33d79860316d283bd1b32f2f9d7"
+ },
+ "groups": [
+  {
+   "id": "20001006",
+   "flagged": true,
+   "lines": 30,
+   "opportunity": 17736.98,
+   "spread": 0.385645,
+   "index": 0.059773,
+   "benchmark": 12.4
+  },
+  {
+   "id": "20001001",
+   "flagged": true,
+   "lines": 31,
+   "opportunity": 14145.77,
+   "spread": 0.42029,
+   "index": 0.129547,
+   "benchmark": 0.069
+  },
+  {
+   "id": "20001003",
+   "flagged": true,
+   "lines": 23,
+   "opportunity": 11736,
+   "spread": 0.171053,
+   "index": 0.057015,
+   "benchmark": 38
+  },
+  {
+   "id": "MPN:Brekholt:BH-7730-S3",
+   "flagged": true,
+   "lines": 18,
+   "opportunity": 11550,
+   "spread": 0.268293,
+   "index": 0.072573,
+   "benchmark": 61.5
+  },
+  {
+   "id": "20001061",
+   "flagged": false,
+   "lines": 18,
+   "opportunity": 5368.78,
+   "spread": 0.025138,
+   "index": 0.00658,
+   "benchmark": 30.85
+  },
+  {
+   "id": "20001007",
+   "flagged": false,
+   "lines": 24,
+   "opportunity": 3594.66,
+   "spread": 0.095506,
+   "index": 0.028435,
+   "benchmark": 17.8
+  },
+  {
+   "id": "20001062",
+   "flagged": false,
+   "lines": 24,
+   "opportunity": 2348.92,
+   "spread": 0.013888,
+   "index": 0.006977,
+   "benchmark": 29.078671
+  },
+  {
+   "id": "20001005",
+   "flagged": false,
+   "lines": 32,
+   "opportunity": 1600,
+   "spread": 0.010582,
+   "index": 0.003272,
+   "benchmark": 1.89
+  },
+  {
+   "id": "20001059",
+   "flagged": false,
+   "lines": 24,
+   "opportunity": 1319.78,
+   "spread": 0.016704,
+   "index": 0.005155,
+   "benchmark": 62.150207
+  },
+  {
+   "id": "20001055",
+   "flagged": false,
+   "lines": 23,
+   "opportunity": 1162.88,
+   "spread": 0.013424,
+   "index": 0.00261,
+   "benchmark": 57.71
+  },
+  {
+   "id": "20001053",
+   "flagged": false,
+   "lines": 16,
+   "opportunity": 955.73,
+   "spread": 0.018803,
+   "index": 0.012601,
+   "benchmark": 1248.444
+  },
+  {
+   "id": "20001056",
+   "flagged": false,
+   "lines": 23,
+   "opportunity": 849.97,
+   "spread": 0.01878,
+   "index": 0.005606,
+   "benchmark": 718.442203
+  },
+  {
+   "id": "20001034",
+   "flagged": false,
+   "lines": 26,
+   "opportunity": 817.86,
+   "spread": 0.025226,
+   "index": 0.006248,
+   "benchmark": 0.616898
+  },
+  {
+   "id": "20001058",
+   "flagged": false,
+   "lines": 24,
+   "opportunity": 767.7,
+   "spread": 0.014117,
+   "index": 0.001933,
+   "benchmark": 29.35
+  },
+  {
+   "id": "20001043",
+   "flagged": false,
+   "lines": 30,
+   "opportunity": 764.82,
+   "spread": 0.024787,
+   "index": 0.010082,
+   "benchmark": 2.03976
+  },
+  {
+   "id": "20001057",
+   "flagged": false,
+   "lines": 23,
+   "opportunity": 573.17,
+   "spread": 0.012412,
+   "index": 0.007385,
+   "benchmark": 85.32602
+  },
+  {
+   "id": "20001050",
+   "flagged": false,
+   "lines": 27,
+   "opportunity": 568.7,
+   "spread": 0.01523,
+   "index": 0.00558,
+   "benchmark": 4.129231
+  },
+  {
+   "id": "20001011",
+   "flagged": false,
+   "lines": 22,
+   "opportunity": 528.83,
+   "spread": 0.019764,
+   "index": 0.007958,
+   "benchmark": 5.770833
+  },
+  {
+   "id": "20001045",
+   "flagged": false,
+   "lines": 21,
+   "opportunity": 481.52,
+   "spread": 0.028061,
+   "index": 0.007942,
+   "benchmark": 3.571628
+  },
+  {
+   "id": "20001037",
+   "flagged": false,
+   "lines": 36,
+   "opportunity": 401.2,
+   "spread": 0.019959,
+   "index": 0.005564,
+   "benchmark": 9.55
+  },
+  {
+   "id": "20001032",
+   "flagged": false,
+   "lines": 29,
+   "opportunity": 339.64,
+   "spread": 0.018556,
+   "index": 0.013682,
+   "benchmark": 2.343205
+  },
+  {
+   "id": "20001038",
+   "flagged": false,
+   "lines": 29,
+   "opportunity": 327.2,
+   "spread": 0.010861,
+   "index": 0.005301,
+   "benchmark": 7.34137
+  },
+  {
+   "id": "20001024",
+   "flagged": false,
+   "lines": 32,
+   "opportunity": 276.6,
+   "spread": 0.019293,
+   "index": 0.011871,
+   "benchmark": 2.091539
+  },
+  {
+   "id": "20001008",
+   "flagged": false,
+   "lines": 27,
+   "opportunity": 271.98,
+   "spread": 0.02267,
+   "index": 0.007195,
+   "benchmark": 4.179
+  },
+  {
+   "id": "20001051",
+   "flagged": false,
+   "lines": 17,
+   "opportunity": 255.11,
+   "spread": 0.02615,
+   "index": 0.011948,
+   "benchmark": 4.765383
+  },
+  {
+   "id": "20001012",
+   "flagged": false,
+   "lines": 23,
+   "opportunity": 214.13,
+   "spread": 0.023509,
+   "index": 0.01148,
+   "benchmark": 4.852912
+  },
+  {
+   "id": "20001022",
+   "flagged": false,
+   "lines": 26,
+   "opportunity": 208.71,
+   "spread": 0.024428,
+   "index": 0.006425,
+   "benchmark": 1.3432
+  },
+  {
+   "id": "20001030",
+   "flagged": false,
+   "lines": 27,
+   "opportunity": 201.64,
+   "spread": 0.022843,
+   "index": 0.006673,
+   "benchmark": 9.710078
+  },
+  {
+   "id": "20001054",
+   "flagged": false,
+   "lines": 15,
+   "opportunity": 183.97,
+   "spread": 0.01411,
+   "index": 0.006536,
+   "benchmark": 1113.281778
+  },
+  {
+   "id": "20001060",
+   "flagged": false,
+   "lines": 27,
+   "opportunity": 183.25,
+   "spread": 0.014979,
+   "index": 0.007191,
+   "benchmark": 33.79575
+  },
+  {
+   "id": "20001039",
+   "flagged": false,
+   "lines": 22,
+   "opportunity": 172.18,
+   "spread": 0.020041,
+   "index": 0.008685,
+   "benchmark": 1.091784
+  },
+  {
+   "id": "20001017",
+   "flagged": false,
+   "lines": 24,
+   "opportunity": 169.73,
+   "spread": 0.023631,
+   "index": 0.010542,
+   "benchmark": 2.127632
+  },
+  {
+   "id": "20001014",
+   "flagged": false,
+   "lines": 25,
+   "opportunity": 165.22,
+   "spread": 0.01833,
+   "index": 0.006033,
+   "benchmark": 14.73
+  },
+  {
+   "id": "20001046",
+   "flagged": false,
+   "lines": 29,
+   "opportunity": 154.12,
+   "spread": 0.019591,
+   "index": 0.006303,
+   "benchmark": 1.84075
+  },
+  {
+   "id": "20001036",
+   "flagged": false,
+   "lines": 20,
+   "opportunity": 144.3,
+   "spread": 0.013417,
+   "index": 0.005503,
+   "benchmark": 0.311417
+  },
+  {
+   "id": "20001035",
+   "flagged": false,
+   "lines": 29,
+   "opportunity": 137.19,
+   "spread": 0.008505,
+   "index": 0.004758,
+   "benchmark": 0.441634
+  },
+  {
+   "id": "20001044",
+   "flagged": false,
+   "lines": 24,
+   "opportunity": 132.77,
+   "spread": 0.018121,
+   "index": 0.006001,
+   "benchmark": 3.070877
+  },
+  {
+   "id": "20001048",
+   "flagged": false,
+   "lines": 23,
+   "opportunity": 131.63,
+   "spread": 0.020805,
+   "index": 0.006522,
+   "benchmark": 11.141471
+  },
+  {
+   "id": "20001042",
+   "flagged": false,
+   "lines": 14,
+   "opportunity": 121.17,
+   "spread": 0.015731,
+   "index": 0.006421,
+   "benchmark": 0.581633
+  },
+  {
+   "id": "20001010",
+   "flagged": false,
+   "lines": 26,
+   "opportunity": 119.42,
+   "spread": 0.021118,
+   "index": 0.014872,
+   "benchmark": 3.593568
+  },
+  {
+   "id": "20001004",
+   "flagged": false,
+   "lines": 8,
+   "opportunity": 106,
+   "spread": 0.125,
+   "index": 0.008756,
+   "benchmark": 0.04
+  },
+  {
+   "id": "20001052",
+   "flagged": false,
+   "lines": 16,
+   "opportunity": 97.89,
+   "spread": 0.012196,
+   "index": 0.007502,
+   "benchmark": 3.925589
+  },
+  {
+   "id": "20001018",
+   "flagged": false,
+   "lines": 36,
+   "opportunity": 91.51,
+   "spread": 0.02529,
+   "index": 0.012588,
+   "benchmark": 0.084447
+  },
+  {
+   "id": "20001015",
+   "flagged": false,
+   "lines": 17,
+   "opportunity": 89.58,
+   "spread": 0.011597,
+   "index": 0.003789,
+   "benchmark": 32.354333
+  },
+  {
+   "id": "20001047",
+   "flagged": false,
+   "lines": 22,
+   "opportunity": 81.22,
+   "spread": 0.008422,
+   "index": 0.003557,
+   "benchmark": 3.397246
+  },
+  {
+   "id": "20001013",
+   "flagged": false,
+   "lines": 24,
+   "opportunity": 79.14,
+   "spread": 0.02606,
+   "index": 0.008947,
+   "benchmark": 8.357811
+  },
+  {
+   "id": "20001041",
+   "flagged": false,
+   "lines": 30,
+   "opportunity": 67.09,
+   "spread": 0.013404,
+   "index": 0.00378,
+   "benchmark": 20.793546
+  },
+  {
+   "id": "20001023",
+   "flagged": false,
+   "lines": 19,
+   "opportunity": 66.43,
+   "spread": 0.017332,
+   "index": 0.005298,
+   "benchmark": 2.394916
+  },
+  {
+   "id": "20001033",
+   "flagged": false,
+   "lines": 15,
+   "opportunity": 62.29,
+   "spread": 0.018017,
+   "index": 0.007414,
+   "benchmark": 0.619982
+  },
+  {
+   "id": "20001029",
+   "flagged": false,
+   "lines": 14,
+   "opportunity": 58.97,
+   "spread": 0.015231,
+   "index": 0.009065,
+   "benchmark": 0.377014
+  },
+  {
+   "id": "20001031",
+   "flagged": false,
+   "lines": 22,
+   "opportunity": 54.64,
+   "spread": 0.014201,
+   "index": 0.004457,
+   "benchmark": 24.406987
+  },
+  {
+   "id": "20001063",
+   "flagged": false,
+   "lines": 17,
+   "opportunity": 52.59,
+   "spread": 0.00829,
+   "index": 0.004255,
+   "benchmark": 95.428276
+  },
+  {
+   "id": "20001016",
+   "flagged": false,
+   "lines": 22,
+   "opportunity": 50.33,
+   "spread": 0.012928,
+   "index": 0.008458,
+   "benchmark": 45.694
+  },
+  {
+   "id": "20001040",
+   "flagged": false,
+   "lines": 25,
+   "opportunity": 44.87,
+   "spread": 0.013969,
+   "index": 0.002008,
+   "benchmark": 1.442778
+  },
+  {
+   "id": "20001025",
+   "flagged": false,
+   "lines": 14,
+   "opportunity": 42.42,
+   "spread": 0.012035,
+   "index": 0.004788,
+   "benchmark": 38.1994
+  },
+  {
+   "id": "20001028",
+   "flagged": false,
+   "lines": 37,
+   "opportunity": 41.98,
+   "spread": 0.012374,
+   "index": 0.004304,
+   "benchmark": 1.144
+  },
+  {
+   "id": "20001019",
+   "flagged": false,
+   "lines": 15,
+   "opportunity": 41.83,
+   "spread": 0.011502,
+   "index": 0.002103,
+   "benchmark": 0.1891
+  },
+  {
+   "id": "20001009",
+   "flagged": false,
+   "lines": 31,
+   "opportunity": 36.43,
+   "spread": 0.012901,
+   "index": 0.001975,
+   "benchmark": 0.10945
+  },
+  {
+   "id": "20001049",
+   "flagged": false,
+   "lines": 19,
+   "opportunity": 32.35,
+   "spread": 0.01259,
+   "index": 0.002232,
+   "benchmark": 2.410923
+  },
+  {
+   "id": "20001020",
+   "flagged": false,
+   "lines": 22,
+   "opportunity": 22.38,
+   "spread": 0.015332,
+   "index": 0.005872,
+   "benchmark": 0.018043
+  },
+  {
+   "id": "20001027",
+   "flagged": false,
+   "lines": 22,
+   "opportunity": 13.58,
+   "spread": 0.004546,
+   "index": 0.001732,
+   "benchmark": 9.188231
+  },
+  {
+   "id": "20001021",
+   "flagged": false,
+   "lines": 29,
+   "opportunity": 12.21,
+   "spread": 0.01883,
+   "index": 0.005446,
+   "benchmark": 0.011921
+  },
+  {
+   "id": "20001026",
+   "flagged": false,
+   "lines": 18,
+   "opportunity": 10.48,
+   "spread": 0.001789,
+   "index": 0.001462,
+   "benchmark": 0.42134
+  }
+ ],
+ "paths": {
+  "SC-GLOVES - recommended": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     12501.38,
+     2400,
+     10101.38,
+     30,
+     1644.39
+    ],
+    [
+     "R",
+     14145.77,
+     7200,
+     6945.77,
+     60,
+     0
+    ],
+    [
+     "B",
+     16981.67,
+     9600,
+     7381.67,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     14145.77
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "change_request: Change request: Nitrile gloves, size L to supplier 30024",
+    "buyer_notice: Nitrile gloves, size L: new source of supply"
+   ],
+   "alerts": [
+    "Lyon pays €9.80 per 100 EA for gloves Frankfurt buys at €6.90 per 100 EA"
+   ],
+   "report": "## Nitrile gloves, size L: option H approved"
+  },
+  "SC-GLOVES - other:0": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     12501.38,
+     2400,
+     10101.38,
+     30,
+     1644.39
+    ],
+    [
+     "R",
+     14145.77,
+     7200,
+     6945.77,
+     60,
+     0
+    ],
+    [
+     "B",
+     16981.67,
+     9600,
+     7381.67,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     14145.77
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: Nitrile gloves, size L"
+   ],
+   "alerts": [
+    "Lyon pays €9.80 per 100 EA for gloves Frankfurt buys at €6.90 per 100 EA"
+   ],
+   "report": "## Nitrile gloves, size L: option R approved"
+  },
+  "SC-GLOVES - other:1": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     12501.38,
+     2400,
+     10101.38,
+     30,
+     1644.39
+    ],
+    [
+     "R",
+     14145.77,
+     7200,
+     6945.77,
+     60,
+     0
+    ],
+    [
+     "B",
+     16981.67,
+     9600,
+     7381.67,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     14145.77
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: Nitrile gloves, size L"
+   ],
+   "alerts": [
+    "Lyon pays €9.80 per 100 EA for gloves Frankfurt buys at €6.90 per 100 EA"
+   ],
+   "report": "## Nitrile gloves, size L: option B approved"
+  },
+  "SC-GLOVES - reject-then-approve": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     12501.38,
+     2400,
+     10101.38,
+     30,
+     1644.39
+    ],
+    [
+     "R",
+     14145.77,
+     7200,
+     6945.77,
+     60,
+     0
+    ],
+    [
+     "B",
+     16981.67,
+     9600,
+     7381.67,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     14145.77
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: Nitrile gloves, size L"
+   ],
+   "alerts": [
+    "Lyon pays €9.80 per 100 EA for gloves Frankfurt buys at €6.90 per 100 EA"
+   ],
+   "report": "## Nitrile gloves, size L: option B approved"
+  },
+  "SC-GLOVES - reject-all-then-accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     12501.38,
+     2400,
+     10101.38,
+     30,
+     1644.39
+    ],
+    [
+     "R",
+     14145.77,
+     7200,
+     6945.77,
+     60,
+     0
+    ],
+    [
+     "B",
+     16981.67,
+     9600,
+     7381.67,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     14145.77
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: Nitrile gloves, size L"
+   ],
+   "alerts": [
+    "Lyon pays €9.80 per 100 EA for gloves Frankfurt buys at €6.90 per 100 EA"
+   ],
+   "report": "## Nitrile gloves, size L: variance accepted"
+  },
+  "SC-GLOVES - accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     12501.38,
+     2400,
+     10101.38,
+     30,
+     1644.39
+    ],
+    [
+     "R",
+     14145.77,
+     7200,
+     6945.77,
+     60,
+     0
+    ],
+    [
+     "B",
+     16981.67,
+     9600,
+     7381.67,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     14145.77
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: Nitrile gloves, size L"
+   ],
+   "alerts": [
+    "Lyon pays €9.80 per 100 EA for gloves Frankfurt buys at €6.90 per 100 EA"
+   ],
+   "report": "## Nitrile gloves, size L: variance accepted"
+  },
+  "SC-CONSULT confirmed recommended": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     36155.44,
+     7200,
+     28955.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     44435.44,
+     9600,
+     34835.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     36155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option B approved"
+  },
+  "SC-CONSULT confirmed other:0": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     36155.44,
+     7200,
+     28955.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     44435.44,
+     9600,
+     34835.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     36155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "change_request: Change request: SAP FI/CO (consulting services, confirmed cluster) to supplier 30059",
+    "buyer_notice: SAP FI/CO (consulting services, confirmed cluster): new source of supply"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option H approved"
+  },
+  "SC-CONSULT confirmed other:1": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     36155.44,
+     7200,
+     28955.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     44435.44,
+     9600,
+     34835.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     36155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option R approved"
+  },
+  "SC-CONSULT confirmed reject-then-approve": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     36155.44,
+     7200,
+     28955.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     44435.44,
+     9600,
+     34835.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     36155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option R approved"
+  },
+  "SC-CONSULT confirmed reject-all-then-accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     36155.44,
+     7200,
+     28955.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     44435.44,
+     9600,
+     34835.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     36155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): variance accepted"
+  },
+  "SC-CONSULT confirmed accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     36155.44,
+     7200,
+     28955.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     44435.44,
+     9600,
+     34835.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     36155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): variance accepted"
+  },
+  "SC-CONSULT confirmed:other-unit recommended": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     36155.44,
+     7200,
+     28955.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     44435.44,
+     9600,
+     34835.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     36155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €197.36 per H, the benchmark is €143.75 per H"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option B approved"
+  },
+  "SC-CONSULT confirmed:other-unit other:0": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     36155.44,
+     7200,
+     28955.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     44435.44,
+     9600,
+     34835.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     36155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "change_request: Change request: SAP FI/CO (consulting services, confirmed cluster) to supplier 30059",
+    "buyer_notice: SAP FI/CO (consulting services, confirmed cluster): new source of supply"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €197.36 per H, the benchmark is €143.75 per H"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option H approved"
+  },
+  "SC-CONSULT confirmed:other-unit other:1": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     36155.44,
+     7200,
+     28955.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     44435.44,
+     9600,
+     34835.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     36155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €197.36 per H, the benchmark is €143.75 per H"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option R approved"
+  },
+  "SC-CONSULT confirmed:other-unit reject-then-approve": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     36155.44,
+     7200,
+     28955.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     44435.44,
+     9600,
+     34835.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     36155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €197.36 per H, the benchmark is €143.75 per H"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option R approved"
+  },
+  "SC-CONSULT confirmed:other-unit reject-all-then-accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     36155.44,
+     7200,
+     28955.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     44435.44,
+     9600,
+     34835.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     36155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €197.36 per H, the benchmark is €143.75 per H"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): variance accepted"
+  },
+  "SC-CONSULT confirmed:other-unit accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     36155.44,
+     7200,
+     28955.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     44435.44,
+     9600,
+     34835.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     36155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €197.36 per H, the benchmark is €143.75 per H"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): variance accepted"
+  },
+  "SC-CONSULT split:0 recommended": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     15000,
+     1200,
+     13800,
+     30,
+     15155.44
+    ],
+    [
+     "R",
+     30155.44,
+     4800,
+     25355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     34475.44,
+     9600,
+     24875.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     30155.44
+    ]
+   ],
+   "recommended": "R",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,200.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option R approved"
+  },
+  "SC-CONSULT split:0 other:0": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     15000,
+     1200,
+     13800,
+     30,
+     15155.44
+    ],
+    [
+     "R",
+     30155.44,
+     4800,
+     25355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     34475.44,
+     9600,
+     24875.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     30155.44
+    ]
+   ],
+   "recommended": "R",
+   "decided": [],
+   "drafts": [
+    "change_request: Change request: SAP FI/CO (consulting services, confirmed cluster) to supplier 30044",
+    "buyer_notice: SAP FI/CO (consulting services, confirmed cluster): new source of supply"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,200.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option H approved"
+  },
+  "SC-CONSULT split:0 other:1": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     15000,
+     1200,
+     13800,
+     30,
+     15155.44
+    ],
+    [
+     "R",
+     30155.44,
+     4800,
+     25355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     34475.44,
+     9600,
+     24875.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     30155.44
+    ]
+   ],
+   "recommended": "R",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,200.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option B approved"
+  },
+  "SC-CONSULT split:0 reject-then-approve": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     15000,
+     1200,
+     13800,
+     30,
+     15155.44
+    ],
+    [
+     "R",
+     30155.44,
+     4800,
+     25355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     34475.44,
+     9600,
+     24875.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     30155.44
+    ]
+   ],
+   "recommended": "R",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,200.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option B approved"
+  },
+  "SC-CONSULT split:0 reject-all-then-accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     15000,
+     1200,
+     13800,
+     30,
+     15155.44
+    ],
+    [
+     "R",
+     30155.44,
+     4800,
+     25355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     34475.44,
+     9600,
+     24875.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     30155.44
+    ]
+   ],
+   "recommended": "R",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,200.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): variance accepted"
+  },
+  "SC-CONSULT split:0 accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     15000,
+     1200,
+     13800,
+     30,
+     15155.44
+    ],
+    [
+     "R",
+     30155.44,
+     4800,
+     25355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     34475.44,
+     9600,
+     24875.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     30155.44
+    ]
+   ],
+   "recommended": "R",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,200.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): variance accepted"
+  },
+  "SC-CONSULT split:1 recommended": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     18000,
+     1200,
+     16800,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     35155.44,
+     4800,
+     30355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     42745.44,
+     9600,
+     33145.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     35155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option B approved"
+  },
+  "SC-CONSULT split:1 other:0": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     18000,
+     1200,
+     16800,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     35155.44,
+     4800,
+     30355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     42745.44,
+     9600,
+     33145.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     35155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "change_request: Change request: SAP FI/CO (consulting services, confirmed cluster) to supplier 30059",
+    "buyer_notice: SAP FI/CO (consulting services, confirmed cluster): new source of supply"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option H approved"
+  },
+  "SC-CONSULT split:1 other:1": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     18000,
+     1200,
+     16800,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     35155.44,
+     4800,
+     30355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     42745.44,
+     9600,
+     33145.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     35155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option R approved"
+  },
+  "SC-CONSULT split:1 reject-then-approve": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     18000,
+     1200,
+     16800,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     35155.44,
+     4800,
+     30355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     42745.44,
+     9600,
+     33145.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     35155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option R approved"
+  },
+  "SC-CONSULT split:1 reject-all-then-accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     18000,
+     1200,
+     16800,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     35155.44,
+     4800,
+     30355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     42745.44,
+     9600,
+     33145.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     35155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): variance accepted"
+  },
+  "SC-CONSULT split:1 accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     18000,
+     1200,
+     16800,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     35155.44,
+     4800,
+     30355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     42745.44,
+     9600,
+     33145.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     35155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): variance accepted"
+  },
+  "SC-CONSULT split:2 recommended": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     0
+    ],
+    [
+     "R",
+     19000,
+     4800,
+     14200,
+     60,
+     0
+    ],
+    [
+     "B",
+     25900,
+     9600,
+     16300,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     19000
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "change_request: Change request: SAP FI/CO (consulting services, confirmed cluster) to supplier 30059",
+    "buyer_notice: SAP FI/CO (consulting services, confirmed cluster): new source of supply"
+   ],
+   "alerts": [
+    "SAP finance consultants: Lyon pays €1,450.00 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option H approved"
+  },
+  "SC-CONSULT split:2 other:0": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     0
+    ],
+    [
+     "R",
+     19000,
+     4800,
+     14200,
+     60,
+     0
+    ],
+    [
+     "B",
+     25900,
+     9600,
+     16300,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     19000
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Lyon pays €1,450.00 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option R approved"
+  },
+  "SC-CONSULT split:2 other:1": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     0
+    ],
+    [
+     "R",
+     19000,
+     4800,
+     14200,
+     60,
+     0
+    ],
+    [
+     "B",
+     25900,
+     9600,
+     16300,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     19000
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Lyon pays €1,450.00 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option B approved"
+  },
+  "SC-CONSULT split:2 reject-then-approve": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     0
+    ],
+    [
+     "R",
+     19000,
+     4800,
+     14200,
+     60,
+     0
+    ],
+    [
+     "B",
+     25900,
+     9600,
+     16300,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     19000
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Lyon pays €1,450.00 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option B approved"
+  },
+  "SC-CONSULT split:2 reject-all-then-accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     0
+    ],
+    [
+     "R",
+     19000,
+     4800,
+     14200,
+     60,
+     0
+    ],
+    [
+     "B",
+     25900,
+     9600,
+     16300,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     19000
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Lyon pays €1,450.00 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): variance accepted"
+  },
+  "SC-CONSULT split:2 accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     19000,
+     2400,
+     16600,
+     30,
+     0
+    ],
+    [
+     "R",
+     19000,
+     4800,
+     14200,
+     60,
+     0
+    ],
+    [
+     "B",
+     25900,
+     9600,
+     16300,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     19000
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Lyon pays €1,450.00 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): variance accepted"
+  },
+  "SC-CONSULT split:3 recommended": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     1000,
+     1200,
+     -200,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     18155.44,
+     4800,
+     13355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     24365.44,
+     9600,
+     14765.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     18155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option B approved"
+  },
+  "SC-CONSULT split:3 other:0": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     1000,
+     1200,
+     -200,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     18155.44,
+     4800,
+     13355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     24365.44,
+     9600,
+     14765.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     18155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "change_request: Change request: SAP FI/CO (consulting services, confirmed cluster) to supplier 30059",
+    "buyer_notice: SAP FI/CO (consulting services, confirmed cluster): new source of supply"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option H approved"
+  },
+  "SC-CONSULT split:3 other:1": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     1000,
+     1200,
+     -200,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     18155.44,
+     4800,
+     13355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     24365.44,
+     9600,
+     14765.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     18155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option R approved"
+  },
+  "SC-CONSULT split:3 reject-then-approve": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     1000,
+     1200,
+     -200,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     18155.44,
+     4800,
+     13355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     24365.44,
+     9600,
+     14765.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     18155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): option R approved"
+  },
+  "SC-CONSULT split:3 reject-all-then-accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     1000,
+     1200,
+     -200,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     18155.44,
+     4800,
+     13355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     24365.44,
+     9600,
+     14765.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     18155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): variance accepted"
+  },
+  "SC-CONSULT split:3 accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     1000,
+     1200,
+     -200,
+     30,
+     17155.44
+    ],
+    [
+     "R",
+     18155.44,
+     4800,
+     13355.44,
+     60,
+     0
+    ],
+    [
+     "B",
+     24365.44,
+     9600,
+     14765.44,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     18155.44
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: SAP FI/CO (consulting services, confirmed cluster)"
+   ],
+   "alerts": [
+    "SAP finance consultants: Birmingham pays €1,578.89 per PD, the benchmark is €1,150.00 per PD"
+   ],
+   "report": "## SAP FI/CO (consulting services, confirmed cluster): variance accepted"
+  },
+  "SC-CONSULT rejected recommended": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "stopped",
+   "options": null,
+   "recommended": null,
+   "decided": [],
+   "drafts": [],
+   "alerts": [],
+   "report": "## SAP finance consultants: stopped at your confirmation"
+  },
+  "SC-CONSULT rejected other:0": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "stopped",
+   "options": null,
+   "recommended": null,
+   "decided": [],
+   "drafts": [],
+   "alerts": [],
+   "report": "## SAP finance consultants: stopped at your confirmation"
+  },
+  "SC-CONSULT rejected other:1": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "stopped",
+   "options": null,
+   "recommended": null,
+   "decided": [],
+   "drafts": [],
+   "alerts": [],
+   "report": "## SAP finance consultants: stopped at your confirmation"
+  },
+  "SC-CONSULT rejected reject-then-approve": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "stopped",
+   "options": null,
+   "recommended": null,
+   "decided": [],
+   "drafts": [],
+   "alerts": [],
+   "report": "## SAP finance consultants: stopped at your confirmation"
+  },
+  "SC-CONSULT rejected reject-all-then-accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "stopped",
+   "options": null,
+   "recommended": null,
+   "decided": [],
+   "drafts": [],
+   "alerts": [],
+   "report": "## SAP finance consultants: stopped at your confirmation"
+  },
+  "SC-CONSULT rejected accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "stopped",
+   "options": null,
+   "recommended": null,
+   "decided": [],
+   "drafts": [],
+   "alerts": [],
+   "report": "## SAP finance consultants: stopped at your confirmation"
+  },
+  "SC-HOSES - recommended": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     11736,
+     2400,
+     9336,
+     30,
+     0
+    ],
+    [
+     "R",
+     11736,
+     4800,
+     6936,
+     60,
+     0
+    ],
+    [
+     "B",
+     17436,
+     9600,
+     7836,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     11736
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "change_request: Change request: Hydraulic hose assembly DN12, 1,000 mm to supplier 30065",
+    "buyer_notice: Hydraulic hose assembly DN12, 1,000 mm: new source of supply"
+   ],
+   "alerts": [
+    "Duisburg pays €44.50 per EA for hoses Frankfurt buys at €38.00 per EA"
+   ],
+   "report": "## Hydraulic hose assembly DN12, 1,000 mm: option H approved"
+  },
+  "SC-HOSES - other:0": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     11736,
+     2400,
+     9336,
+     30,
+     0
+    ],
+    [
+     "R",
+     11736,
+     4800,
+     6936,
+     60,
+     0
+    ],
+    [
+     "B",
+     17436,
+     9600,
+     7836,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     11736
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: Hydraulic hose assembly DN12, 1,000 mm"
+   ],
+   "alerts": [
+    "Duisburg pays €44.50 per EA for hoses Frankfurt buys at €38.00 per EA"
+   ],
+   "report": "## Hydraulic hose assembly DN12, 1,000 mm: option R approved"
+  },
+  "SC-HOSES - other:1": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     11736,
+     2400,
+     9336,
+     30,
+     0
+    ],
+    [
+     "R",
+     11736,
+     4800,
+     6936,
+     60,
+     0
+    ],
+    [
+     "B",
+     17436,
+     9600,
+     7836,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     11736
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: Hydraulic hose assembly DN12, 1,000 mm"
+   ],
+   "alerts": [
+    "Duisburg pays €44.50 per EA for hoses Frankfurt buys at €38.00 per EA"
+   ],
+   "report": "## Hydraulic hose assembly DN12, 1,000 mm: option B approved"
+  },
+  "SC-HOSES - reject-then-approve": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     11736,
+     2400,
+     9336,
+     30,
+     0
+    ],
+    [
+     "R",
+     11736,
+     4800,
+     6936,
+     60,
+     0
+    ],
+    [
+     "B",
+     17436,
+     9600,
+     7836,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     11736
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: Hydraulic hose assembly DN12, 1,000 mm"
+   ],
+   "alerts": [
+    "Duisburg pays €44.50 per EA for hoses Frankfurt buys at €38.00 per EA"
+   ],
+   "report": "## Hydraulic hose assembly DN12, 1,000 mm: option B approved"
+  },
+  "SC-HOSES - reject-all-then-accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     11736,
+     2400,
+     9336,
+     30,
+     0
+    ],
+    [
+     "R",
+     11736,
+     4800,
+     6936,
+     60,
+     0
+    ],
+    [
+     "B",
+     17436,
+     9600,
+     7836,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     11736
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: Hydraulic hose assembly DN12, 1,000 mm"
+   ],
+   "alerts": [
+    "Duisburg pays €44.50 per EA for hoses Frankfurt buys at €38.00 per EA"
+   ],
+   "report": "## Hydraulic hose assembly DN12, 1,000 mm: variance accepted"
+  },
+  "SC-HOSES - accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     11736,
+     2400,
+     9336,
+     30,
+     0
+    ],
+    [
+     "R",
+     11736,
+     4800,
+     6936,
+     60,
+     0
+    ],
+    [
+     "B",
+     17436,
+     9600,
+     7836,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     11736
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: Hydraulic hose assembly DN12, 1,000 mm"
+   ],
+   "alerts": [
+    "Duisburg pays €44.50 per EA for hoses Frankfurt buys at €38.00 per EA"
+   ],
+   "report": "## Hydraulic hose assembly DN12, 1,000 mm: variance accepted"
+  },
+  "SC-BOXES - recommended": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "nothing_found",
+   "options": null,
+   "recommended": null,
+   "decided": [],
+   "drafts": [],
+   "alerts": [],
+   "report": "## Corrugated boxes: no material variance"
+  },
+  "SC-BOXES - other:0": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "nothing_found",
+   "options": null,
+   "recommended": null,
+   "decided": [],
+   "drafts": [],
+   "alerts": [],
+   "report": "## Corrugated boxes: no material variance"
+  },
+  "SC-BOXES - other:1": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "nothing_found",
+   "options": null,
+   "recommended": null,
+   "decided": [],
+   "drafts": [],
+   "alerts": [],
+   "report": "## Corrugated boxes: no material variance"
+  },
+  "SC-BOXES - reject-then-approve": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "nothing_found",
+   "options": null,
+   "recommended": null,
+   "decided": [],
+   "drafts": [],
+   "alerts": [],
+   "report": "## Corrugated boxes: no material variance"
+  },
+  "SC-BOXES - reject-all-then-accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "nothing_found",
+   "options": null,
+   "recommended": null,
+   "decided": [],
+   "drafts": [],
+   "alerts": [],
+   "report": "## Corrugated boxes: no material variance"
+  },
+  "SC-BOXES - accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "nothing_found",
+   "options": null,
+   "recommended": null,
+   "decided": [],
+   "drafts": [],
+   "alerts": [],
+   "report": "## Corrugated boxes: no material variance"
+  },
+  "SC-PALLETS - recommended": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     1000,
+     1200,
+     -200,
+     30,
+     16736.98
+    ],
+    [
+     "R",
+     17736.98,
+     4800,
+     12936.98,
+     60,
+     0
+    ],
+    [
+     "B",
+     26106.98,
+     9600,
+     16506.98,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     17736.98
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: Euro pallet 1200 x 800 mm"
+   ],
+   "alerts": [
+    "Birmingham pays €17.18 per EA for pallets the other plants buy at €12.40 per EA"
+   ],
+   "report": "## Euro pallet 1200 x 800 mm: option B approved"
+  },
+  "SC-PALLETS - other:0": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     1000,
+     1200,
+     -200,
+     30,
+     16736.98
+    ],
+    [
+     "R",
+     17736.98,
+     4800,
+     12936.98,
+     60,
+     0
+    ],
+    [
+     "B",
+     26106.98,
+     9600,
+     16506.98,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     17736.98
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "change_request: Change request: Euro pallet 1200 x 800 mm to supplier 30109",
+    "buyer_notice: Euro pallet 1200 x 800 mm: new source of supply"
+   ],
+   "alerts": [
+    "Birmingham pays €17.18 per EA for pallets the other plants buy at €12.40 per EA"
+   ],
+   "report": "## Euro pallet 1200 x 800 mm: option H approved"
+  },
+  "SC-PALLETS - other:1": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     1000,
+     1200,
+     -200,
+     30,
+     16736.98
+    ],
+    [
+     "R",
+     17736.98,
+     4800,
+     12936.98,
+     60,
+     0
+    ],
+    [
+     "B",
+     26106.98,
+     9600,
+     16506.98,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     17736.98
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: Euro pallet 1200 x 800 mm"
+   ],
+   "alerts": [
+    "Birmingham pays €17.18 per EA for pallets the other plants buy at €12.40 per EA"
+   ],
+   "report": "## Euro pallet 1200 x 800 mm: option R approved"
+  },
+  "SC-PALLETS - reject-then-approve": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     1000,
+     1200,
+     -200,
+     30,
+     16736.98
+    ],
+    [
+     "R",
+     17736.98,
+     4800,
+     12936.98,
+     60,
+     0
+    ],
+    [
+     "B",
+     26106.98,
+     9600,
+     16506.98,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     17736.98
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: Euro pallet 1200 x 800 mm"
+   ],
+   "alerts": [
+    "Birmingham pays €17.18 per EA for pallets the other plants buy at €12.40 per EA"
+   ],
+   "report": "## Euro pallet 1200 x 800 mm: option R approved"
+  },
+  "SC-PALLETS - reject-all-then-accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     1000,
+     1200,
+     -200,
+     30,
+     16736.98
+    ],
+    [
+     "R",
+     17736.98,
+     4800,
+     12936.98,
+     60,
+     0
+    ],
+    [
+     "B",
+     26106.98,
+     9600,
+     16506.98,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     17736.98
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: Euro pallet 1200 x 800 mm"
+   ],
+   "alerts": [
+    "Birmingham pays €17.18 per EA for pallets the other plants buy at €12.40 per EA"
+   ],
+   "report": "## Euro pallet 1200 x 800 mm: variance accepted"
+  },
+  "SC-PALLETS - accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     1000,
+     1200,
+     -200,
+     30,
+     16736.98
+    ],
+    [
+     "R",
+     17736.98,
+     4800,
+     12936.98,
+     60,
+     0
+    ],
+    [
+     "B",
+     26106.98,
+     9600,
+     16506.98,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     17736.98
+    ]
+   ],
+   "recommended": "B",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: Euro pallet 1200 x 800 mm"
+   ],
+   "alerts": [
+    "Birmingham pays €17.18 per EA for pallets the other plants buy at €12.40 per EA"
+   ],
+   "report": "## Euro pallet 1200 x 800 mm: variance accepted"
+  },
+  "SC-SHOES - recommended": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     11550,
+     1200,
+     10350,
+     30,
+     0
+    ],
+    [
+     "R",
+     11550,
+     2400,
+     9150,
+     60,
+     0
+    ],
+    [
+     "B",
+     15978,
+     9600,
+     6378,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     11550
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "change_request: Change request: Safety shoe S3 ESD, black to supplier 30135",
+    "buyer_notice: Safety shoe S3 ESD, black: new source of supply"
+   ],
+   "alerts": [
+    "Lyon pays €78.00 per EA for the safety shoe Frankfurt buys at €61.50 per EA"
+   ],
+   "report": "## Safety shoe S3 ESD, black: option H approved"
+  },
+  "SC-SHOES - other:0": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     11550,
+     1200,
+     10350,
+     30,
+     0
+    ],
+    [
+     "R",
+     11550,
+     2400,
+     9150,
+     60,
+     0
+    ],
+    [
+     "B",
+     15978,
+     9600,
+     6378,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     11550
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: Safety shoe S3 ESD, black"
+   ],
+   "alerts": [
+    "Lyon pays €78.00 per EA for the safety shoe Frankfurt buys at €61.50 per EA"
+   ],
+   "report": "## Safety shoe S3 ESD, black: option R approved"
+  },
+  "SC-SHOES - other:1": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     11550,
+     1200,
+     10350,
+     30,
+     0
+    ],
+    [
+     "R",
+     11550,
+     2400,
+     9150,
+     60,
+     0
+    ],
+    [
+     "B",
+     15978,
+     9600,
+     6378,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     11550
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "tender_memo: Tender request: Safety shoe S3 ESD, black"
+   ],
+   "alerts": [
+    "Lyon pays €78.00 per EA for the safety shoe Frankfurt buys at €61.50 per EA"
+   ],
+   "report": "## Safety shoe S3 ESD, black: option B approved"
+  },
+  "SC-SHOES - reject-then-approve": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "option_approved",
+   "options": [
+    [
+     "H",
+     11550,
+     1200,
+     10350,
+     30,
+     0
+    ],
+    [
+     "R",
+     11550,
+     2400,
+     9150,
+     60,
+     0
+    ],
+    [
+     "B",
+     15978,
+     9600,
+     6378,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     11550
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "negotiation_brief: Negotiation brief: Safety shoe S3 ESD, black"
+   ],
+   "alerts": [
+    "Lyon pays €78.00 per EA for the safety shoe Frankfurt buys at €61.50 per EA"
+   ],
+   "report": "## Safety shoe S3 ESD, black: option R approved"
+  },
+  "SC-SHOES - reject-all-then-accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     11550,
+     1200,
+     10350,
+     30,
+     0
+    ],
+    [
+     "R",
+     11550,
+     2400,
+     9150,
+     60,
+     0
+    ],
+    [
+     "B",
+     15978,
+     9600,
+     6378,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     11550
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: Safety shoe S3 ESD, black"
+   ],
+   "alerts": [
+    "Lyon pays €78.00 per EA for the safety shoe Frankfurt buys at €61.50 per EA"
+   ],
+   "report": "## Safety shoe S3 ESD, black: variance accepted"
+  },
+  "SC-SHOES - accept": {
+   "errors": 0,
+   "skipped": false,
+   "outcome": "variance_accepted",
+   "options": [
+    [
+     "H",
+     11550,
+     1200,
+     10350,
+     30,
+     0
+    ],
+    [
+     "R",
+     11550,
+     2400,
+     9150,
+     60,
+     0
+    ],
+    [
+     "B",
+     15978,
+     9600,
+     6378,
+     90,
+     0
+    ],
+    [
+     "accept",
+     0,
+     0,
+     0,
+     null,
+     11550
+    ]
+   ],
+   "recommended": "H",
+   "decided": [],
+   "drafts": [
+    "variance_memo: Accepted variance: Safety shoe S3 ESD, black"
+   ],
+   "alerts": [
+    "Lyon pays €78.00 per EA for the safety shoe Frankfurt buys at €61.50 per EA"
+   ],
+   "report": "## Safety shoe S3 ESD, black: variance accepted"
+  }
+ }
+}
