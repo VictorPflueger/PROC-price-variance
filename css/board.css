@@ -231,12 +231,13 @@
 }
 
 /* ---- drawer additions: the options' table, a bundle part, money an option spends (fjord) ----------- */
-.options-table { width: 100%; margin: 8px 0; table-layout: fixed; font-size: var(--fs-xs); }
-.options-table :is(th, td) { padding: 4px 6px; }
-.options-table thead th { white-space: normal; line-height: 1.15; }
+/* The summary sits in a narrow column (about 220 px at 1280 × 720): sentence-case headers that wrap at
+   spaces only, the letter column as narrow as its letter, the amounts never broken. */
+.options-table { width: 100%; margin: 8px 0; table-layout: auto; font-size: var(--fs-xs); }
+.options-table :is(th, td) { padding: 4px 5px; }
+.options-table thead th { white-space: normal; overflow-wrap: normal; line-height: 1.15; text-transform: none; letter-spacing: normal; vertical-align: bottom; }
 .options-table .num { text-align: end; }
 .options-table td.num { white-space: nowrap; }
-.options-table thead th:first-child { width: 4.75em; }
 .options-table tr[data-recommended="true"] th { color: var(--vc-accent-text); }
 .options-reason { margin: 4px 0 0; font-size: var(--vc-font-size-sm); }
 .option-part { display: block; color: var(--vc-text-muted); font-size: var(--fs-xs); font-weight: var(--vc-weight-regular); }
