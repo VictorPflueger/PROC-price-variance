@@ -1,10 +1,12 @@
 // The price ladder (brief §9): one row per plant–supplier pair, sorted by price; a hexagon at the pair's
-// normalised price sized by its quantity, its lines as small hexagons, the benchmark as an ink line with
+// normalised price sized by its quantity, its lines as small hexagons in a lane above it, the benchmark as an ink line with
 // its label, the unexplained part from the benchmark to each pair in the danger tone with a cross, the
 // justified part hatched in the warning tone with its reason, and the euros a year at the row's end.
 // Plants are told apart by the labels on their rows, never by colour. A line opens its normalisation
 // steps; a pair opens its lines and contract. The lines the agent reads pulse in a fjord outline.
 // Everything round is a hexagon (Vici's hexagon rule); every colour comes from css/board.css.
+
+import { LINE_R } from "./board_data.js";
 
 const NS = "http://www.w3.org/2000/svg";
 const RAD = Math.PI / 180;
@@ -82,8 +84,8 @@ export function renderLadder(model, { onLine, onPair } = {}) {
           "aria-label": `Line ${l.id}: ${l.priceText}${l.urgent ? ", urgent with a reason" : ""}. Opens its normalisation.`,
           dataset: { line: l.id, price: l.price, mark: l.mark || "" }
         },
-        svg("polygon", { class: "line-pulse", points: hexPoints(l.x, l.y, 7.5) }),
-        svg("polygon", { class: "line-hex", points: hexPoints(l.x, l.y, 4.2) }));
+        svg("polygon", { class: "line-pulse", points: hexPoints(l.x, l.y, LINE_R + 2.75) }),
+        svg("polygon", { class: "line-hex", points: hexPoints(l.x, l.y, LINE_R) }));
         lg.addEventListener("click", (e) => { e.stopPropagation(); onLine?.(l.id, lg); });
         lg.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onLine?.(l.id, lg); } });
         g.append(lg);

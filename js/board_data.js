@@ -33,6 +33,38 @@ export function niceTicks(lo, hi, count = 5) {
  * appear only then); marks: { lines: Map id -> state, pairs: Map id -> state }; size: { width, height,
  * compact }.
  */
+/** A line's small hexagon, and the largest pair hexagon (the pair with the group's largest quantity). */
+export const LINE_R = 4;
+export const PAIR_R_MAX = 14;
+const LINE_STEP = 2 * LINE_R + 1.5;            // centres in one band of the lane at least this far apart
+const LINE_BAND = Math.sqrt(3) * LINE_R + 1.5; // the lane's two bands, centre to centre
+
+/**
+ * The lines of a pair in a lane above its hexagon, left to right by price. Each line sits at its own
+ * price; where lines would overlap (the same price, as every line of a contract pair has), they are
+ * nudged into a honeycomb ribbon around it: whole steps in the lower band, half steps in the upper one.
+ * Nothing hides under the pair's hexagon, so every line can be pointed at and opened.
+ */
+export function lineLane(lines, x, cy, compact = false) {
+  const sorted = lines.slice().sort((a, b) => a.price - b.price || a.id.localeCompare(b.id));
+  if (compact) return sorted.map((l) => ({ ...l, x: x(l.price), y: cy }));
+  const low = cy - PAIR_R_MAX - 3 - (Math.sqrt(3) / 2) * LINE_R;
+  const up = low - LINE_BAND;
+  const placed = [];
+  return sorted.map((l) => {
+    const x0 = x(l.price);
+    for (let k = 0; ; k += 1) {
+      const o = k === 0 ? 0 : (k % 2 ? 1 : -1) * Math.ceil(k / 2) / 2;
+      const band = Number.isInteger(o) ? low : up;
+      const xc = x0 + o * LINE_STEP;
+      if (placed.every((p) => p.y !== band || Math.abs(p.x - xc) >= LINE_STEP - 1e-9)) {
+        placed.push({ x: xc, y: band });
+        return { ...l, x: xc, y: band };
+      }
+    }
+  });
+}
+
 export function ladderModel(world, analysis, { compared = false, marks = { lines: new Map(), pairs: new Map() }, size = {} } = {}) {
   const width = Math.max(420, size.width || 900);
   const compact = !!size.compact;
@@ -54,7 +86,8 @@ export function ladderModel(world, analysis, { compared = false, marks = { lines
   lo = Math.max(0, lo - pad);
   hi += pad;
   const x = (price) => left + ((price - lo) / (hi - lo)) * (right - left);
-  const rowH = compact ? Math.max(30, Math.min(44, ((size.height || 360) - top - 24) / Math.max(1, pairs.length))) : Math.max(46, Math.min(78, ((size.height || 480) - top - 30) / Math.max(1, pairs.length)));
+  // A full row holds the pair's hexagon on its centre line and, above it, the lane of its lines.
+  const rowH = compact ? Math.max(30, Math.min(44, ((size.height || 360) - top - 24) / Math.max(1, pairs.length))) : Math.max(76, Math.min(92, ((size.height || 480) - top - 30) / Math.max(1, pairs.length)));
   const qMax = Math.max(...pairs.map((p) => p.quantity));
   const bench = analysis.benchmark;
   const rows = pairs.map((p, i) => {
@@ -84,13 +117,13 @@ export function ladderModel(world, analysis, { compared = false, marks = { lines
       tags, quantity: p.quantity, price: p.price, share: p.share, gap: p.gap, justified: p.justified, unexplained: p.unexplained,
       isBenchmark: !!bench && bench.pair === p.id,
       isHighest: analysis.highest?.pair === p.id,
-      x: xp, r: 6 + 10 * Math.sqrt(p.quantity / qMax),
+      x: xp, r: 6 + (PAIR_R_MAX - 6) * Math.sqrt(p.quantity / qMax),
       above, gapUnit, xb, xSplit,
       priceText: unitPrice(p.price, dq, bu), quantityText: qty(p.quantity, bu), shareText: pct(p.share),
       unexplainedText: eur(p.unexplained), justifiedText: eur(p.justified),
       state,
-      lines: lines.map((l, k) => ({
-        id: l.id, price: l.price, x: x(l.price), y: cy + (compact ? 0 : [0, -9, 9, -4.5, 4.5][k % 5]),
+      lines: lineLane(lines, x, cy, compact).map((l) => ({
+        id: l.id, price: l.price, x: l.x, y: l.y,
         urgent: !!l.urgent, unexplained: l.unexplained, justified: l.justified, mark: marks.lines.get(l.id) || null,
         priceText: unitPrice(l.price, dq, bu)
       }))

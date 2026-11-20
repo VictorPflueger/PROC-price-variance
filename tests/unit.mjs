@@ -5,7 +5,8 @@
 //   format   display strings beyond the engine suite: cents, dates with and without the year, the clock
 //   schema   the validator of js/schema.js on planted good and bad records, and the data contracts
 //   static   AC-07: the security policy exactly as the brief's section 4, nothing from a third party,
-//            every storage key under "pv." apart from Vici's "vc-theme"
+//            every storage key under "pv." apart from Vici's "vc-theme"; the golden data of Diagnostics
+//            current with the fixtures
 //   tools    the sixteen tool schemas: within the strict-tool limits (TECH_NOTES §1), only supported
 //            keywords, every object closed; every tool's input checked by the app's own validator; a
 //            plain sentence and a result line for every tool
@@ -254,15 +255,35 @@ if (chosen.includes("static")) {
   check("static", "every storage key in js/config.js starts with pv.", Object.values(STORAGE).length >= 5 && Object.values(STORAGE).every((k) => k.startsWith("pv.")), JSON.stringify(STORAGE));
   const calls = [];
   for (const f of walk("js")) {
-    for (const m of read(f).matchAll(/\b(?:localStorage|sessionStorage)\s*\.\s*(?:getItem|setItem|removeItem)\(\s*([^,)]+)/g)) calls.push([f, m[1].trim()]);
-    if (/\b(?:localStorage|sessionStorage)\s*\[|\b(?:localStorage|sessionStorage)\.(?!getItem|setItem|removeItem)\w+\s*=/.test(read(f))) calls.push([f, "a key set without getItem/setItem"]);
+    const text = read(f);
+    for (const m of text.matchAll(/\b(?:localStorage|sessionStorage)\s*\.\s*(getItem|setItem|removeItem)\(\s*([^,)]+)/g)) calls.push({ f, text, key: m[2].trim(), method: m[1] });
+    if (/\b(?:localStorage|sessionStorage)\s*\[|\b(?:localStorage|sessionStorage)\.(?!getItem|setItem|removeItem|key\(|length)\w+\s*=/.test(text)) calls.push({ f, text, key: "a key set without getItem/setItem", method: "set" });
   }
-  const strays = calls.filter(([, k]) => !/^STORAGE\.\w+$/.test(k) && k !== '"vc-theme"' && k !== "'vc-theme'");
-  check("static", "every storage call in js/ uses a key from STORAGE or Vici's vc-theme", calls.length >= 4 && strays.length === 0, strays.map(([f, k]) => `${f}: ${k}`).join("; "));
+  // Allowed besides a STORAGE key and Vici's vc-theme: reading every key by its index (Diagnostics
+  // looks for a stray API key), and a helper's key parameter when every call of the helper, in any
+  // module, passes a STORAGE key.
+  const jsTexts = walk("js").map((g) => read(g));
+  const helperOk = (text, param, texts) => {
+    const helpers = [...text.matchAll(new RegExp(`function\\s+(\\w+)\\(\\s*${param}\\b`, "g"))].map((m) => m[1]);
+    const args = texts.flatMap((t) => helpers.flatMap((name) => [...t.matchAll(new RegExp(`\\b${name}\\(([^,)]*)`, "g"))].map((m) => m[1].trim()))).filter((a) => a !== param);
+    return helpers.length > 0 && args.length > 0 && args.every((a) => /^STORAGE\.\w+$/.test(a));
+  };
+  const allowed = ({ text, key, method }, texts = jsTexts) => /^STORAGE\.\w+$/.test(key) || key === '"vc-theme"' || key === "'vc-theme'"
+    || (method === "getItem" && /^(?:localStorage|sessionStorage)\.key\(/.test(key))
+    || (/^\w+$/.test(key) && helperOk(text, key, texts));
+  const strays = calls.filter((c) => !allowed(c));
+  check("static", "every storage call in js/ uses a key from STORAGE or Vici's vc-theme", calls.length >= 4 && strays.length === 0, strays.map((c) => `${c.f}: ${c.key}`).join("; "));
+  // The rule must be able to fail: a helper called with a key of its own, a literal key, a write by index.
+  const planted = "function store(key, v) { try { sessionStorage.setItem(key, v); } catch {} }\nstore(STORAGE.speed, 1);\nstore(\"rh.speed\", 2);";
+  check("static", "the storage rule catches a planted helper call, a literal key and a write by index",
+    !allowed({ text: planted, key: "key", method: "setItem" }, [...jsTexts, planted]) && !allowed({ text: "", key: '"rh.speed"', method: "setItem" }) && !allowed({ text: "", key: "localStorage.key(0)", method: "setItem" }));
   const viciJs = read("vici/dist/vici.js");
   const viciKeys = [...viciJs.matchAll(/storage(?:Get|Set)\(\s*([^,)]+)/g)].map((m) => m[1].trim()).filter((k) => k !== "key");
   check("static", "Vici's script stores only vc-theme", /STORAGE_KEY = 'vc-theme'/.test(viciJs) && viciKeys.every((k) => k === "STORAGE_KEY"), viciKeys.join(", "));
   check("static", "the key's storage is this tab's session storage, under pv.anthropic.key", STORAGE.apiKey === "pv.anthropic.key" && /sessionStorage\.setItem\(STORAGE\.apiKey/.test(read("js/keystore.js")) && !/localStorage[^\n]*STORAGE\.apiKey/.test(read("js/keystore.js")));
+  // Diagnostics runs the golden cases in the browser from js/golden_data.js: it must be the fixtures'.
+  const { goldenText } = await import(pathToFileURL(path.join(APP_ROOT, "tools", "build_golden.mjs")).href);
+  check("static", "js/golden_data.js is current with tests/fixtures (node tools/build_golden.mjs writes it)", read("js/golden_data.js") === goldenText());
 }
 
 for (const f of failures) console.log(`FAIL  ${f}`);

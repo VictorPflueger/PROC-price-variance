@@ -213,11 +213,14 @@ export function createBoard(root, { world, analyse, pipeline }) {
         h("p", { class: "candidate-sum" }, `${lines.length} line${lines.length === 1 ? "" : "s"} in ${[...new Set(lines.map((l) => l.order_unit))].join(" and ")}, ${[...new Set(lines.map((l) => l.currency))].join(" and ")}`)))));
   }
 
+  // The ladder is drawn to the canvas: a new width, or a new height (the drawer opening or closing turns
+  // the compact ladder on or off), draws it again.
   if (typeof ResizeObserver === "function") {
-    let last = 0;
+    let last = "";
     new ResizeObserver(() => {
-      const w = Math.round(canvas.getBoundingClientRect().width / 8);
-      if (w !== last) { last = w; if (st.view === "group" && !st.table) render(); }
+      const r = canvas.getBoundingClientRect();
+      const size = `${Math.round(r.width / 8)}x${Math.round(r.height / 8)}`;
+      if (size !== last) { last = size; if (st.view === "group" && !st.table) render(); }
     }).observe(canvas);
   }
 

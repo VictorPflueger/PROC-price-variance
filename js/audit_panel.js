@@ -8,12 +8,12 @@ import { auditRows, onAuditEvent, buildAuditExport, auditFileName } from "./audi
 import { canRecord, saveRunAsSimulation } from "./recorder.js";
 
 const GROUPS = {
-  all: { label: "All", types: null },
-  agent: { label: "Agent", types: ["narration", "reasoning", "alert", "confirmation_request", "options", "action_draft", "report"] },
-  tools: { label: "Tools", types: ["tool_call", "tool_result"] },
-  model: { label: "Model calls", types: ["model_call"] },
-  human: { label: "Your decisions", types: ["confirmation_decision", "option_decision", "action_decision", "param_change"] },
-  system: { label: "System", types: ["run_start", "run_end", "state_change", "notice", "board_update", "kpi_update", "fx_sensitivity", "cost_update", "attempt_discarded"] }
+  all: { label: "All", types: null, none: "No events in this run yet." },
+  agent: { label: "Agent", types: ["narration", "reasoning", "alert", "confirmation_request", "options", "action_draft", "report"], none: "No message from the agent in this run yet." },
+  tools: { label: "Tools", types: ["tool_call", "tool_result"], none: "No tool call in this run yet." },
+  model: { label: "Model calls", types: ["model_call"], none: "No model call in this run (a simulation makes none)." },
+  human: { label: "Your decisions", types: ["confirmation_decision", "option_decision", "action_decision", "param_change"], none: "No decision of yours in this run yet." },
+  system: { label: "System", types: ["run_start", "run_end", "state_change", "notice", "board_update", "kpi_update", "fx_sensitivity", "cost_update", "attempt_discarded"], none: "No system event in this run yet." }
 };
 
 /** getEngine: () => ({ world, fx, params }), for checking a recording before it is saved. */
@@ -60,16 +60,28 @@ export function createAuditPanel(panel, { onCount, getEngine } = {}) {
     setDisabled(saveBtn, !can.ok, can.reason);
   }
 
+  // An empty log says what will appear in it (the other two tabs do the same).
+  const emptyRow = (text) => h("tr", { class: "audit-empty" }, h("td", { colspan: 4 }, text));
+
   function renderAll() {
     clear(tbody);
     const rows = auditRows();
-    for (const ev of rows) if (matches(ev)) tbody.appendChild(row(ev));
+    const shown = rows.filter(matches);
+    for (const ev of shown) tbody.appendChild(row(ev));
+    if (!shown.length) {
+      tbody.appendChild(emptyRow(rows.length
+        ? GROUPS[filter].none
+        : "No run recorded yet. Every event and model call of a run appears here, with its time."));
+    }
     onCount?.(rows.length);
     updateSave();
   }
 
   onAuditEvent((ev) => {
-    if (matches(ev)) tbody.appendChild(row(ev));
+    if (matches(ev)) {
+      tbody.querySelector(".audit-empty")?.remove();
+      tbody.appendChild(row(ev));
+    }
     onCount?.(auditRows().length);
     if (ev.type === "run_end" || ev.type === "run_start") {
       updateSave();

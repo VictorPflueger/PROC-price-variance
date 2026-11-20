@@ -52,11 +52,11 @@
 .ladder-row[data-benchmark="true"] .pair-hex { fill: var(--vc-text); }
 .ladder[data-compared="true"] .ladder-row[data-unexplained]:not([data-unexplained="0"]) .pair-hex { fill: var(--vc-danger-bg); stroke: var(--vc-danger-solid); }
 .ladder-row[data-state="approved"] .pair-hex { fill: var(--vc-success-bg) !important; stroke: var(--vc-success-solid) !important; }
-.ladder-row[data-state="justified"] .pair-hex { fill: var(--vc-warning-bg) !important; stroke: var(--vc-warning-solid) !important; }
+.ladder-row[data-state="justified"] .pair-hex { fill: var(--vc-warning-bg) !important; stroke: var(--vc-warning-text) !important; }
 /* Closed by an approved option: the gap turns success, with the tick and "approved" at the row's end. */
 .ladder-row[data-state="approved"] :is(.gap-unexplained, .gap-justified) { fill: var(--vc-success-bg); stroke: var(--vc-success-solid); }
 /* Accepted with a reason: the gap stays, in the warning tone, with "accepted" at the row's end. */
-.ladder-row[data-state="justified"] .gap-unexplained { fill: var(--vc-warning-bg); stroke: var(--vc-warning-solid); }
+.ladder-row[data-state="justified"] .gap-unexplained { fill: var(--vc-warning-bg); stroke: var(--vc-warning-text); }
 .pair-mark { fill: none; stroke-width: 2.2; stroke-linecap: round; }
 .mark-above { stroke: var(--vc-danger-solid); }
 .mark-approved { stroke: var(--vc-success-solid); }
@@ -73,9 +73,9 @@
 .gap-unexplained { fill: url(#cross-unexplained); stroke: var(--vc-danger-solid); stroke-width: 1; }
 .cross-bg { fill: var(--vc-danger-bg); }
 .cross-line { stroke: var(--vc-danger-solid); stroke-width: 1.2; }
-.gap-justified { fill: url(#hatch-justified); stroke: var(--vc-warning-solid); stroke-width: 1; }
+.gap-justified { fill: url(#hatch-justified); stroke: var(--vc-warning-text); stroke-width: 1; }
 .hatch-bg { fill: var(--vc-warning-bg); }
-.hatch-line { stroke: var(--vc-warning-solid); stroke-width: 2; }
+.hatch-line { stroke: var(--vc-warning-text); stroke-width: 1.5; }
 .row-value { font-weight: var(--vc-weight-semibold); font-variant-numeric: tabular-nums; }
 .value-above { fill: var(--vc-danger-text) !important; }
 .value-justified { fill: var(--vc-warning-text) !important; }
@@ -92,7 +92,7 @@
 .ladder-legend .key { display: inline-block; width: 18px; height: 10px; }
 .key-bench { width: 3px !important; height: 14px !important; background: var(--vc-text); }
 .key-above { background: var(--vc-danger-bg); border: 1px solid var(--vc-danger-solid); }
-.key-justified { background: repeating-linear-gradient(45deg, var(--vc-warning-solid) 0 2px, var(--vc-warning-bg) 2px 5px); border: 1px solid var(--vc-warning-solid); }
+.key-justified { background: repeating-linear-gradient(45deg, var(--vc-warning-text) 0 1.5px, var(--vc-warning-bg) 1.5px 5px); border: 1px solid var(--vc-warning-text); }
 .key-checking { width: 14px !important; height: 12px !important; clip-path: var(--vc-hex); background: var(--vc-info-solid); }
 .board-excluded { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); }
 
@@ -100,7 +100,7 @@
 .candidate-view { padding: 6px 2px; }
 .candidate-lead { margin: 0 0 10px; color: var(--vc-text-muted); }
 .candidate-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
-.candidate-col { padding: 10px 12px; background: var(--vc-surface); border: 1px dashed var(--vc-feature-border); border-radius: var(--vc-radius-md); }
+.candidate-col { padding: 10px 12px; background: var(--vc-surface); border: 1px dashed var(--vc-feature-solid); border-radius: var(--vc-radius-md); }
 .candidate-col h4 { margin: 0 0 6px; font-size: var(--vc-font-size-md); }
 .candidate-col ul { margin: 0 0 6px; padding-left: 1.1em; color: var(--vc-text); }
 .candidate-sum { margin: 0; color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); }
@@ -153,9 +153,9 @@
 
 /* ---- the cluster confirmation (js/cluster.js) ----------------------------------------------------- */
 .cluster-proposal { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.cluster-note { margin: 0 0 12px; padding: 8px 12px; border-left: 3px solid var(--vc-feature-border); background: var(--vc-feature-bg); color: var(--vc-text); }
+.cluster-note { margin: 0 0 12px; padding: 8px 12px; border-left: 3px solid var(--vc-feature-solid); background: var(--vc-feature-bg); color: var(--vc-text); }
 .cluster-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 10px; }
-.cluster-col { padding: 10px 12px; border: 1px solid var(--vc-feature-border); }
+.cluster-col { padding: 10px 12px; border: 1px solid var(--vc-feature-solid); }
 .cluster-col__plant { margin: 0; font-size: var(--vc-font-size-md); }
 .cluster-col__supplier { margin: 0 0 6px; color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); }
 .cluster-col__texts { margin: 0 0 6px; padding-left: 1.1em; font-size: var(--vc-font-size-sm); }
@@ -231,10 +231,13 @@
 .options-table { width: 100%; margin: 8px 0; table-layout: fixed; font-size: var(--fs-xs); }
 .options-table :is(th, td) { padding: 4px 6px; }
 .options-table thead th { white-space: normal; line-height: 1.15; }
-.options-table .num { text-align: end; white-space: nowrap; }
+.options-table .num { text-align: end; }
+.options-table td.num { white-space: nowrap; }
+.options-table thead th:first-child { width: 4.75em; }
 .options-table tr[data-recommended="true"] th { color: var(--vc-accent-text); }
 .options-reason { margin: 4px 0 0; font-size: var(--vc-font-size-sm); }
 .option-part { display: block; color: var(--vc-text-muted); font-size: var(--fs-xs); font-weight: var(--vc-weight-regular); }
 .option-figures dd.spend { color: var(--vc-info-text); }
 .accept-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .accept-reason { min-height: 40px; max-width: 100%; }
+.audit-table tr.audit-empty td { padding: 14px 12px; color: var(--vc-text-muted); }

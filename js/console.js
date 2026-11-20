@@ -26,7 +26,6 @@ import { eur, pct, unitPrice } from "./format.js";
 
 // The rail and the status pill show the agent's step; the log only marks when it is the person's turn.
 const PHASES = new Set(["awaiting_approval"]);
-const TEXT_SIZE_KEY = STORAGE.consoleText;
 
 /**
  * scenarios: the preset scenarios (data/scenarios.js). onPickScenario(id) chooses one (as the menu
@@ -46,7 +45,7 @@ export function createConsole(panel, { scenarios = [], onPickScenario, onRunScen
   sizeBtn.addEventListener("click", () => {
     const large = panel.dataset.text !== "large";
     applySize(large);
-    try { localStorage.setItem(TEXT_SIZE_KEY, large ? "large" : "standard"); } catch { /* storage unavailable */ }
+    try { localStorage.setItem(STORAGE.consoleText, large ? "large" : "standard"); } catch { /* storage unavailable */ }
   });
   const SCRIPTED = "Authored replay. No model calls; the engine recalculates every figure.";
   const watermarkText = h("span", {}, SCRIPTED);
@@ -444,7 +443,7 @@ export function createConsole(panel, { scenarios = [], onPickScenario, onRunScen
   }
 
   let storedSize = null;
-  try { storedSize = localStorage.getItem(TEXT_SIZE_KEY); } catch { /* storage unavailable */ }
+  try { storedSize = localStorage.getItem(STORAGE.consoleText); } catch { /* storage unavailable */ }
   applySize(storedSize === "large");
   showEmpty();
   return { reset, setScenario };
