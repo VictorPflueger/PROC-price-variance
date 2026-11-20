@@ -1,0 +1,4 @@
+# Work files of the agent that built this version; not part of the prototype.
+.unlazy/
+.unlazy-hook-state.json
+.claude/settings.local.json

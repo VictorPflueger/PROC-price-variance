@@ -6,6 +6,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
 import { readFile, mkdir } from "node:fs/promises";
 
 /** The app folder: the parent of tests/. */
@@ -20,7 +21,7 @@ export const MIME = {
 export const CORS = { "access-control-allow-origin": "*", "access-control-expose-headers": "*" };
 
 /** Case names given on the command line (empty: run all cases). */
-export const ONLY = process.argv.slice(2);
+export const ONLY = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 export const wanted = (name) => ONLY.length === 0 || ONLY.includes(name);
 
 /** Where screenshots, downloads and result files go (outside the app folder by default). */
@@ -84,11 +85,10 @@ export const NETWORK_NOISE = /Failed to load resource|net::ERR_|ERR_BLOCKED_BY_C
 /** A key-shaped string that is obviously not a real key. */
 export const MOCK_KEY = "sk-ant-test-MOCKKEY-0123456789abcdefghijklmnopqrstuvwxyz0123456789";
 
-/**
- * Init script for browser contexts: marks the intro window as seen, so it does not open by itself
- * and cover the controls. The smoke suite's "intro" case runs without it.
- */
-export const SKIP_INTRO = () => { try { localStorage.setItem("pv.introSeen", "1"); } catch { /* file:// or blocked storage */ } };
+/** --require-vici (or GitHub Actions): a missing ViciDesign checkout fails instead of skipping. */
+export const REQUIRE_VICI = process.argv.includes("--require-vici") || process.env.GITHUB_ACTIONS === "true";
 
-/** Browser storage keys of the app (js/config.js STORAGE), for tests that inspect storage. */
-export const KEYS = { apiKey: "pv.anthropic.key", introSeen: "pv.introSeen", diagnostics: "pv.diag" };
+/** A ViciDesign checkout: the folder in VICI_DIR, or ../ViciDesign next to this repository. */
+export function viciDir() {
+  return [process.env.VICI_DIR, path.resolve(APP_ROOT, "..", "ViciDesign")].filter(Boolean).find((d) => existsSync(path.join(d, "scripts", "lib", "guide.mjs"))) || null;
+}

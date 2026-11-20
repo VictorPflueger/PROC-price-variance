@@ -5,9 +5,8 @@
 //   format   display strings beyond the engine suite: cents, dates with and without the year, the clock
 //   schema   the validator of js/schema.js on planted good and bad records, and the data contracts
 //   static   AC-07: the security policy exactly as the brief's section 4, nothing from a third party,
-//            every storage key under "pv." apart from Vici's "vc-theme"; the golden data of Diagnostics
-//            current with the fixtures
-//   tools    the sixteen tool schemas: within the strict-tool limits (TECH_NOTES §1), only supported
+//            every storage key under "pv." apart from Vici's "vc-theme"
+//   tools    the sixteen tool schemas: within the strict-tool limits (1.0.0's technical notes, §1, in the git history), only supported
 //            keywords, every object closed; every tool's input checked by the app's own validator; a
 //            plain sentence and a result line for every tool
 //   exports  AC-16: the file names, the report's banner, the group analysis as CSV against the engine
@@ -287,9 +286,6 @@ if (chosen.includes("static")) {
   const viciKeys = [...viciJs.matchAll(/storage(?:Get|Set)\(\s*([^,)]+)/g)].map((m) => m[1].trim()).filter((k) => k !== "key");
   check("static", "Vici's script stores only vc-theme", /STORAGE_KEY = 'vc-theme'/.test(viciJs) && viciKeys.every((k) => k === "STORAGE_KEY"), viciKeys.join(", "));
   check("static", "the key's storage is this tab's session storage, under pv.anthropic.key", STORAGE.apiKey === "pv.anthropic.key" && /sessionStorage\.setItem\(STORAGE\.apiKey/.test(read("js/keystore.js")) && !/localStorage[^\n]*STORAGE\.apiKey/.test(read("js/keystore.js")));
-  // Diagnostics runs the golden cases in the browser from js/golden_data.js: it must be the fixtures'.
-  const { goldenText } = await import(pathToFileURL(path.join(APP_ROOT, "tools", "build_golden.mjs")).href);
-  check("static", "js/golden_data.js is current with tests/fixtures (node tools/build_golden.mjs writes it)", read("js/golden_data.js") === goldenText());
 }
 
 // ---- exports: AC-16 ---------------------------------------------------------------------------------

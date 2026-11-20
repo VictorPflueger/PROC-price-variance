@@ -1,6 +1,7 @@
 // Runs every check in order and prints a summary. The app itself needs none of this.
-// Usage: node tests/run-all.mjs            (all suites)
-//        node tests/run-all.mjs unit sims  (only the named suites)
+// Usage: node tests/run-all.mjs                  (all suites)
+//        node tests/run-all.mjs unit showcase   (only the named suites)
+//        node tests/run-all.mjs --require-vici  (Vici's checks must run: no ViciDesign checkout fails)
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { APP_ROOT } from "./lib/harness.mjs";
@@ -8,24 +9,22 @@ import { APP_ROOT } from "./lib/harness.mjs";
 const SUITES = [
   { id: "tokens", what: "colour system on Vici's tokens, light and dark: contrast, colour-blind separation", file: "tests/tokens.mjs", browser: false },
   { id: "page-icon", what: "page icon: favicon, header and loading screen, as on the website's card", file: "tests/page-icon.mjs", browser: false },
-  { id: "vici-files", what: "vici/ holds exactly the files its README lists, unchanged", file: "tests/vici-files.mjs", browser: false },
-  { id: "world", what: "the world, the six scenarios and their frozen figures, the past cases (AC-05)", file: "tools/check_world.mjs", browser: false },
-  { id: "unit", what: "streaming client, cost maths, display, schema validator, the security policy, the exports (AC-07, AC-16)", file: "tests/unit.mjs", browser: false },
-  { id: "engine", what: "golden cases G1 to G5, normalisation, display rules (AC-01 to AC-03)", file: "tests/engine.mjs", browser: false },
-  { id: "audit", what: "the figure audit: F01 to F16 and the rules around them (AC-04)", file: "tests/audit.mjs", browser: false },
+  { id: "fingerprint", what: "the case intact: engine, tools, agent, data and scripts byte for byte 1.0.0's, with 1.0.0's figures on every path", file: "tests/fingerprint.mjs", browser: false },
+  { id: "world", what: "the world, the six scenarios and their frozen figures, every script on every path", file: "tools/check_world.mjs", browser: false },
+  { id: "unit", what: "streaming client, cost maths, display, schema validator, the security policy, the exports", file: "tests/unit.mjs", browser: false },
+  { id: "engine", what: "golden cases G1 to G5, normalisation, display rules, the guardrails call by call", file: "tests/engine.mjs", browser: false },
+  { id: "audit", what: "the figure audit: F01 to F16 and the rules around them", file: "tests/audit.mjs", browser: false },
   { id: "hygiene", what: "no private term and no e-mail address in any published file", file: "tests/hygiene.mjs", browser: false },
-  { id: "docs", what: "documents complete for the release, every path and section they name exists (AC-23)", file: "tests/docs.mjs", browser: false, args: ["--complete"] },
-  { id: "parity", what: "shared shell identical to the sister app's, two modules adapted (needs a Rebate Hunter checkout; AC-06)", file: "tests/parity.mjs", browser: false, optional: true },
-  { id: "smoke", what: "the page boots; idle board, scenarios, intro, drawer, keyboard, storage, a missing file; the board equals the engine; a run by keyboard alone, reduced motion, names; the Method dialog (AC-14, AC-19)", file: "tests/smoke.mjs", browser: true },
+  { id: "vici", what: "Vici's own checks: guide, byline, writing, AI notice; every sentence of six cases on every path; vici/ byte for byte", file: "tests/vici.mjs", browser: false, vici: true },
+  { id: "lean", what: "the limits: modules, lines, one stylesheet, two network modules, the policy, the docs' length", file: "tests/lean.mjs", browser: false },
+  { id: "docs", what: "the docs say what the page and the engine say: paths, talk track, figures", file: "tests/docs.mjs", browser: false },
+  { id: "showcase", what: "the presenter in Chromium: steps, key figures, decisions, six cases, the guide (with Vici's render check), layout at three sizes in both themes", file: "tests/showcase.mjs", browser: true, vici: true },
   { id: "hexagon", what: "nothing round: the app's files, and the rendered app in both themes", file: "tests/hexagon.mjs", browser: true },
-  { id: "design", what: "series colours: no chart uses merlot, fjord, lilac, honey or a state colour (AC-14)", file: "tests/design.mjs", browser: true },
-  { id: "accept", what: "the key: asked only for Live, checked, kept in this tab, never stored, exported or logged; the exports and their schema (AC-08, AC-16)", file: "tests/accept.mjs", browser: true },
-  { id: "layout", what: "1920×1080 to 1280×720 in both themes: no overflow, no ellipsis, 40 px targets (AC-17)", file: "tests/layout.mjs", browser: true },
-  { id: "live", what: "the live agent against a scripted API stand-in: guardrails, rates, caps, recorder, entries, parameters (AC-09 to AC-11)", file: "tests/live.mjs", browser: true },
-  { id: "sims", what: "the six simulations along every decision path, the cluster dialog, the words, the demo's timing at ×1 (AC-10, AC-12, AC-15, AC-21)", file: "tests/sims.mjs", browser: true }
+  { id: "live", what: "a live run against a stand-in API: Start agent, LIVE and the AI notice, steps unlocking, decisions, cost measured, the key, Stop, the caps, offline", file: "tests/live.mjs", browser: true }
 ];
 
-const only = process.argv.slice(2);
+const REQUIRE = process.argv.includes("--require-vici");
+const only = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const chosen = SUITES.filter((s) => !only.length || only.includes(s.id));
 const summary = [];
 // In GitHub Actions a failed suite also becomes an annotation with its FAIL lines, readable in the
@@ -46,13 +45,13 @@ const annotate = (s, out) => {
 for (const s of chosen) {
   console.log(`\n=== ${s.id}: ${s.what} ===`);
   const started = Date.now();
-  const r = spawnSync(process.execPath, [path.join(APP_ROOT, s.file), ...(s.args || [])], { cwd: APP_ROOT, stdio: CI ? ["inherit", "pipe", "pipe"] : "inherit", env: process.env, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+  const r = spawnSync(process.execPath, [path.join(APP_ROOT, s.file), ...(s.args || []), ...(s.vici && REQUIRE ? ["--require-vici"] : [])], { cwd: APP_ROOT, stdio: CI ? ["inherit", "pipe", "pipe"] : "inherit", env: process.env, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
   if (CI) {
     process.stdout.write(r.stdout || "");
     process.stderr.write(r.stderr || "");
     if (r.status !== 0 && !(s.optional && r.status === 2)) annotate(s, `${r.stdout || ""}\n${r.stderr || ""}`);
   }
-  // An optional suite without what it needs (parity without a sister-app checkout) exits 2: skipped.
+  // An optional suite without what it needs exits 2: skipped.
   if (s.optional && r.status === 2) {
     summary.push({ ...s, ok: true, skipped: true, code: r.status, seconds: Math.round((Date.now() - started) / 1000) });
     continue;

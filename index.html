@@ -1,33 +1,20 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- The browser enforces where this page may connect: the API key can only ever reach api.anthropic.com,
-       and open data only the ECB's reference rates through api.frankfurter.dev (brief section 4). Scripts,
-       styles, fonts and images come from this site only: the app loads nothing from a third party. -->
+  <!-- Everything comes from this site. A live run reaches api.anthropic.com with the visitor's key, and the
+       ECB's rates through api.frankfurter.dev; nothing else can be reached. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src https://api.anthropic.com https://api.frankfurter.dev; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="The Price Variance Agent finds where a fictional industrial group pays different prices for the same item or service, makes the prices comparable, separates the justified from the unexplained part, and proposes costed options for human approval.">
-  <title>Price Variance Agent — Procurement price variance</title>
+  <meta name="description" content="The Price Variance Agent checks a buyer's tip against every order, makes the prices of the same item comparable, finds the gap no reason explains and proposes costed ways to close it for a person to approve.">
+  <title>Price Variance Agent · Agentic AI prototype</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-
-  <!-- The look comes from Victor's design system Vici, copied unchanged into vici/ (vici/README.md).
-       It sits in cascade layers, so the app's own stylesheets below refine it without !important. -->
   <link rel="stylesheet" href="vici/dist/vici.min.css">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/board.css">
-  <link rel="stylesheet" href="css/console.css">
-  <link rel="stylesheet" href="css/drawer.css">
-  <link rel="stylesheet" href="css/modals.css">
-
-  <!-- The theme before the page is drawn (light unless the visitor chose dark), then Vici's script. -->
+  <link rel="stylesheet" href="css/app.css">
   <script src="js/theme.js"></script>
   <script src="vici/dist/vici.js" defer></script>
-
-  <!-- Fictional company and its data products: plain scripts that set window globals (no fetch needed). -->
   <script src="data/fx.js" defer></script>
   <script src="data/world.js" defer></script>
   <script src="data/scenarios.js" defer></script>
@@ -36,62 +23,212 @@
   <script type="module" src="js/main.js"></script>
 </head>
 <body class="app-shell">
-  <a class="vc-skip-link skip-link" href="#console">Skip to the agent console</a>
+  <a class="vc-skip-link" href="#story">Skip to the step</a>
 
   <header class="app-header">
     <div class="brand">
       <span class="vc-cell vc-cell--lilac" aria-hidden="true"><span class="vc-icon vc-icon--trend-down"></span></span>
-      <div class="brand-text">
-        <span class="brand-name">Price Variance Agent</span>
-        <span class="brand-sub">Price variance agent for GlobalCorp SE (fictional)</span>
+      <span class="brand-name">Price Variance Agent</span>
+    </div>
+
+    <div class="header-actions">
+      <span class="vc-tooltip-anchor">
+        <span class="vc-tag vc-tag--lg mode-tag" id="mode-tag" data-mode="simulation" tabindex="0" aria-describedby="tip-mode"><span id="mode-text">SIMULATION</span></span>
+        <span class="vc-tooltip vc-tooltip--bottom" role="tooltip" id="tip-mode">A replay of the agent's run through its live tools: the engine computes every figure and no model is called. Start agent offers a live run.</span>
+      </span>
+      <button type="button" class="vc-button vc-button--secondary" data-vc-guide-open="guide"><span class="vc-icon vc-icon--info" aria-hidden="true"></span>How it works</button>
+      <span class="vc-tooltip-anchor">
+        <button type="button" class="vc-icon-button" data-vc-theme-toggle aria-labelledby="tip-theme"><span class="vc-icon vc-icon--moon vc-when-light" aria-hidden="true"></span><span class="vc-icon vc-icon--sun vc-when-dark" aria-hidden="true"></span></button>
+        <span class="vc-tooltip vc-tooltip--bottom" role="tooltip" id="tip-theme">Dark or light theme</span>
+      </span>
+    </div>
+
+    <div class="kpis" role="group" aria-label="Key figures">
+      <div class="kpi vc-stat" id="kpi-unexplained" data-vc-kpi="Unexplained a year">
+        <p class="vc-stat__label">Unexplained a year</p>
+        <p class="vc-stat__value kpi-value"><s class="vc-stat__was" id="kpi-unexplained-from" hidden></s><span class="vc-visually-hidden" id="kpi-unexplained-to" hidden>, now </span><span id="kpi-unexplained-value">€14,146</span></p>
+        <p class="vc-stat__note kpi-note" id="kpi-unexplained-note">at today's volume</p>
+      </div>
+      <div class="kpi vc-stat" id="kpi-highest" data-vc-kpi="Highest vs best price">
+        <p class="vc-stat__label">Highest vs best price</p>
+        <p class="vc-stat__value kpi-value" id="kpi-highest-value">+42 %</p>
+        <p class="vc-stat__note kpi-note" id="kpi-highest-note">Lyon €9.80, best €6.90</p>
+      </div>
+      <div class="kpi vc-stat" id="kpi-clock" data-vc-kpi="Tip → decision">
+        <p class="vc-stat__label">Tip → decision</p>
+        <p class="vc-stat__value kpi-value"><span class="vc-tabular" id="kpi-clock-value">0:00</span></p>
+        <p class="vc-stat__note kpi-note" id="kpi-clock-note">running since the tip</p>
+      </div>
+      <div class="kpi vc-stat" id="kpi-cost" data-vc-kpi="Session cost">
+        <p class="vc-stat__label">Session cost</p>
+        <p class="vc-stat__value kpi-value" id="kpi-cost-value">≈ €0.08</p>
+        <p class="vc-stat__note kpi-note" id="kpi-cost-note">estimated for a live run</p>
       </div>
     </div>
-
-    <div class="header-badges">
-      <span id="mode-badge" class="vc-tag mode-badge" data-mode="none" role="status" aria-live="polite" title="Choose a mode with Start agent">No run active</span>
-      <!-- Vici's theme toggle (vici.js switches the theme and remembers the choice). -->
-      <span class="vc-tooltip-anchor">
-        <button type="button" class="vc-icon-button theme-toggle" data-vc-theme-toggle aria-labelledby="tip-theme"><span class="vc-icon vc-icon--moon vc-when-light" aria-hidden="true"></span><span class="vc-icon vc-icon--sun vc-when-dark" aria-hidden="true"></span></button>
-        <span class="vc-tooltip vc-tooltip--bottom" role="tooltip" id="tip-theme">Dark theme</span>
-      </span>
-      <span class="vc-tag vc-tag--feature ai-disclosure" title="The Price Variance Agent is an AI system. Its analysis can be wrong. Every action is a draft that waits for your approval, and nothing is ever sent to a real company.">
-        <span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>
-        <span><span class="long">You are interacting with an </span>AI system</span>
-      </span>
-      <span class="honesty">Fictional company, no client data</span>
-    </div>
-
-    <div id="kpis" class="kpis" role="group" aria-label="Key figures for the current run"></div>
   </header>
 
-  <nav id="controls" class="controls" aria-label="Run controls"></nav>
+  <div class="intro">
+    <p class="intro-text">An AI agent finds where plants pay more for the same item and proposes a fix, on fictional data. Nothing is sent without your approval.</p>
+    <p class="vc-byline">
+      <span class="vc-byline__label">Built by</span>
+      <a class="vc-byline__person" href="https://www.linkedin.com/in/victorpflueger" rel="author noopener" target="_blank">
+        <span class="vc-avatar vc-avatar--xs"><img src="vici/assets/brand/portrait-96.jpg" alt="" width="96" height="96"></span>
+        <span class="vc-byline__name">Victor Pflüger</span>
+        <img class="vc-platform-mark" src="vici/assets/marks/linkedin.png" alt="" width="840" height="779">
+        <span class="vc-visually-hidden"> on LinkedIn (opens in a new tab)</span>
+      </a>
+      <span class="vc-tooltip-anchor">
+        <a class="vc-byline__icon" href="https://victorpflueger.github.io/VIP/index.html" rel="author noopener" target="_blank" aria-label="Victor Pflüger's website (opens in a new tab)"><span class="vc-icon vc-icon--globe-hex" aria-hidden="true"></span></a>
+        <span class="vc-tooltip vc-tooltip--bottom" aria-hidden="true">Website</span>
+      </span>
+    </p>
+  </div>
+
+  <nav class="talk" aria-label="Talk track">
+    <button type="button" class="vc-button vc-button--secondary start" id="start" data-vc-live><span class="vc-icon vc-icon--play" aria-hidden="true"></span>Start agent</button>
+    <span class="vc-tag vc-tag--feature ai-notice"><span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>You are interacting with an AI system</span>
+    <ol class="vc-stepper steps" id="steps">
+      <li class="vc-step" data-step="tip"><button type="button" class="vc-step__button"><span class="vc-step__marker" aria-hidden="true">1</span><span class="vc-step__label">The tip</span></button></li>
+      <li class="vc-step" data-step="compare"><button type="button" class="vc-step__button"><span class="vc-step__marker" aria-hidden="true">2</span><span class="vc-step__label">Like for like</span></button></li>
+      <li class="vc-step" data-step="gap"><button type="button" class="vc-step__button"><span class="vc-step__marker" aria-hidden="true">3</span><span class="vc-step__label">The gap</span></button></li>
+      <li class="vc-step" data-step="decide"><button type="button" class="vc-step__button"><span class="vc-step__marker" aria-hidden="true">4</span><span class="vc-step__label">Your decision</span></button></li>
+      <li class="vc-step" data-step="drafts"><button type="button" class="vc-step__button"><span class="vc-step__marker" aria-hidden="true">5</span><span class="vc-step__label">The drafts</span></button></li>
+    </ol>
+    <button type="button" class="vc-button vc-button--ghost case-button" id="case-button" popovertarget="case-menu" aria-haspopup="menu" aria-expanded="false"><span class="vc-visually-hidden">Case: </span><span class="case-name" id="case-name">Gloves at four plants</span><span class="vc-icon vc-icon--chevron-down" aria-hidden="true"></span></button>
+    <div class="vc-menu case-menu" id="case-menu" popover role="menu" aria-label="Cases"></div>
+    <button type="button" class="vc-button vc-button--danger stop" id="stop" hidden><span class="vc-icon vc-icon--stop" aria-hidden="true"></span>Stop the live run</button>
+  </nav>
+
+  <p class="vc-visually-hidden" id="announce" aria-live="polite"></p>
 
   <main class="workspace">
-    <!-- The workspace's first panel (layout class shared with the sister apps) holds the price board. -->
-    <section class="map-panel" aria-label="Price board: the comparable groups and their prices">
-      <div id="board"></div>
+    <section class="stage" aria-labelledby="stage-title">
+      <h2 class="stage-title" id="stage-title">Prices as booked</h2>
+      <div class="stage-body" id="stage-body"></div>
     </section>
-    <section id="console" class="console-panel" aria-label="Agent console" tabindex="-1"></section>
+    <section class="story" id="story" aria-labelledby="story-title" tabindex="-1">
+      <h2 class="story-title" id="story-title" tabindex="-1">The tip</h2>
+      <p class="story-lead" id="story-lead"></p>
+      <p class="vc-alert vc-alert--warning story-alert" id="story-alert" role="status" hidden></p>
+      <p class="story-working" id="story-working" hidden><span class="vc-spinner vc-spinner--sm" aria-hidden="true"></span><span id="story-working-text"></span></p>
+      <figure class="agent" id="agent" hidden>
+        <figcaption><span class="vc-tag vc-tag--feature vc-tag--sm"><span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>Agent</span><span class="agent-note" id="agent-note">replayed, not live</span></figcaption>
+        <div class="agent-words" id="agent-text"></div>
+      </figure>
+      <details class="log" id="log" hidden><summary id="log-summary">Decision log</summary><ol id="log-list"></ol></details>
+      <div class="story-foot">
+        <button type="button" class="vc-button next" id="next"><span id="next-text">Next</span><span class="vc-icon vc-icon--chevron-right" aria-hidden="true"></span></button>
+      </div>
+    </section>
   </main>
 
-  <section id="drawer" class="drawer" aria-label="Options, outbox and audit log"></section>
+  <!-- How it works: Vici's guide. vici.js builds the chapter rail and opens it once per browser tab;
+       ?guide=0 keeps it closed, ?guide=present opens the talk track. Every figure in it is the engine's
+       for the gloves case, written in by js/app.js (data-fig). -->
+  <dialog class="vc-dialog vc-guide" id="guide" aria-labelledby="guide-title" data-vc-guide data-vc-guide-auto data-vc-guide-count="{n} of {total}">
+    <header class="vc-dialog__header">
+      <h2 class="vc-dialog__title" id="guide-title">How the prototype works</h2>
+      <button type="button" class="vc-icon-button" data-vc-close aria-label="Close"><span class="vc-icon vc-icon--close" aria-hidden="true"></span></button>
+    </header>
+    <div class="vc-guide__chapters">
+      <section class="vc-guide__chapter" data-vc-chapter="what" data-vc-nav="What it does">
+        <h3>Finds where a group pays two prices for one item</h3>
+        <p class="vc-guide__lead">An AI agent for procurement. It checks a buyer's tip against every order, proves the gap like for like and proposes how to close it. A person decides; nothing is sent.</p>
+        <div class="vc-table-wrap"><table class="vc-table vc-table--compact">
+          <caption>The case it opens on</caption>
+          <tbody>
+            <tr><th scope="row">The tip</th><td><span data-fig="tip">“Lyon seems to pay far more for nitrile gloves than Frankfurt.”</span></td></tr>
+            <tr><th scope="row">Orders</th><td><span data-fig="orders">32</span> at <span data-fig="plants">4</span> plants, in euros and pounds</td></tr>
+            <tr><th scope="row">Found</th><td><span data-fig="unexplained">€14,146</span> a year that no reason explains</td></tr>
+            <tr><th scope="row">Proposed</th><td><span data-fig="options">3</span> costed options, one recommended, for you to approve</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+      <section class="vc-guide__chapter" data-vc-chapter="how" data-vc-nav="How it works">
+        <h3>Four figures show what the agent finds and costs</h3>
+        <p class="vc-guide__lead">An engine computes every figure; the agent checks, explains and drafts. You decide.</p>
+        <div class="vc-table-wrap"><table class="vc-table vc-table--compact">
+          <caption>Key figures</caption>
+          <thead><tr><th scope="col">Figure</th><th scope="col">What it measures</th><th scope="col">Gloves case</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Unexplained a year</th><td>The price gap no recorded reason explains, at today's volume, and what is left after your decision</td><td><span data-fig="unexplained">€14,146</span>, then <span data-fig="left">€1,644</span></td></tr>
+            <tr><th scope="row">Highest vs best price</th><td>How much more the dearest plant pays than the group's best price at volume</td><td><span data-fig="spread">+42 %</span>, <span data-fig="highest-plant">Lyon</span></td></tr>
+            <tr><th scope="row">Tip → decision</th><td>Time from the tip to your decision, measured on this page</td><td>about 4 min on the talk track</td></tr>
+            <tr><th scope="row">Session cost</th><td>What the agent's model calls cost: estimated here, measured in a live run</td><td>about <span data-fig="cost">€0.08</span></td></tr>
+          </tbody>
+        </table></div>
+      </section>
+      <section class="vc-guide__chapter" data-vc-chapter="real" data-vc-nav="What is real">
+        <h3>The company is invented, the arithmetic is real</h3>
+        <p class="vc-guide__lead">GlobalCorp SE and its data are fictional. The replay runs the agent's written steps through its live tools, so the engine recomputes every figure. Start agent offers a live run with Claude on your own key.</p>
+        <div class="vc-table-wrap"><table class="vc-table vc-table--compact">
+          <caption>Where everything comes from</caption>
+          <tbody>
+            <tr><th scope="row">Fictional</th><td>GlobalCorp SE: <span data-fig="world-plants">4</span> plants, <span data-fig="world-suppliers">132</span> suppliers, <span data-fig="world-orders">1,540</span> orders, and the agent's words in the replay</td></tr>
+            <tr><th scope="row">Real</th><td>The engine's arithmetic, the ECB's exchange rates and, with your key, Claude itself</td></tr>
+            <tr><th scope="row">In production</th><td>Orders from SAP S/4HANA or Ariba, the engine on Microsoft Fabric, the agent on Azure OpenAI, approvals in Teams</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+      <section class="vc-guide__chapter" data-vc-chapter="present" data-vc-nav="How to present">
+        <h3>Show it in five minutes</h3>
+        <p class="vc-guide__lead">Five minutes, a minute a step, on the numbered steps above the work area.</p>
+        <ol class="vc-guide__path">
+          <li><strong>The tip: a buyer's hunch. Point at the four figures.</strong> <span class="vc-guide__say">“The gap's worth and width, your time to decide, the agent's cost.”</span> <span class="vc-guide__time">1 min</span></li>
+          <li><strong>Like for like.</strong> <span class="vc-guide__say">“Birmingham's <span data-fig="booked">£6.20</span> per 100 looks cheap. In euros, delivered, it's <span data-fig="delivered">€7.56</span>.”</span> <span class="vc-guide__time">1 min</span></li>
+          <li><strong>The gap.</strong> <span class="vc-guide__say">“Lyon pays <span data-fig="highest">€9.80</span>, the contract <span data-fig="best">€6.90</span>: <span data-fig="unexplained">€14,146</span> a year no reason explains.”</span> <span class="vc-guide__time">1 min</span></li>
+          <li><strong>Your decision: approve the recommended option.</strong> <span class="vc-guide__say">“Savings of <span data-fig="savings">€12,501</span> a year, the first after <span data-fig="days">30</span> days.”</span> <span class="vc-guide__time">1 min</span></li>
+          <li><strong>The drafts: approve both.</strong> <span class="vc-guide__say">“The agent writes them. Nothing leaves without a person's approval.”</span> <span class="vc-guide__time">1 min</span></li>
+        </ol>
+      </section>
+    </div>
+    <footer class="vc-dialog__footer vc-guide__footer">
+      <span class="vc-guide__count"></span>
+      <button type="button" class="vc-button vc-button--ghost" data-vc-guide-back><span class="vc-icon vc-icon--chevron-left" aria-hidden="true"></span>Back</button>
+      <button type="button" class="vc-button" data-vc-guide-next data-vc-guide-done="Start">Next<span class="vc-icon vc-icon--chevron-right" aria-hidden="true"></span></button>
+    </footer>
+  </dialog>
 
-  <div id="banners" class="banner-stack"></div>
+  <!-- Start agent: the free simulation, or a live run on the visitor's own key. js/live.js loads the
+       agent only when a live run starts. -->
+  <dialog class="vc-dialog start-dialog" id="start-dialog" aria-labelledby="start-title">
+    <header class="vc-dialog__header">
+      <h2 class="vc-dialog__title" id="start-title">Start the agent</h2>
+      <button type="button" class="vc-icon-button" data-vc-close aria-label="Close"><span class="vc-icon vc-icon--close" aria-hidden="true"></span></button>
+    </header>
+    <div class="vc-dialog__body start-choices">
+      <section class="start-card" aria-labelledby="start-sim-title">
+        <h3 id="start-sim-title"><span class="vc-icon vc-icon--cube" aria-hidden="true"></span>Simulation</h3>
+        <p>A replay of the agent's run on the same data, through its live tools. Free, no key: the presenter's path.</p>
+        <button type="button" class="vc-button" id="start-sim"><span class="vc-icon vc-icon--play" aria-hidden="true"></span>Run the simulation</button>
+      </section>
+      <section class="start-card start-card--live" aria-labelledby="start-live-title">
+        <h3 id="start-live-title"><span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>Live run</h3>
+        <p class="vc-tag vc-tag--feature ai-notice-full"><span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>You are interacting with an AI system</p>
+        <p>Claude investigates <span id="live-case">the case's tip</span> with the same tools, on your own Anthropic API key. The key stays in this tab and goes only to api.anthropic.com. Nothing is sent without your approval.</p>
+        <form class="key-form" id="key-form" novalidate>
+          <label class="vc-label" for="live-model">Model</label>
+          <select class="vc-select" id="live-model"></select>
+          <label class="vc-label" for="live-key">Your API key</label>
+          <input class="vc-input" id="live-key" name="pv-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" aria-describedby="live-facts live-msg" data-1p-ignore data-lpignore="true" data-bwignore="true">
+          <p class="vc-help" id="live-facts">A run stops at 40 model calls or €3.</p>
+          <p class="vc-help vc-help--error" id="live-msg" role="status"></p>
+          <div class="key-actions">
+            <button type="submit" class="vc-button vc-button--secondary" id="live-start" data-vc-live><span class="vc-icon vc-icon--key" aria-hidden="true"></span>Check key and start</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </dialog>
 
-  <!-- Boot screen: removed by js/main.js once the workspace is running. Without JavaScript modules
-       (for example when opened from disk via file://) it stays and explains what to do. -->
+  <!-- Boot screen: removed by js/main.js once the case has played. Opened from disk (file://), where
+       browsers block program modules, it stays and says what to do. -->
   <div id="boot" class="boot" data-state="loading">
     <div class="boot-card">
-      <div class="boot-brand">
-        <span class="vc-cell vc-cell--lilac vc-cell--xl" aria-hidden="true"><span class="vc-icon vc-icon--trend-down"></span></span>
-        <span class="brand-name">Price Variance Agent</span>
-      </div>
-      <p class="boot-status" role="status" aria-live="polite"><span class="vc-spinner" aria-hidden="true"></span><span id="boot-status">Starting the Price Variance Agent…</span></p>
+      <p class="boot-brand"><span class="vc-cell vc-cell--lilac vc-cell--xl" aria-hidden="true"><span class="vc-icon vc-icon--trend-down"></span></span>Price Variance Agent</p>
+      <p class="boot-status" role="status"><span class="vc-spinner" aria-hidden="true"></span><span id="boot-status">Comparing the gloves' prices…</span></p>
       <p id="boot-detail" class="vc-alert vc-alert--danger boot-detail" hidden></p>
-      <div class="boot-help">
-        <p>Still on this screen? The Price Variance Agent has to be served over http or https. Browsers block its program modules when <code>index.html</code> is opened straight from disk, at an address starting with <code>file://</code>.</p>
-        <p>To run it on your computer, open a terminal in this folder, run <code>python -m http.server 8000</code>, then open <code>http://localhost:8000</code>. Published on GitHub Pages, it works as is. Use a current Chrome or Edge.</p>
-      </div>
+      <p class="boot-help">Still on this screen? Serve the folder over http, for example with <code>python -m http.server 8000</code>, and open <code>http://localhost:8000</code>. Browsers don't run its modules from a file.</p>
       <noscript><p class="boot-detail">The Price Variance Agent needs JavaScript. Allow it for this site and reload the page.</p></noscript>
     </div>
   </div>
