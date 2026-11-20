@@ -13,6 +13,9 @@ import { APP_ROOT, ONLY, wanted, launchBrowser, serveStatic, NETWORK_NOISE, SKIP
 import { analyseWorld, ratesOf, scanWorld, worldPipeline } from "../js/world.js";
 import { eur, unitPrice } from "../js/format.js";
 
+// Incoterms 2020: the eleven rules in their four groups (ICC), written out for the checks.
+const INCOTERMS_2020 = { EXW: "E", FCA: "F", FAS: "F", FOB: "F", CPT: "C", CIP: "C", CFR: "C", CIF: "C", DAP: "D", DPU: "D", DDP: "D" };
+
 const CASES = ["boot", "idle", "scenarios", "intro", "drawer", "keyboard", "storage", "missing", "board", "keyboard-run", "motion", "names", "method"];
 const unknown = ONLY.filter((c) => !CASES.includes(c));
 if (unknown.length) { console.error(`Unknown case(s): ${unknown.join(", ")}. Cases: ${CASES.join(", ")}`); process.exit(2); }
@@ -280,16 +283,26 @@ try {
       for (const id of listed.map((x) => x.id)) {
         await s.page.click(`.board-pop .pop-line[data-line="${id}"]`);
         await s.page.waitForSelector(".board-pop .norm-steps", { timeout: 3000 });
-        const shown = await s.page.$eval(".board-pop", (e) => ({ title: e.querySelector(".pop-title")?.textContent || "", result: e.querySelector(".norm-result strong")?.textContent || "", steps: e.querySelectorAll(".norm-steps dt").length }));
+        const shown = await s.page.$eval(".board-pop", (e) => {
+          const dts = [...e.querySelectorAll(".norm-steps dt")];
+          const dd = (label) => dts.find((d) => d.textContent === label)?.nextElementSibling?.firstChild?.textContent || "";
+          return { title: e.querySelector(".pop-title")?.textContent || "", result: e.querySelector(".norm-result strong")?.textContent || "", steps: dts.length, terms: dd("Delivery terms"), rate: dd("Rate to EUR"), text: e.textContent };
+        });
         const l = a.lines.find((x) => x.id === id);
-        if (!shown.title.includes(id) || shown.result !== l.normalisation.display || shown.steps < 6) wrong.push(`${id}: ${JSON.stringify(shown)} vs ${l.normalisation.display}`);
+        // The delivery terms with their Incoterms 2020 group, written out here rather than taken from the app.
+        const rule = l.normalisation.steps.incoterm;
+        const want = rule ? `${rule} (group ${INCOTERMS_2020[rule]})` : "none (a service)";
+        const rate = l.normalisation.steps.currency === "EUR" ? "euro, no conversion" : `1 ${l.normalisation.steps.currency} = ${l.normalisation.steps.rate_to_eur.toLocaleString("en-GB", { maximumFractionDigits: 4 })} EUR`;
+        if (!shown.title.includes(id) || shown.result !== l.normalisation.display || shown.steps < 6) wrong.push(`${id}: ${JSON.stringify(shown).slice(0, 200)} vs ${l.normalisation.display}`);
+        else if (shown.terms !== want || shown.rate !== rate) wrong.push(`${id}: delivery terms "${shown.terms}" (want "${want}"), rate "${shown.rate}" (want "${rate}")`);
+        else if (/\b(null|undefined|NaN)\b/.test(shown.text)) wrong.push(`${id}: the popover shows a missing value: ${shown.text.slice(0, 200)}`);
         else opened.add(id);
         await s.page.click(".board-pop .pop-back");
         await s.page.waitForSelector(".board-pop .pop-lines", { timeout: 3000 });
       }
       await s.page.keyboard.press("Escape");
     }
-    check("board: every pair lists exactly its lines, and every line opens the engine's six steps and its normalised price", wrong.length === 0 && opened.size === a.lines.length, `${opened.size} of ${a.lines.length} opened; ${wrong.slice(0, 3).join(" | ")}`);
+    check("board: every pair lists exactly its lines, and every line opens the engine's six steps, its rate, its delivery terms with their Incoterms group and its normalised price", wrong.length === 0 && opened.size === a.lines.length, `${opened.size} of ${a.lines.length} opened; ${wrong.slice(0, 3).join(" | ")}`);
     check("board: every line's button is at least 40 px high and wide", small.length === 0, small.slice(0, 5).join(", "));
     // By keyboard: Tab reaches the rows; Enter opens a pair; Tab and Enter open a line; Escape returns.
     const kp = a.pairs[a.pairs.length - 1];

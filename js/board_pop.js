@@ -45,7 +45,8 @@ const money = (v, cur, dq = 1, unit = "") => {
   const n = new Intl.NumberFormat("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.round(v * dq * 1e9) / 1e9);
   return `${symbol(cur)}${n} per ${dq === 1 ? "" : `${int(dq)} `}${unit}`;
 };
-const groupOf = (incoterm) => Object.entries(INCOTERM_GROUPS).find(([, rules]) => rules.includes(incoterm))?.[0] || null;
+/** The Incoterms 2020 group of a rule (INCOTERM_GROUPS maps each rule to its group: FCA → F). */
+const groupOf = (incoterm) => INCOTERM_GROUPS[String(incoterm || "").toUpperCase()] || null;
 
 /**
  * A line's normalisation as a definition list, with the line's facts. onBack: returns to its pair's
@@ -68,7 +69,7 @@ export function normalisationContent(world, analysis, lineId, { onBack = null } 
     ["Price per base unit", money(s.price_per_base_unit, s.currency, dq, bu), null],
     ["Rate to EUR", s.currency === "EUR" ? "euro, no conversion" : `1 ${s.currency} = ${s.rate_to_eur.toLocaleString("en-GB", { maximumFractionDigits: 4 })} EUR`, s.currency === "EUR" ? null : "the window's mean ECB rate"],
     ["In euros", unitPrice(s.price_per_base_unit_eur, dq, bu), null],
-    ["Delivery terms", s.incoterm ? `${s.incoterm} (group ${g})` : "none (a service)", s.logistics_uplift ? `main carriage unpaid: + ${pct(s.logistics_uplift)} logistics uplift (an assumption)` : s.incoterm ? "delivered: no uplift" : null]
+    ["Delivery terms", s.incoterm ? (g ? `${s.incoterm} (group ${g})` : s.incoterm) : "none (a service)", s.logistics_uplift ? `main carriage unpaid: + ${pct(s.logistics_uplift)} logistics uplift (an assumption)` : s.incoterm ? "delivered: no uplift" : null]
   ];
   return h("div", { class: "pop-body" },
     back,
