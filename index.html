@@ -85,8 +85,8 @@
   </div>
 
   <nav class="talk" aria-label="Talk track">
-    <button type="button" class="vc-button vc-button--secondary start" id="start" data-vc-live><span class="vc-icon vc-icon--play" aria-hidden="true"></span>Start agent</button>
-    <span class="vc-tag vc-tag--feature ai-notice"><span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>You are interacting with an AI system</span>
+    <button type="button" class="vc-button vc-button--secondary play" id="play" data-state="play"><span class="vc-icon vc-icon--play" aria-hidden="true"></span><span id="play-text">Play</span></button>
+    <button type="button" class="vc-button vc-button--danger stop" id="stop" hidden><span class="vc-icon vc-icon--stop" aria-hidden="true"></span>Stop the live run</button>
     <ol class="vc-stepper steps" id="steps">
       <li class="vc-step" data-step="tip"><button type="button" class="vc-step__button"><span class="vc-step__marker" aria-hidden="true">1</span><span class="vc-step__label">The tip</span></button></li>
       <li class="vc-step" data-step="compare"><button type="button" class="vc-step__button"><span class="vc-step__marker" aria-hidden="true">2</span><span class="vc-step__label">Like for like</span></button></li>
@@ -96,7 +96,8 @@
     </ol>
     <button type="button" class="vc-button vc-button--ghost case-button" id="case-button" popovertarget="case-menu" aria-haspopup="menu" aria-expanded="false"><span class="vc-visually-hidden">Case: </span><span class="case-name" id="case-name">Gloves at four plants</span><span class="vc-icon vc-icon--chevron-down" aria-hidden="true"></span></button>
     <div class="vc-menu case-menu" id="case-menu" popover role="menu" aria-label="Cases"></div>
-    <button type="button" class="vc-button vc-button--danger stop" id="stop" hidden><span class="vc-icon vc-icon--stop" aria-hidden="true"></span>Stop the live run</button>
+    <button type="button" class="vc-button vc-button--secondary start" id="start" data-vc-live>Start agent</button>
+    <span class="vc-tag vc-tag--feature ai-notice"><span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>You are interacting with an AI system</span>
   </nav>
 
   <p class="vc-visually-hidden" id="announce" aria-live="polite"></p>
@@ -117,6 +118,7 @@
       </figure>
       <details class="log" id="log" hidden><summary id="log-summary">Decision log</summary><ol id="log-list"></ol></details>
       <div class="story-foot">
+        <p class="foot-note" id="foot-note"></p>
         <button type="button" class="vc-button next" id="next"><span id="next-text">Next</span><span class="vc-icon vc-icon--chevron-right" aria-hidden="true"></span></button>
       </div>
     </section>
@@ -172,7 +174,7 @@
       </section>
       <section class="vc-guide__chapter" data-vc-chapter="present" data-vc-nav="How to present">
         <h3>Show it in five minutes</h3>
-        <p class="vc-guide__lead">Five minutes, a minute a step, on the numbered steps above the work area.</p>
+        <p class="vc-guide__lead">It plays by itself and stops where you act; Space pauses while you talk.</p>
         <ol class="vc-guide__path">
           <li><strong>The tip: a buyer's hunch. Point at the four figures.</strong> <span class="vc-guide__say">“The gap's worth and width, your time to decide, the agent's cost.”</span> <span class="vc-guide__time">1 min</span></li>
           <li><strong>Like for like.</strong> <span class="vc-guide__say">“Birmingham's <span data-fig="booked">£6.20</span> per 100 looks cheap. In euros, delivered, it's <span data-fig="delivered">€7.56</span>.”</span> <span class="vc-guide__time">1 min</span></li>

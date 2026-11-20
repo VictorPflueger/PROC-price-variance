@@ -6,8 +6,8 @@ On Vici 2.0, Victor's design system, copied unchanged into `vici/`, and on the l
 
 - **Header.** The name in a lilac hexagon, SIMULATION or LIVE, How it works, the theme toggle, and the four key figures top right.
 - **Under the header.** One sentence on what the prototype does and that its data is fictional, beside the byline.
-- **Talk track.** Start agent with "You are interacting with an AI system" beside it, the five numbered steps, the case menu, and Stop during a live run.
-- **Work area.** The stage on the left shows what to look at: the orders as booked, one order converted, the gap chart, the options, the drafts. The story on the right says what it means: a title with the finding, a lead, the agent's words, the decision log, and one primary button for the next step.
+- **Talk track.** Play, Pause or Replay (Stop during a live run), the five numbered steps, the case menu, and Start agent with "You are interacting with an AI system" beside it.
+- **Work area.** The stage on the left shows what to look at. The story on the right says what it means: a title with the finding, a lead, the agent's words, the decision log, and one primary button for the next step.
 
 It reads from the back of a room at 1920 × 1080 and fits 1280 × 720 without scrolling, in both themes, with text at Vici's sizes or larger.
 
@@ -22,7 +22,9 @@ It reads from the back of a room at 1920 × 1080 and fits 1280 × 720 without sc
 | Sage | The best price at volume, a contract, a decision taken |
 | Ink | Everything else |
 
-Each step has one primary button. Where the step waits for your click (Approve, Same service), Next turns secondary.
+## Play and Your turn
+
+The page plays its steps by itself, each for as long as its title and lead take to read (7 to 14 seconds), and stops where you act: a merlot **Your turn** callout above the action says what to do, the recommended button pulses, and Next, the one primary button otherwise, steps aside. Next sits right under the story; beside it, words say when Play moves on, or "Your move" while paused, when Next pulses after six quiet seconds. Space pauses, as does a step chosen by hand. Vici's *Presenting step by step* sets the pattern.
 
 ## Plain words
 
@@ -30,8 +32,8 @@ The engine and the agent speak in ids and unit codes. The presenter says names a
 
 ## The figures
 
-Every figure on screen comes from the engine's results in the run; `js/story.js` only chooses and words them. The key figures start with values that make sense before anything happens, and two of them move when you decide: the first falls to what is left, the clock stops. The guide's figures are written in from the same engine when the page loads.
+Every figure on screen comes from the engine's results in the run; `js/story.js` only chooses and words them, and the guide's figures come from the same engine. The key figures make sense before anything happens; when you decide, the first falls to what is left and the clock stops.
 
 ## What stayed and what went
 
-The engine, the tools, the agent and the simulation scripts stayed, byte for byte. The console went: the price board, the portfolio and value pipeline, the outbox drawer, the Method dialog, Diagnostics, the exports, the replay speeds and the run recorder. A presenter needs none of them in five minutes, and the engine still computes everything they showed.
+The engine, the tools, the agent and the simulation scripts stayed, byte for byte. The console went: the price board, the portfolio and value pipeline, the outbox drawer, the Method dialog, Diagnostics, the exports, the replay speeds and the run recorder.

@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: VictorPflueger/ViciDesign
-          ref: 95018f1fad866d6f46f9dc2c094207cdabf1d453
+          ref: b2c302cd896a2e92938a64dca540ea0c690be52c
           path: ViciDesign
           fetch-depth: 0
       # Victor's website, next to the app once its card for this prototype exists, so tests/page-icon.mjs

@@ -4,6 +4,8 @@
 //            key figures and the five steps as the page does
 //   script   DEMO_SCRIPT.md walks the guide's talk track: the same five steps in the same order, each
 //            with its minutes, and the same sentence to say, figure for figure
+//   play     README.md, DEMO_SCRIPT.md and the guide's presenting chapter say the page plays by itself,
+//            stops where you act with Your turn (the two documents), and that Space pauses it
 //   figures  every euro amount and percentage in README.md and DEMO_SCRIPT.md is one the engine
 //            computes for the six cases (the cost cap aside), and the guide's own figures in index.html
 //            are the gloves case's
@@ -65,6 +67,9 @@ const unknown = (doc) => [...norm(doc).replace(/```[\s\S]*?```/g, "").matchAll(/
 check(unknown("Lyon pays €9.80 against €6.90: €99,999 a year.").join() === "€99,999", "control: a euro amount the engine never computes is caught, and its own figures pass");
 const say = (doc) => [...doc.matchAll(/^\d\.\s+\*\*(.+?)\*\*.*?\((\d+) min\)\s*\n\s*>?\s*“(.+?)”/gm)].map((m) => ({ step: m[1].replace(/[.:].*$/, "").trim(), min: Number(m[2]), say: norm(m[3]) }));
 check(say("1. **The tip.** Point at the figures. (1 min)\n   “Say this.”").length === 1 && say("1. The tip (1 min)").length === 0, "control: the demo script's steps are read as the guide's: name, minutes, sentence");
+/** A document that tells the presenter about Play: it plays by itself, stops for Your turn, Space pauses. */
+const tellsPlay = (doc, turn = true) => /\bplays?\b[^.]*\b(by itself|each step)/i.test(doc) && (!turn || /Your turn/.test(doc)) && /\bSpace\b[^.]*\bpause/i.test(doc);
+check(tellsPlay("The page plays by itself and stops for **Your turn**. Space pauses.") && !tellsPlay("Next, the number keys or the arrows move between the steps."), "control: a document that never mentions Play is caught");
 
 // ---- paths -------------------------------------------------------------------------------------------------
 for (const doc of DOCS) {
@@ -91,6 +96,11 @@ check(guide.length === 5 && guide.map((g) => g.step).join("|") === STEPS.join("|
 check(script.map((s) => s.step).join("|") === guide.map((g) => g.step).join("|") && script.every((s, i) => s.min === guide[i].min), `DEMO_SCRIPT.md walks the same steps with the same minutes (${script.map((s) => `${s.step} ${s.min}`).join(", ")})`);
 const differ = script.filter((s, i) => s.say !== guide[i]?.say).map((s) => s.step);
 check(script.length === 5 && !differ.length, `DEMO_SCRIPT.md says the guide's sentence at every step${differ.length ? ` (differs at ${differ.join(", ")})` : ""}`);
+
+// ---- Play --------------------------------------------------------------------------------------------------
+const presenting = text((html.match(/data-vc-chapter="present"[\s\S]*?<p class="vc-guide__lead">([\s\S]*?)<\/p>/) || [, ""])[1]);
+check(tellsPlay(presenting, false), `the guide's presenting chapter says the page plays by itself and Space pauses it ("${presenting}")`);
+for (const doc of ["README.md", "DEMO_SCRIPT.md"]) check(tellsPlay(norm(read(doc))), `${doc} says the page plays by itself, stops for Your turn and Space pauses it`);
 
 // ---- figures -----------------------------------------------------------------------------------------------
 for (const doc of ["README.md", "DEMO_SCRIPT.md"]) {

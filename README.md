@@ -8,7 +8,7 @@ Live site: <https://victorpflueger.github.io/PROC-price-variance/>
 
 ## The four figures
 
-Top right, from the first screen, each explained in the guide's How it works chapter.
+Top right, each explained in the guide's How it works chapter.
 
 | Figure | What it measures | Gloves case |
 |---|---|---|
@@ -19,7 +19,7 @@ Top right, from the first screen, each explained in the guide's How it works cha
 
 ## The talk track
 
-The guide, *How the prototype works*, opens once per browser tab. Its last chapter is the presenter's script: five steps of a minute each, on the numbered steps above the work area. [DEMO_SCRIPT.md](DEMO_SCRIPT.md) has the same script with what to do and the questions that come.
+The guide, *How the prototype works*, opens once per browser tab. When it closes, the page plays each step for as long as it takes to read and stops wherever you act, with **Your turn** above the button to press. Space pauses; the arrow keys, a clicker or the numbered steps step by hand. The guide's last chapter is the presenter's script, five steps of a minute each; [DEMO_SCRIPT.md](DEMO_SCRIPT.md) adds what to do and the questions that come.
 
 1. **The tip**: the buyer's hunch and every order of the item, as booked.
 2. **Like for like**: one order converted step by step (pack size, currency, freight), then every price in euros per 100, delivered.
@@ -27,11 +27,11 @@ The guide, *How the prototype works*, opens once per browser tab. Its last chapt
 4. **Your decision**: three costed options next to accepting the gap. The agent recommends one; you approve.
 5. **The drafts**: what your decision allows, each waiting for your approval. Nothing is sent.
 
-Each step is a click, a number key or an arrow key, and a link: `?case=gloves&step=gap`. The case menu holds five more: consultants (a cluster only a person can confirm), hoses (urgency as a reason), boxes (an honest negative), pallets (pounds) and shoes (two material numbers, one part).
+A link opens a step, paused: `?case=gloves&step=gap`. The case menu holds five more: consultants (a cluster only a person can confirm), hoses (urgency as a reason), boxes (an honest negative), pallets (pounds) and shoes (two material numbers, one part).
 
 ## Start agent: the simulation or a live run
 
-The page opens on the simulation: a replay of the agent's run through its live tools, so the engine computes every figure again and no model is called. **Start agent** offers it again, or a live run with Claude on your own Anthropic API key, with "You are interacting with an AI system" beside it. The key is checked with Anthropic's free models call, stays in this tab's session storage and goes only to api.anthropic.com. A live run stops at 40 model calls or €3, and says why when it stops early.
+The page opens on the simulation: a replay of the agent's run through its live tools, so the engine computes every figure again and no model is called. **Start agent** offers it again, or a live run with Claude on your own Anthropic API key, with "You are interacting with an AI system" beside it. The key stays in this tab and goes only to api.anthropic.com. A live run stops at 40 model calls or €3, and says why when it stops early.
 
 ## What is real
 
@@ -52,7 +52,7 @@ The engine, the sixteen tools, the agent with its guardrails and the six simulat
 
 | Module | Does |
 |---|---|
-| `js/app.js` | The five steps, the keys and links, the key figures, Start agent |
+| `js/app.js` | The five steps, Play, the keys and links, the key figures, Start agent |
 | `js/run.js` | Sorts a run's events into the five steps and logs every decision |
 | `js/story.js` | Words each step and figure from the engine's results, in plain names |
 | `js/view.js` | Draws a step: the stage on the left, the story on the right |
@@ -70,11 +70,11 @@ No build step and no install. Serve the folder over http and open it in Chrome o
 python -m http.server 8000
 ```
 
-then <http://localhost:8000>. Opened from disk, the browser blocks its modules and the loading screen says so. GitHub Pages publishes `main`; after each build the *live site* workflow checks that the published files are this commit's and that a simulation runs there.
+then <http://localhost:8000>. Opened from disk, the browser blocks its modules and the loading screen says so. GitHub Pages publishes `main`; the *live site* workflow checks that the published page is this commit's and plays.
 
 ## Tests
 
-`node tests/run-all.mjs` runs every suite; [tests/README.md](tests/README.md) lists them. GitHub Actions runs them on every push, with ViciDesign checked out at the commit `vici/` was copied from, so Vici's own checks run on the page: the guide, the byline, the writing rules and the AI notice. No test calls the real API.
+`node tests/run-all.mjs` runs every suite; [tests/README.md](tests/README.md) lists them. GitHub Actions runs them on every push, with ViciDesign at the commit `vici/` was copied from, so Vici's checks of the guide, the byline, the writing and the AI notice run on the page. No test calls the real API.
 
 ## History
 

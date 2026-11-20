@@ -1,9 +1,10 @@
 # Vici, copied into this prototype
 
 These files come unchanged from Vici, Victor Pflüger's design system
-(<https://victorpflueger.github.io/ViciDesign/index.html>), from its main branch at commit **`95018f1`**
+(<https://victorpflueger.github.io/ViciDesign/index.html>), from its main branch at commit **`b2c302c`**
 (20 November 2026), on the way to Vici 2.0: the How it works guide (`vc-guide`), the 2.0 byline, the
-key-figure rule with `vc-stat__was` (added for this prototype, ViciDesign#11), the AI notice and the
+key-figure rule with `vc-stat__was` (added for this prototype, ViciDesign#11), Presenting step by step
+with Play, Your turn, `vc-attention` and `--vc-step-fill` (ViciDesign#15), the AI notice and the
 prototype brief this prototype follows. Its files still call themselves 1.0.0 until 2.0 is released.
 The prototype loads them from here rather than from a CDN, so every page is served from this site alone.
 

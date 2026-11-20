@@ -8,6 +8,7 @@ import { asBooked, freightLeftOut, liveWords, money, noun, pct, perUnit, place, 
 
 const EPS = 1e-9;
 const eur0 = (x) => money(x, "EUR", 0);
+const words = (t) => (String(t).match(/\S+/g) || []).length;
 const LABELS = ["The tip", "Like for like", "The gap", "Your decision", "The drafts"];
 const IDS = ["tip", "compare", "gap", "decide", "drafts"];
 
@@ -149,17 +150,25 @@ export function story({ world, scenario, run, mode = "simulation", params = DEFA
     id: d.action_id, label: DRAFT_LABELS[d.type] || d.type, to: say(d.recipient), subject: say(d.subject), body: say(d.body), status: d.status || "pending"
   }));
   const open = drafts.filter((d) => d.status === "pending").length;
+  // Nothing to decide: the honest negative, or a cluster the person said is not one service.
+  const none = !decided && !opts && (negative || stopped);
   steps.push({
-    title: !decided ? "Drafts follow your decision" : !drafts.length ? "Drafting…" : open ? `${plural(drafts.length, "draft")} ${drafts.length === 1 ? "waits" : "wait"} for your approval` : `${drafts.filter((d) => d.status === "approved").length} of ${plural(drafts.length, "draft")} approved, nothing sent`,
-    lead: !decided ? "Approve an option in step 4, and the agent drafts what it allows." : "The agent drafts only what your decision allows. Approving clears a draft for a person to send; nothing leaves this page.",
-    stage: decided ? { kind: "drafts", drafts, outcome: run.report ? `Report filed: ${decided.id === "accept" ? "the gap accepted with its reason" : `${say(decided.title).replace(/^./, (c) => c.toLowerCase())}, approved`}. Nothing was sent.` : null } : { kind: "empty", text: "No drafts yet." }
+    title: none ? "No drafts: there was nothing to decide" : !decided ? "Drafts follow your decision" : !drafts.length ? "Drafting…" : open ? `${plural(drafts.length, "draft")} ${drafts.length === 1 ? "waits" : "wait"} for your approval` : `${drafts.filter((d) => d.status === "approved").length} of ${plural(drafts.length, "draft")} approved, nothing sent`,
+    lead: none ? "The agent drafts only what a decision allows, so this case ends with its finding." : !decided ? "Approve an option in step 4, and the agent drafts what it allows." : "The agent drafts only what your decision allows. Approving clears a draft for a person to send; nothing leaves this page.",
+    stage: decided ? { kind: "drafts", drafts, outcome: run.report ? `Report filed: ${decided.id === "accept" ? "the gap accepted with its reason" : `${say(decided.title).replace(/^./, (c) => c.toLowerCase())}, approved`}. Nothing was sent.` : null } : { kind: "empty", text: none ? "Nothing to draft in this case." : "No drafts yet." }
   });
 
   // A step waits for the person when its own click comes next: confirming the cluster, approving an
-  // option, deciding the drafts. Then that click is the step's one primary action, not Next.
+  // option, deciding the drafts. Then that click is the step's one primary action, not Next, and the
+  // step says whose turn it is and what to do (turn), above the action.
   const waits = [false, !!confirm, false, !!opts && !decided, !!decided && open > 0];
-  steps.forEach((s, i) => Object.assign(s, { id: IDS[i], label: LABELS[i], agent: agent(i), ready: ready(i), waits: waits[i] }));
-  if (confirm) for (const i of [2, 3, 4]) Object.assign(steps[i], { title: LABELS[i], lead: "First say in step 2 whether the orders are the same service. Then the engine compares them.", agent: [], recommendation: null, waits: false, stage: { kind: "empty", text: "Waits for your answer in step 2." } });
+  const turns = [null, "Say whether these orders are the same service. Only you can.", null,
+    "Approve one way to close the gap, or accept the gap with a reason.",
+    open > 1 ? "Approve or reject each draft. Nothing is sent." : "Approve or reject the draft. Nothing is sent."];
+  steps.forEach((s, i) => Object.assign(s, { id: IDS[i], label: LABELS[i], agent: agent(i), ready: ready(i), waits: waits[i], turn: waits[i] ? turns[i] : null }));
+  if (confirm) for (const i of [2, 3, 4]) Object.assign(steps[i], { title: LABELS[i], lead: "First say in step 2 whether the orders are the same service. Then the engine compares them.", agent: [], recommendation: null, waits: false, turn: null, stage: { kind: "empty", text: "Waits for your answer in step 2." } });
+  // How long Play stays on a step: the time to read its title and lead, between 7 and 14 seconds.
+  for (const s of steps) s.read = Math.min(14000, Math.max(7000, 3000 + 230 * words(`${s.title} ${s.lead}`)));
   if (working && mode === "live") steps[Math.min(run.reached, 4)].working = say(working);
 
   // A step the run has not reached is closed: in a live run while the agent works, in either mode
