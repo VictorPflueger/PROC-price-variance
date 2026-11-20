@@ -1,0 +1,46 @@
+{
+  "about": "The figure audit's cases of the brief (section 11, F01 to F16). The run's tool figures are the expected values of G1 to G5, as the engine types them: amounts in euros, prices in euros per base unit with the item's display quantity, shares as fractions, quantities with their unit, counts. The ids are the fixtures'. A fraction [a, b] stands for a / b.",
+  "known": {
+    "amounts": [0, 1160, 290, 103.5, 186.5, 117.3, 15, 260, 11277.3, 1842.3, 1738.8, 1621.5, 2400, -778.5, 7200, -5461.2, 2022.39, 9600, -7577.61, 283.59, 1300, 100, 5000],
+    "prices": [
+      { "value": 0.069, "display_quantity": 100, "unit": "EA" },
+      { "value": 0.098, "display_quantity": 100, "unit": "EA" },
+      { "value": 0.074865, "display_quantity": 100, "unit": "EA" },
+      { "value": 0.072, "display_quantity": 100, "unit": "EA" },
+      { "value": 0.06, "display_quantity": 100, "unit": "EA" },
+      { "value": 0.095, "display_quantity": 100, "unit": "EA" },
+      { "value": 0.05, "display_quantity": 100, "unit": "EA" }
+    ],
+    "shares": [[50, 137], [20, 137], [5, 137], [2, 137], [10, 137], [1738.8, 11277.3], [29, 69], [117.3, 9655.8], [0, 1], [115, 137]],
+    "quantities": [
+      { "value": 50000, "unit": "EA" }, { "value": 20000, "unit": "EA" }, { "value": 5000, "unit": "EA" }, { "value": 2000, "unit": "EA" },
+      { "value": 10000, "unit": "EA" }, { "value": 137000, "unit": "EA" }, { "value": 115000, "unit": "EA" }
+    ],
+    "counts": [1, 2, 3],
+    "ids": ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "C1", "C2", "C3", "C4", "C5", "M-100", "M-200", "S-A", "S-B", "S-C", "S-D", "S-X", "S-Y", "S-Z"],
+    "codes": ["1010", "1020", "2010", "3010", "1000", "2000", "3000"]
+  },
+  "cases": [
+    { "id": "F01", "text": "Lyon pays €9.80 per 100 EA, Frankfurt €6.90.", "offending": [] },
+    { "id": "F02", "text": "Lyon pays €9.90 per 100 EA.", "offending": ["€9.90"] },
+    { "id": "F03", "text": "Lyon pays 42.0% above the benchmark.", "offending": [] },
+    { "id": "F04", "text": "Lyon pays 45% above the benchmark.", "offending": ["45%"] },
+    { "id": "F05", "text": "The unexplained variance is €1,739 a year.", "offending": [] },
+    { "id": "F06", "text": "The unexplained variance is €1.74k a year.", "offending": [] },
+    { "id": "F07", "text": "The unexplained variance is €1,600 a year.", "offending": ["€1,600"] },
+    { "id": "F08", "text": "Birmingham buys 20,000 EA a year.", "offending": [] },
+    { "id": "F09", "text": "Urgent orders explain €103.50 of the gap.", "offending": [] },
+    { "id": "F10", "text": "Harmonising saves €1,621.50 a year for €2,400.", "offending": [] },
+    { "id": "F11", "text": "Harmonising saves €1,550 a year.", "offending": ["€1,550"] },
+    { "id": "F12", "text": "Plant 3010 buys from S-B without a contract.", "offending": [] },
+    { "id": "F13", "text": "Plant 3011 buys from S-B without a contract.", "offending": ["3011"] },
+    { "id": "F14", "text": "The index drops from 15.4% to 1.2% with option H.", "offending": [] },
+    { "id": "F15", "text": "The unexplained variance is €1.7k a year.", "offending": ["€1.7k"] },
+    { "id": "F16", "text": "Lyon pays €9,500 a year.", "offending": ["€9,500"] }
+  ],
+  "notes": [
+    { "id": "N-F02", "what": "F02 passes with Rebate Hunter's €0.50 floor", "text": "Lyon pays €9.90 per 100 EA.", "floor": 0.5 },
+    { "id": "N-F15", "what": "F15 lies within the precision written but 2.2 % from €1,738.80", "written": 1700, "half_unit": 50, "figure": 1738.8 },
+    { "id": "N-F16", "what": "F16 read with a decimal comma would be €9.50, P9's unit price", "decimal_reading": 9.50 }
+  ]
+}

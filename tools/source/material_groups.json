@@ -1,0 +1,27 @@
+{
+  "about": "GlobalCorp SE's material-group taxonomy: two levels, keyed to the vendor accounts' categories. Fictional company; shared with the Data Quality Agent (decision N1), which may copy this file unchanged. Codes are <category>-<group>.",
+  "version": "1.0.0",
+  "categories": [
+    { "code": "MRO", "name": "MRO supplies", "vendor_category": "MRO supplies" },
+    { "code": "PKG", "name": "Packaging", "vendor_category": "Packaging" },
+    { "code": "CHM", "name": "Chemicals", "vendor_category": "Chemicals" },
+    { "code": "SRV", "name": "Services", "vendor_category": null }
+  ],
+  "groups": [
+    { "code": "MRO-PPE", "name": "Personal protective equipment", "category": "MRO", "vendor_category": "MRO supplies", "examples": ["Nitrile gloves", "Safety shoes", "Safety glasses"] },
+    { "code": "MRO-HYD", "name": "Hydraulics and pneumatics", "category": "MRO", "vendor_category": "MRO supplies", "examples": ["Hydraulic hoses", "Couplings"] },
+    { "code": "MRO-FAS", "name": "Fasteners and fixings", "category": "MRO", "vendor_category": "MRO supplies", "examples": ["Cable ties", "Anchors"] },
+    { "code": "MRO-TLS", "name": "Tools and abrasives", "category": "MRO", "vendor_category": "MRO supplies", "examples": ["Cutting discs", "Drill bits"] },
+    { "code": "MRO-ELE", "name": "Electrical spares", "category": "MRO", "vendor_category": "MRO supplies", "examples": ["Fuses", "Cable glands"] },
+    { "code": "PKG-COR", "name": "Corrugated board", "category": "PKG", "vendor_category": "Packaging", "examples": ["Shipping boxes"] },
+    { "code": "PKG-PAL", "name": "Pallets and load carriers", "category": "PKG", "vendor_category": "Packaging", "examples": ["Euro pallets"] },
+    { "code": "PKG-FLM", "name": "Films and tapes", "category": "PKG", "vendor_category": "Packaging", "examples": ["Stretch film", "Packing tape"] },
+    { "code": "CHM-LUB", "name": "Lubricants", "category": "CHM", "vendor_category": "Chemicals", "examples": ["Hydraulic oil", "Grease"] },
+    { "code": "CHM-CLN", "name": "Cleaning agents", "category": "CHM", "vendor_category": "Chemicals", "examples": ["Industrial cleaner"] },
+    { "code": "CHM-PRC", "name": "Process chemicals", "category": "CHM", "vendor_category": "Chemicals", "examples": ["Coolant concentrate"] },
+    { "code": "SRV-CON", "name": "Consulting services", "category": "SRV", "vendor_category": "Consulting", "examples": ["SAP finance consultants"] },
+    { "code": "SRV-ITS", "name": "IT services", "category": "SRV", "vendor_category": "IT services", "examples": ["Service desk", "Field engineer"] },
+    { "code": "SRV-FAC", "name": "Facility services", "category": "SRV", "vendor_category": "Facility management", "examples": ["Cleaning", "Maintenance"] },
+    { "code": "SRV-SEC", "name": "Security services", "category": "SRV", "vendor_category": "Security services", "examples": ["Guarding", "Gate control"] }
+  ]
+}

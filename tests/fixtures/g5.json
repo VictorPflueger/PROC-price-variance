@@ -1,0 +1,42 @@
+{
+  "about": "Realised value, the brief's G5: an option approved on day -120 for €5,000 a year moved plant 1020's cable ties (M-200, base unit EA) from S-X to S-Y at €0.040 per EA, implemented on day -90. Prices are € per EA, delivered (DAP, EUR, price unit 1), so the normalised price is the price itself. The boundary case adds lines on the days at the edges of the two windows (PLAN.md B7): the baseline is days -455 to -91, after implementation is day -89 onward.",
+  "materials": [
+    { "id": "M-200", "description": "Cable tie 4.8 x 300 mm", "material_group": "MRO-FAS", "base_unit": "EA", "conversions": { "EA": 1 }, "display_quantity": 100, "manufacturer": null, "mpn": null }
+  ],
+  "plants": [{ "id": "1020", "country": "DE" }],
+  "value_log": [
+    { "id": "VL-G5", "group": "M-200", "option": "H", "plant": "1020", "old_supplier": "S-X", "new_supplier": "S-Y", "new_price": 0.040, "approved_day": -120, "approved_savings_eur": 5000, "bundle_part_eur": 0, "implemented_day": -90 }
+  ],
+  "po_lines": [
+    { "id": "C1", "plant": "1020", "supplier": "S-X", "material": "M-200", "quantity": 100000, "order_unit": "EA", "net_price": 0.050, "price_unit": 1, "currency": "EUR", "incoterm": "DAP", "order_day": -200, "urgent": false, "urgent_reason": null, "cancelled": false },
+    { "id": "C2", "plant": "1020", "supplier": "S-X", "material": "M-200", "quantity": 50000, "order_unit": "EA", "net_price": 0.050, "price_unit": 1, "currency": "EUR", "incoterm": "DAP", "order_day": -150, "urgent": false, "urgent_reason": null, "cancelled": false },
+    { "id": "C3", "plant": "1020", "supplier": "S-Y", "material": "M-200", "quantity": 80000, "order_unit": "EA", "net_price": 0.040, "price_unit": 1, "currency": "EUR", "incoterm": "DAP", "order_day": -60, "urgent": false, "urgent_reason": null, "cancelled": false },
+    { "id": "C4", "plant": "1020", "supplier": "S-Y", "material": "M-200", "quantity": 40000, "order_unit": "EA", "net_price": 0.040, "price_unit": 1, "currency": "EUR", "incoterm": "DAP", "order_day": -30, "urgent": false, "urgent_reason": null, "cancelled": false },
+    { "id": "C5", "plant": "1020", "supplier": "S-Z", "material": "M-200", "quantity": 20000, "order_unit": "EA", "net_price": 0.045, "price_unit": 1, "currency": "EUR", "incoterm": "DAP", "order_day": -10, "urgent": false, "urgent_reason": null, "cancelled": false }
+  ],
+  "expected": {
+    "baseline": 0.05, "baseline_display": "€5.00 per 100 EA",
+    "realised": 1300, "realised_display": "€1,300",
+    "leakage_lines": 1, "leakage_quantity": 20000, "leakage_quantity_display": "20,000 EA",
+    "missed": 100, "missed_display": "€100",
+    "approved": 5000, "approved_display": "€5,000",
+    "implemented": 5000,
+    "realised_new_supplier_only": 1200
+  },
+  "boundary": {
+    "about": "B1 sits on the implementation day (neither before nor after), B2 on the first day of the baseline window (day -455, in it), B3 one day earlier (out of it), B4 the day after implementation (after).",
+    "extra_lines": [
+      { "id": "B1", "plant": "1020", "supplier": "S-Y", "material": "M-200", "quantity": 10000, "order_unit": "EA", "net_price": 0.040, "price_unit": 1, "currency": "EUR", "incoterm": "DAP", "order_day": -90, "urgent": false, "urgent_reason": null, "cancelled": false },
+      { "id": "B2", "plant": "1020", "supplier": "S-X", "material": "M-200", "quantity": 10000, "order_unit": "EA", "net_price": 0.060, "price_unit": 1, "currency": "EUR", "incoterm": "DAP", "order_day": -455, "urgent": false, "urgent_reason": null, "cancelled": false },
+      { "id": "B3", "plant": "1020", "supplier": "S-X", "material": "M-200", "quantity": 10000, "order_unit": "EA", "net_price": 0.080, "price_unit": 1, "currency": "EUR", "incoterm": "DAP", "order_day": -456, "urgent": false, "urgent_reason": null, "cancelled": false },
+      { "id": "B4", "plant": "1020", "supplier": "S-Y", "material": "M-200", "quantity": 10000, "order_unit": "EA", "net_price": 0.040, "price_unit": 1, "currency": "EUR", "incoterm": "DAP", "order_day": -89, "urgent": false, "urgent_reason": null, "cancelled": false }
+    ],
+    "expected": {
+      "baseline": 0.050625,
+      "after_lines": ["C3", "C4", "C5", "B4"],
+      "realised": 1493.75,
+      "leakage_lines": 1,
+      "missed": 100
+    }
+  }
+}

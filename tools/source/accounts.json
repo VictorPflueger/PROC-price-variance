@@ -1,0 +1,1314 @@
+{
+  "about": "GlobalCorp SE's vendor accounts outside the five real corporate groups of Rebate Hunter's world, one per duplicate-name group (the lowest id). Fictional, like the company. Shared with the Data Quality Agent (decision N1); written by tools/extract_accounts.mjs.",
+  "source": {
+    "repository": "PROC-Rebate-Hunter",
+    "file": "data/world.js",
+    "commit": "73c00f8",
+    "world_version": "1.2.0",
+    "sha256": "f0be93fdccad6a7ab7b1cb724dd1e96834d65c90e73af53a0468b920782ece65"
+  },
+  "rule": {
+    "real_groups": [
+      "G-AVGO",
+      "G-CISCO",
+      "G-CRM",
+      "G-MSFT",
+      "G-SCHN"
+    ],
+    "excluded": "accounts with a real group's key or a register entry in a real group",
+    "name_normalisation": "lower case; dots removed; every other character that is not a letter or a digit a space; legal-form tokens dropped",
+    "legal_forms": [
+      "gmbh",
+      "ag",
+      "se",
+      "sa",
+      "sas",
+      "sarl",
+      "ltd",
+      "limited",
+      "plc",
+      "bv",
+      "nv",
+      "spa",
+      "srl",
+      "kg",
+      "co",
+      "inc"
+    ],
+    "duplicates": "one account per normalised name and country: the lowest id",
+    "fields_dropped": [
+      "tax_id",
+      "bank",
+      "spend",
+      "open_payables_eur",
+      "group_key",
+      "origin"
+    ]
+  },
+  "counts": {
+    "vendors": 161,
+    "outside_real_groups": 143,
+    "duplicate_name_groups": 17,
+    "kept": 124
+  },
+  "company_codes": [
+    {
+      "id": "CC-1000",
+      "code": "1000",
+      "name": "GlobalCorp SE",
+      "city": "Frankfurt am Main",
+      "country": "DE",
+      "currency": "EUR"
+    },
+    {
+      "id": "CC-2000",
+      "code": "2000",
+      "name": "GlobalCorp UK Ltd",
+      "city": "Birmingham",
+      "country": "GB",
+      "currency": "GBP"
+    },
+    {
+      "id": "CC-3000",
+      "code": "3000",
+      "name": "GlobalCorp France SAS",
+      "city": "Lyon",
+      "country": "FR",
+      "currency": "EUR"
+    }
+  ],
+  "accounts": [
+    {
+      "id": "30008",
+      "name": "Inno IT-Services AG",
+      "city": "Paris",
+      "country": "FR",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-3000"
+    },
+    {
+      "id": "30009",
+      "name": "Chroma Robotics AG",
+      "city": "Amsterdam",
+      "country": "NL",
+      "currency": "EUR",
+      "category": "Automation and robotics",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30010",
+      "name": "Vanguard Facility S.A.",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30011",
+      "name": "Chroma Logistics S.A.",
+      "city": "Madrid",
+      "country": "ES",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30012",
+      "name": "Sino IT-Services Ltd",
+      "city": "Madrid",
+      "country": "ES",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30013",
+      "name": "Nova Security GmbH",
+      "city": "Stuttgart",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30014",
+      "name": "Global Logistics AG",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30015",
+      "name": "Stellar Logistics S.A.",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30016",
+      "name": "Global Security S.A.",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30017",
+      "name": "Inno Consulting GmbH",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30018",
+      "name": "Global Security Ltd",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30019",
+      "name": "Stellar Security S.A.",
+      "city": "Düsseldorf",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30020",
+      "name": "Global Consulting S.A.",
+      "city": "Stuttgart",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30021",
+      "name": "Chroma Logistics AG",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30022",
+      "name": "Global Robotics S.A.",
+      "city": "Hamburg",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Automation and robotics",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30023",
+      "name": "Vanguard Facility AG",
+      "city": "Paris",
+      "country": "FR",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-3000"
+    },
+    {
+      "id": "30024",
+      "name": "Chroma MRO AG",
+      "city": "Hamburg",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "MRO supplies",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30025",
+      "name": "Inno Packaging AG",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Packaging",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30026",
+      "name": "Euro Fleet Ltd",
+      "city": "Hamburg",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Fleet services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30027",
+      "name": "Stellar Logistics GmbH",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30028",
+      "name": "Chroma Security S.A.",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30029",
+      "name": "Chroma Chemicals Ltd",
+      "city": "Amsterdam",
+      "country": "NL",
+      "currency": "EUR",
+      "category": "Chemicals",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30031",
+      "name": "Nova Packaging Ltd",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "Packaging",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30032",
+      "name": "Sino Logistics Ltd",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30033",
+      "name": "Euro Packaging GmbH",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "Packaging",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30034",
+      "name": "Inno IT-Services S.A.",
+      "city": "Madrid",
+      "country": "ES",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30035",
+      "name": "Sino Security GmbH",
+      "city": "Amsterdam",
+      "country": "NL",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30036",
+      "name": "Sino Consulting Ltd",
+      "city": "Stuttgart",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30037",
+      "name": "Omni Chemicals GmbH",
+      "city": "Hamburg",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Chemicals",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30038",
+      "name": "Euro Logistics Ltd",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30039",
+      "name": "Chroma IT-Services GmbH",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30040",
+      "name": "Sino Facility GmbH",
+      "city": "Düsseldorf",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30041",
+      "name": "Sino MRO GmbH",
+      "city": "Stuttgart",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "MRO supplies",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30042",
+      "name": "Vanguard Fleet AG",
+      "city": "Frankfurt",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Fleet services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30043",
+      "name": "Vanguard IT-Services Ltd",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30044",
+      "name": "Nova Consulting S.A.",
+      "city": "Düsseldorf",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30045",
+      "name": "Euro Logistics GmbH",
+      "city": "Amsterdam",
+      "country": "NL",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30046",
+      "name": "Chroma Consulting GmbH",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30047",
+      "name": "Stellar Logistics GmbH",
+      "city": "Stuttgart",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30048",
+      "name": "Stellar Robotics Ltd",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "Automation and robotics",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30049",
+      "name": "Sino MRO GmbH",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "MRO supplies",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30050",
+      "name": "Inno Consulting Ltd",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30052",
+      "name": "Chroma Facility S.A.",
+      "city": "Düsseldorf",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30053",
+      "name": "Stellar IT-Services GmbH",
+      "city": "Paris",
+      "country": "FR",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-3000"
+    },
+    {
+      "id": "30054",
+      "name": "Euro Facility GmbH",
+      "city": "Frankfurt",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30055",
+      "name": "Global Robotics GmbH",
+      "city": "Amsterdam",
+      "country": "NL",
+      "currency": "EUR",
+      "category": "Automation and robotics",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30056",
+      "name": "Vanguard Chemicals GmbH",
+      "city": "Paris",
+      "country": "FR",
+      "currency": "EUR",
+      "category": "Chemicals",
+      "company_code": "CC-3000"
+    },
+    {
+      "id": "30057",
+      "name": "Inno Security AG",
+      "city": "Stuttgart",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30058",
+      "name": "Stellar IT-Services GmbH",
+      "city": "Hamburg",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30059",
+      "name": "Vanguard Consulting AG",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30060",
+      "name": "Omni IT-Services GmbH",
+      "city": "Paris",
+      "country": "FR",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-3000"
+    },
+    {
+      "id": "30061",
+      "name": "Omni Packaging GmbH",
+      "city": "Amsterdam",
+      "country": "NL",
+      "currency": "EUR",
+      "category": "Packaging",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30062",
+      "name": "Nova MRO AG",
+      "city": "Hamburg",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "MRO supplies",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30063",
+      "name": "Global MRO S.A.",
+      "city": "Stuttgart",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "MRO supplies",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30064",
+      "name": "Inno Robotics Ltd",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "Automation and robotics",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30065",
+      "name": "Stellar MRO GmbH",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "MRO supplies",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30066",
+      "name": "Chroma IT-Services S.A.",
+      "city": "Frankfurt",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30067",
+      "name": "Nova Security S.A.",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30068",
+      "name": "Global Consulting Ltd",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30069",
+      "name": "Stellar Consulting Ltd",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30070",
+      "name": "Euro Security Ltd",
+      "city": "Düsseldorf",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30071",
+      "name": "Vanguard Fleet Ltd",
+      "city": "Madrid",
+      "country": "ES",
+      "currency": "EUR",
+      "category": "Fleet services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30073",
+      "name": "Chroma Security S.A.",
+      "city": "Stuttgart",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30074",
+      "name": "Stellar Robotics AG",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "Automation and robotics",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30075",
+      "name": "Vanguard IT-Services Ltd",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30076",
+      "name": "Nova Robotics Ltd",
+      "city": "Madrid",
+      "country": "ES",
+      "currency": "EUR",
+      "category": "Automation and robotics",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30077",
+      "name": "Nova Logistics AG",
+      "city": "Hamburg",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30078",
+      "name": "Global Logistics GmbH",
+      "city": "Madrid",
+      "country": "ES",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30079",
+      "name": "Stellar Consulting S.A.",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30080",
+      "name": "Stellar Packaging Ltd",
+      "city": "Paris",
+      "country": "FR",
+      "currency": "EUR",
+      "category": "Packaging",
+      "company_code": "CC-3000"
+    },
+    {
+      "id": "30082",
+      "name": "Nova MRO GmbH",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "MRO supplies",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30083",
+      "name": "Stellar Packaging Ltd",
+      "city": "Hamburg",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Packaging",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30085",
+      "name": "Inno Chemicals Ltd",
+      "city": "Stuttgart",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Chemicals",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30086",
+      "name": "Euro Security S.A.",
+      "city": "Madrid",
+      "country": "ES",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30089",
+      "name": "Omni Security AG",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30090",
+      "name": "Chroma Fleet AG",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "Fleet services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30091",
+      "name": "Inno Chemicals Ltd",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "Chemicals",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30092",
+      "name": "Nova Fleet Ltd",
+      "city": "Paris",
+      "country": "FR",
+      "currency": "EUR",
+      "category": "Fleet services",
+      "company_code": "CC-3000"
+    },
+    {
+      "id": "30093",
+      "name": "Euro MRO S.A.",
+      "city": "Düsseldorf",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "MRO supplies",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30094",
+      "name": "Euro IT-Services GmbH",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30095",
+      "name": "Inno Facility AG",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30096",
+      "name": "Vanguard Facility GmbH",
+      "city": "Frankfurt",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30097",
+      "name": "Global IT-Services Ltd",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30102",
+      "name": "Chroma Facility AG",
+      "city": "Amsterdam",
+      "country": "NL",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30103",
+      "name": "Vanguard Logistics Ltd",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30104",
+      "name": "Chroma Robotics GmbH",
+      "city": "Madrid",
+      "country": "ES",
+      "currency": "EUR",
+      "category": "Automation and robotics",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30105",
+      "name": "Sino IT-Services S.A.",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30106",
+      "name": "Omni Consulting Ltd",
+      "city": "Düsseldorf",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30107",
+      "name": "Sino Security S.A.",
+      "city": "Paris",
+      "country": "FR",
+      "currency": "EUR",
+      "category": "Security services",
+      "company_code": "CC-3000"
+    },
+    {
+      "id": "30108",
+      "name": "Stellar Chemicals GmbH",
+      "city": "Düsseldorf",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Chemicals",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30109",
+      "name": "Chroma Packaging AG",
+      "city": "Düsseldorf",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Packaging",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30110",
+      "name": "Sino IT-Services AG",
+      "city": "Paris",
+      "country": "FR",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-3000"
+    },
+    {
+      "id": "30111",
+      "name": "Global IT-Services Ltd",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30114",
+      "name": "Omni Robotics GmbH",
+      "city": "Düsseldorf",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Automation and robotics",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30116",
+      "name": "Sino Facility AG",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30117",
+      "name": "Inno IT-Services Ltd",
+      "city": "Hamburg",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30119",
+      "name": "Nova Packaging GmbH",
+      "city": "Madrid",
+      "country": "ES",
+      "currency": "EUR",
+      "category": "Packaging",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30120",
+      "name": "Omni Packaging Ltd",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "Packaging",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30121",
+      "name": "Euro Consulting Ltd",
+      "city": "Düsseldorf",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30122",
+      "name": "Omni IT-Services Ltd",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30123",
+      "name": "Omni Packaging GmbH",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "Packaging",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30124",
+      "name": "Euro Chemicals Ltd",
+      "city": "Stuttgart",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Chemicals",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30125",
+      "name": "Nova Facility AG",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30127",
+      "name": "Nova IT-Services Ltd",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30128",
+      "name": "Global Consulting GmbH",
+      "city": "Paris",
+      "country": "FR",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-3000"
+    },
+    {
+      "id": "30129",
+      "name": "Inno IT-Services S.A.",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30131",
+      "name": "Chroma Logistics GmbH",
+      "city": "Vienna",
+      "country": "AT",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30132",
+      "name": "Inno Robotics S.A.",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Automation and robotics",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30133",
+      "name": "Sino MRO S.A.",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "MRO supplies",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30135",
+      "name": "Vanguard MRO Ltd",
+      "city": "Stuttgart",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "MRO supplies",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30136",
+      "name": "Euro Fleet S.A.",
+      "city": "Paris",
+      "country": "FR",
+      "currency": "EUR",
+      "category": "Fleet services",
+      "company_code": "CC-3000"
+    },
+    {
+      "id": "30137",
+      "name": "Omni IT-Services GmbH",
+      "city": "Frankfurt",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30138",
+      "name": "Omni Facility GmbH",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30139",
+      "name": "Inno IT-Services AG",
+      "city": "Amsterdam",
+      "country": "NL",
+      "currency": "EUR",
+      "category": "IT services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30140",
+      "name": "Chroma Logistics GmbH",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Logistics services",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30141",
+      "name": "Global Chemicals AG",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Chemicals",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30142",
+      "name": "Sino Packaging AG",
+      "city": "Zurich",
+      "country": "CH",
+      "currency": "EUR",
+      "category": "Packaging",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30143",
+      "name": "Global Facility AG",
+      "city": "Berlin",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30144",
+      "name": "Euro Consulting S.A.",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "Consulting",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30145",
+      "name": "Chroma Chemicals AG",
+      "city": "Milan",
+      "country": "IT",
+      "currency": "EUR",
+      "category": "Chemicals",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30146",
+      "name": "Omni Chemicals GmbH",
+      "city": "Madrid",
+      "country": "ES",
+      "currency": "EUR",
+      "category": "Chemicals",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "30147",
+      "name": "Stellar Facility S.A.",
+      "city": "Düsseldorf",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Facility management",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "40001",
+      "name": "Apex Robotics Solutions GmbH",
+      "city": "Stuttgart",
+      "country": "DE",
+      "currency": "EUR",
+      "category": "Automation and robotics",
+      "company_code": "CC-1000"
+    },
+    {
+      "id": "40002",
+      "name": "Apex Robotics Systems Ltd.",
+      "city": "Manchester",
+      "country": "GB",
+      "currency": "EUR",
+      "category": "Automation and robotics",
+      "company_code": "CC-2000"
+    }
+  ],
+  "dropped_duplicates": [
+    {
+      "id": "30030",
+      "kept": "30024",
+      "name": "Chroma MRO Ltd",
+      "country": "DE"
+    },
+    {
+      "id": "30051",
+      "kept": "30050",
+      "name": "Inno Consulting Ltd",
+      "country": "DE"
+    },
+    {
+      "id": "30072",
+      "kept": "30059",
+      "name": "Vanguard Consulting GmbH",
+      "country": "DE"
+    },
+    {
+      "id": "30081",
+      "kept": "30010",
+      "name": "Vanguard Facility Ltd",
+      "country": "CH"
+    },
+    {
+      "id": "30084",
+      "kept": "30066",
+      "name": "Chroma IT-Services Ltd",
+      "country": "DE"
+    },
+    {
+      "id": "30087",
+      "kept": "30035",
+      "name": "Sino Security GmbH",
+      "country": "NL"
+    },
+    {
+      "id": "30088",
+      "kept": "30042",
+      "name": "Vanguard Fleet GmbH",
+      "country": "DE"
+    },
+    {
+      "id": "30098",
+      "kept": "30008",
+      "name": "Inno IT-Services AG",
+      "country": "FR"
+    },
+    {
+      "id": "30099",
+      "kept": "30066",
+      "name": "Chroma IT-Services Ltd",
+      "country": "DE"
+    },
+    {
+      "id": "30100",
+      "kept": "30014",
+      "name": "Global Logistics AG",
+      "country": "DE"
+    },
+    {
+      "id": "30101",
+      "kept": "30041",
+      "name": "Sino MRO AG",
+      "country": "DE"
+    },
+    {
+      "id": "30112",
+      "kept": "30108",
+      "name": "Stellar Chemicals Ltd",
+      "country": "DE"
+    },
+    {
+      "id": "30113",
+      "kept": "30083",
+      "name": "Stellar Packaging AG",
+      "country": "DE"
+    },
+    {
+      "id": "30115",
+      "kept": "30020",
+      "name": "Global Consulting S.A.",
+      "country": "DE"
+    },
+    {
+      "id": "30118",
+      "kept": "30034",
+      "name": "Inno IT-Services AG",
+      "country": "ES"
+    },
+    {
+      "id": "30126",
+      "kept": "30060",
+      "name": "Omni IT-Services AG",
+      "country": "FR"
+    },
+    {
+      "id": "30130",
+      "kept": "30050",
+      "name": "Inno Consulting S.A.",
+      "country": "DE"
+    },
+    {
+      "id": "30134",
+      "kept": "30096",
+      "name": "Vanguard Facility AG",
+      "country": "DE"
+    },
+    {
+      "id": "30148",
+      "kept": "30061",
+      "name": "Omni Packaging S.A.",
+      "country": "NL"
+    }
+  ]
+}
