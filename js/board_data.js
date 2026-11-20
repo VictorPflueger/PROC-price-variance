@@ -162,7 +162,7 @@ function tickLabel(v, span) {
 /** Stage definitions of the value pipeline (brief §6.7), shown one click away. */
 export const PIPELINE_DEFINITIONS = {
   identified: "The opportunity of the flagged groups this run's engine results show: unexplained variance over the window, read as euros a year.",
-  approved: "The savings a year of the options a person approved, in this session or before (the value log), bundle discounts included as their own part.",
+  approved: "The savings a year of the options a person approved, in this session (since the page was opened or last reset; a later decision on a group replaces an earlier one) or before (the value log), bundle discounts included as their own part.",
   implemented: "The approved savings of options with an implementation day. Nothing in the demo changes a system, so only past cases planted in the world are implemented.",
   realised: "For an implemented option: quantity × (baseline − paid price) over all later order lines of its plant and item, whichever supplier they went to. Lines that still go to another supplier are leakage."
 };

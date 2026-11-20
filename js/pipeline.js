@@ -3,7 +3,8 @@
 //
 //   identified   the opportunity of the flagged groups (€ a year), from this run's engine results
 //   approved     the savings a year of the options a person approved, in this session or before
-//                (value_log), with bundle discounts as their own part
+//                (value_log), with bundle discounts as their own part; the session's approvals of
+//                earlier runs come from js/session.js (review R13)
 //   implemented  the approved savings of options with an implementation day
 //   realised     for an implemented option: Σ quantity × (baseline − paid price) over every line of its
 //                plant and group after the implementation day, whichever supplier it went to; the

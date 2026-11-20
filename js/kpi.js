@@ -112,7 +112,7 @@ export function createKpis(container, { pipeline }) {
     runCost = 0;
     set(identified, "—", "", "muted", "no run yet");
     set(index, "—", "", "muted", "no run yet");
-    showApproved(pipeline);
+    showApproved(typeof pipeline === "function" ? pipeline() : pipeline);
     renderCost();
   }
 

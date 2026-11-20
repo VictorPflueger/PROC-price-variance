@@ -180,7 +180,7 @@ export function phaseForTool(name, phase, entry) {
  *        (kind "option" or "confirmation", oldest first), drafts: Map, onPhase(state), getPhase(),
  *        isEnded(), signal, ecbRate(input, io) → Promise (resolves, never throws), mode ("live" |
  *        "authored" | "recorded"), entry ("scenario" | "sweep" | "custom"), beforeExecute?(name) → Promise
- *        (the player's pacing) }
+ *        (the player's pacing), session? (js/session.js: approvals of earlier runs, recorded on approval) }
  */
 export function createToolbox(ctx) {
   const world = ctx.world;
@@ -209,6 +209,7 @@ export function createToolbox(ctx) {
     rejected: new Set(),
     approved: null,
     approvals: [],
+    decidedGroups: new Set(), // groups a person decided in this run (their earlier session approvals no longer count)
     figureRejections: { alert: 0, options: 0, draft: 0, report: 0, cluster: 0 },
     guardrails: 0,
     normalisedCount: 0,
@@ -301,18 +302,22 @@ export function createToolbox(ctx) {
 
   const guard = (error, rule) => ({ error, guardrail: rule });
 
+  // The session's approvals of earlier runs (review R13): ctx.session from the live agent or the player.
+  const prior = ctx.session ? ctx.session.list() : [];
+  const approvalsNow = () => [...prior.filter((a) => !run.decidedGroups.has(a.group)), ...run.approvals];
+
   // -- engine ---------------------------------------------------------------------------------------
 
   function pipelineNow(identified) {
     const index = groupIndex(world, { clusters: run.clusters });
-    return valuePipeline({ valueLog: world.value_log || [], approvals: run.approvals, identified, lines: world.po_line || [], unitOf: (l) => unitOfLine(index, l), ctx: engineCtx() });
+    return valuePipeline({ valueLog: world.value_log || [], approvals: approvalsNow(), identified, lines: world.po_line || [], unitOf: (l) => unitOfLine(index, l), ctx: engineCtx() });
   }
 
   function emitKpi() {
     const scope = run.scanned ? run.scanned.analyses : [...run.compared.values()];
     const flagged = scope.filter((a) => a.flagged);
     const identified = flagged.reduce((s, a) => s + a.opportunity, 0);
-    const approvals = run.approvals.filter((x) => scope.some((a) => a.id === x.group));
+    const approvals = approvalsNow().filter((x) => scope.some((a) => a.id === x.group));
     const pi = portfolioIndex(scope, approvals);
     const pipe = pipelineNow(identified);
     emit("kpi_update", {
@@ -700,7 +705,9 @@ export function createToolbox(ctx) {
     if (decision === "approved") {
       const label = id === "accept" ? `Accept the variance (${reason})` : `Option ${id}: ${card.title}`;
       run.approved = { id, label, reason: id === "accept" ? reason : null, compare_id: compare.compare_id, group_id: compare.id };
+      run.decidedGroups.add(compare.id);
       if (id !== "accept") run.approvals.push({ group: compare.id, option: id, savings: card.savings, bundle: card.bundle });
+      ctx.session?.record(id === "accept" ? { group: compare.id, option: "accept" } : { group: compare.id, option: id, savings: card.savings, bundle: card.bundle });
       emitKpi();
       const o = compare.options[id === "accept" ? "accept" : id];
       emit("board_update", {

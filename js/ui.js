@@ -21,6 +21,7 @@ import { openDiagnostics } from "./diagnostics_view.js";
 import { openIntro, introSeen } from "./intro.js";
 import { createSimulationPlayer } from "./simulation.js";
 import { createLiveAgent } from "./agent.js";
+import { sessionApprovals } from "./session.js";
 import { hasKey, forgetKey } from "./keystore.js";
 import { worldPipeline, contextOf, ratesOf } from "./world.js";
 import { buildGroups } from "./groups.js";
@@ -68,7 +69,8 @@ export function initUI() {
     const g = buildGroups(world, ctx, { clusters }).find((x) => x.id === groupId);
     return g ? analyseGroup(g, ctx) : null;
   };
-  const pipeline = worldPipeline(world, fx);
+  // The value pipeline before a run: the value log and the session's earlier approvals (review R13).
+  const pipeline = () => worldPipeline(world, fx, { approvals: sessionApprovals.list() });
   setState({ keyPresent: hasKey() });
 
   // ---- components ------------------------------------------------------------------------------
@@ -106,9 +108,9 @@ export function initUI() {
     onCount: (n, attention) => drawer.setCount("outbox", n, attention)
   });
   const auditPanel = createAuditPanel(drawer.panel("audit"), { onCount: (n) => drawer.setCount("audit", n), getEngine: engine });
-  const player = createSimulationPlayer({ getSpeed: () => getState().speed, getWorld: () => world, getFx: () => fx, getParams: () => DEFAULTS });
+  const player = createSimulationPlayer({ getSpeed: () => getState().speed, getWorld: () => world, getFx: () => fx, getParams: () => DEFAULTS, session: sessionApprovals });
   const agent = createLiveAgent({
-    getWorld: () => world, getFx: () => fx, getParams: () => activeParams(),
+    getWorld: () => world, getFx: () => fx, getParams: () => activeParams(), session: sessionApprovals,
     onKeyRejected: () => { forgetKey(); setState({ keyPresent: false }); }
   });
 
@@ -123,7 +125,8 @@ export function initUI() {
     onSelectModel: (id) => setState({ model: id }),
     onSpeed: (n) => setState({ speed: n }),
     onAbort: () => abort("Stopped by the user."),
-    onReset: () => resetWorkspace(),
+    // Reset starts the session again: approvals of earlier runs no longer count (review R13).
+    onReset: () => { sessionApprovals.clear(); resetWorkspace(); },
     onMethod: () => openMethod({
       params,
       isRunning: () => isRunning(getState()),

@@ -185,7 +185,7 @@ export async function runScript(def, env) {
  * Plays a script on the page through the run-event bus.
  * deps: { getSpeed(), world, fx, params }
  */
-export function createSimulationPlayer({ getSpeed, getWorld, getFx, getParams }) {
+export function createSimulationPlayer({ getSpeed, getWorld, getFx, getParams, session = null }) {
   let ctx = null;
 
   async function play(def, { scenario = null } = {}) {
@@ -227,6 +227,7 @@ export function createSimulationPlayer({ getSpeed, getWorld, getFx, getParams })
       },
       mode: recorded ? "recorded" : "authored",
       entry: "scenario",
+      session,
       beforeExecute: (name) => wait(r, name.startsWith("ui_") ? 450 : name.startsWith("pv_") ? 900 : 700)
     });
     try {

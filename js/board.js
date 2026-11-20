@@ -33,6 +33,8 @@ function textWidth(text, px, bold) {
 }
 
 export function createBoard(root, { world, analyse, pipeline }) {
+  // The value pipeline before a run: a getter (the value log and the session's earlier approvals) or a value.
+  const pipelineNow = () => (typeof pipeline === "function" ? pipeline() : pipeline);
   const st = {
     view: "portfolio",
     table: false,
@@ -42,7 +44,7 @@ export function createBoard(root, { world, analyse, pipeline }) {
     candidate: null,        // { id, lines, state }
     marks: { lines: new Map(), pairs: new Map() },
     scanRows: null,
-    pipeline: { ...pipeline, identified: null },
+    pipeline: { ...pipelineNow(), identified: null },
     sensitivity: null,
     lastMatch: null,
     run: { run_id: null, mode: null }
@@ -87,7 +89,7 @@ export function createBoard(root, { world, analyse, pipeline }) {
   };
 
   // ---- run events ---------------------------------------------------------------------------
-  bus.on("run_start", (ev) => { reset({ keepPipeline: true }); st.run = { run_id: ev.payload.run_id, mode: ev.payload.mode }; });
+  bus.on("run_start", (ev) => { reset(); st.run = { run_id: ev.payload.run_id, mode: ev.payload.mode }; });
 
   bus.on("tool_result", (ev) => {
     const p = ev.payload;
@@ -248,7 +250,7 @@ export function createBoard(root, { world, analyse, pipeline }) {
     }).observe(canvas);
   }
 
-  function reset({ keepPipeline = false } = {}) {
+  function reset() {
     st.focus = null;
     st.groups.clear();
     st.clusters = [];
@@ -258,8 +260,7 @@ export function createBoard(root, { world, analyse, pipeline }) {
     st.sensitivity = null;
     st.lastMatch = null;
     st.run = { run_id: null, mode: null };
-    if (!keepPipeline) st.pipeline = { ...pipeline, identified: null };
-    else st.pipeline = { ...pipeline, identified: null };
+    st.pipeline = { ...pipelineNow(), identified: null };
     st.view = "portfolio";
     st.table = false;
     render();
