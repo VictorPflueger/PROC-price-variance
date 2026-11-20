@@ -27,6 +27,13 @@ const icon = (name) => h("span", { class: `vc-icon vc-icon--${name}`, "aria-hidd
 
 let drawn = "";
 
+/** Where a step waits for the person, the button the Your turn callout points at: the recommendation. */
+const TURN_TARGETS = {
+  options: [".option[data-recommended='true'] .option-approve", ".option-approve:not(:disabled)"],
+  drafts: [".draft[data-status='pending'] .draft-actions .vc-button:not(.vc-button--ghost)"],
+  confirm: [".confirm-actions .vc-button:not(.vc-button--outline)"]
+};
+
 /** Draws a step; a step that reads as it did is left as it is, so focus and selection stay put. */
 export function renderStep(step, act) {
   const key = JSON.stringify(step);
@@ -35,8 +42,14 @@ export function renderStep(step, act) {
   const stage = document.getElementById("stage-body");
   document.getElementById("stage-title").textContent = STAGE_TITLES[step.stage.kind] || "";
   document.getElementById("stage-title").hidden = !STAGE_TITLES[step.stage.kind];
-  stage.replaceChildren(...(STAGES[step.stage.kind] || STAGES.empty)(step.stage, act));
+  const parts = (STAGES[step.stage.kind] || STAGES.empty)(step.stage, act).filter(Boolean);
+  // The person's turn: a merlot callout above the action says what to do, and its button draws the eye.
+  stage.replaceChildren(...(step.turn ? [turn(step.turn), ...parts] : parts));
   stage.dataset.kind = step.stage.kind;
+  if (step.turn) {
+    const target = (TURN_TARGETS[step.stage.kind] || []).map((s) => stage.querySelector(s)).find(Boolean);
+    target?.classList.add("vc-attention");
+  }
 
   document.getElementById("story-title").textContent = step.title;
   document.getElementById("story-lead").textContent = step.lead;
@@ -56,6 +69,13 @@ export function renderLog(entries) {
   const time = (at) => (at ? new Date(at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "");
   document.getElementById("log-summary").textContent = `Decision log: ${entries.length} ${entries.length === 1 ? "entry" : "entries"}`;
   document.getElementById("log-list").replaceChildren(...entries.map((e) => h("li", {}, e.at ? h("time", { datetime: e.at }, time(e.at)) : null, ` ${e.who} ${e.what}`)));
+}
+
+/** Vici's callout in merlot, the colour of the person: whose turn it is and what to do. */
+function turn(text) {
+  return h("div", { class: "vc-callout turn" },
+    h("span", { class: "vc-callout__cell", "aria-hidden": "true" }, icon("hand")),
+    h("div", { class: "vc-callout__body" }, h("p", { class: "vc-callout__title" }, "Your turn"), h("p", {}, text)));
 }
 
 /** "Hypothesis: …" shows its label in bold, as the agent writes it. */

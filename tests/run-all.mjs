@@ -11,14 +11,14 @@ const SUITES = [
   { id: "page-icon", what: "page icon: favicon, header and loading screen, as on the website's card", file: "tests/page-icon.mjs", browser: false },
   { id: "fingerprint", what: "the case intact: engine, tools, agent, data and scripts byte for byte 1.0.0's, with 1.0.0's figures on every path", file: "tests/fingerprint.mjs", browser: false },
   { id: "world", what: "the world, the six scenarios and their frozen figures, every script on every path", file: "tools/check_world.mjs", browser: false },
-  { id: "unit", what: "streaming client, cost maths, display, schema validator, the security policy, the exports", file: "tests/unit.mjs", browser: false },
+  { id: "unit", what: "streaming client, cost maths, display, schema validator, the security policy, the exports, Play's pace and the person's turn", file: "tests/unit.mjs", browser: false },
   { id: "engine", what: "golden cases G1 to G5, normalisation, display rules, the guardrails call by call", file: "tests/engine.mjs", browser: false },
   { id: "audit", what: "the figure audit: F01 to F16 and the rules around them", file: "tests/audit.mjs", browser: false },
   { id: "hygiene", what: "no private term and no e-mail address in any published file", file: "tests/hygiene.mjs", browser: false },
   { id: "vici", what: "Vici's own checks: guide, byline, writing, AI notice; every sentence of six cases on every path; vici/ byte for byte", file: "tests/vici.mjs", browser: false, vici: true },
   { id: "lean", what: "the limits: modules, lines, one stylesheet, two network modules, the policy, the docs' length", file: "tests/lean.mjs", browser: false },
   { id: "docs", what: "the docs say what the page and the engine say: paths, talk track, figures", file: "tests/docs.mjs", browser: false },
-  { id: "showcase", what: "the presenter in Chromium: steps, key figures, decisions, six cases, the guide (with Vici's render check), layout at three sizes in both themes", file: "tests/showcase.mjs", browser: true, vici: true },
+  { id: "showcase", what: "the presenter in Chromium: Play and Your turn, steps, key figures, decisions, six cases, the guide (with Vici's render check), layout at three sizes in both themes", file: "tests/showcase.mjs", browser: true, vici: true },
   { id: "hexagon", what: "nothing round: the app's files, and the rendered app in both themes", file: "tests/hexagon.mjs", browser: true },
   { id: "live", what: "a live run against a stand-in API: Start agent, LIVE and the AI notice, steps unlocking, decisions, cost measured, the key, Stop, the caps, offline", file: "tests/live.mjs", browser: true }
 ];

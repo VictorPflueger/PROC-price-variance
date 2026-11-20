@@ -68,6 +68,8 @@ html { font-size: clamp(100%, 0.48vw + 50%, 112.5%); }
 
 .talk { display: flex; align-items: center; gap: 12px; padding: 8px 18px; background: var(--vc-bg); border-bottom: 1px solid var(--vc-border-subtle); }
 .talk .vc-button { --_h: var(--hit); flex: none; }
+/* Play, Pause and Replay keep one width, so the steps beside them stay put. */
+.play.vc-button { min-width: 7.5rem; }
 .ai-notice.vc-tag { gap: 6px; flex: none; }
 .steps.vc-stepper { flex: 1 1 auto; min-width: 0; --_m: 1.9rem; }
 .steps .vc-step { margin: 0; }
@@ -191,8 +193,22 @@ html { font-size: clamp(100%, 0.48vw + 50%, 112.5%); }
 .log > summary { min-height: 32px; color: var(--vc-text-muted); cursor: pointer; }
 .log ol { display: grid; gap: 2px; margin: 4px 0 0; padding-inline-start: 1.5rem; }
 .log time { color: var(--vc-text-muted); font-variant-numeric: tabular-nums; }
-.story-foot { position: sticky; bottom: 0; z-index: 1; display: flex; justify-content: flex-end; margin-top: auto; padding: 14px 0 16px; background: linear-gradient(to bottom, transparent, var(--vc-surface) 14px); }
+/* Next follows the story's last line, in the reading flow, and stays in view when the story is long. */
+.story-foot { position: sticky; bottom: 0; z-index: 1; display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 4px 0 16px; background: linear-gradient(to bottom, transparent, var(--vc-surface) 14px); }
+/* What happens next, in words: when Play moves on, or that the move is yours. */
+.foot-note { margin: 0; color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); font-variant-numeric: tabular-nums; }
+.foot-note[data-tone="move"] { color: var(--vc-accent-text); font-weight: var(--vc-weight-semibold); }
+.foot-note:empty { display: none; }
 .story-foot .vc-button { --_h: var(--hit); }
+/* While Play reads the step, a bar along Next's foot fills (--fill): when it is full, the page moves on. */
+.next.vc-button { position: relative; overflow: hidden; }
+.next.vc-button::after { content: ""; position: absolute; inset: auto 0 0; height: 5px; background: currentColor; opacity: 0.7; transform: scaleX(var(--fill, 0)); transform-origin: left; }
+
+/* Your turn: Vici's merlot callout above the action; the button it points at carries vc-attention. */
+.turn.vc-callout { align-items: center; gap: 14px; padding: 10px 18px; }
+.turn .vc-callout__body { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; }
+.turn .vc-callout__body > * + * { margin-top: 0; }
+.turn .vc-callout__title { font-size: var(--vc-font-size-xl); line-height: 1.2; white-space: nowrap; }
 
 /* ---------------------------------------------------------------- Start agent */
 

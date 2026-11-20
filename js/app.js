@@ -1,7 +1,9 @@
 // The presenter: five steps over one case. The simulation plays the case's script at once through the
 // agent's live tools (js/simulation.js at full speed); Start agent offers it again or a live run with
 // Claude on the visitor's key (js/live.js, loaded on demand). Both emit the same events, which js/run.js
-// digests, js/story.js words and js/view.js draws. Keys: ← → and 1 to 5; links: ?case=gloves&step=gap.
+// digests, js/story.js words and js/view.js draws. Play walks the steps by itself, each for its reading
+// time, and stops where the person acts. Keys: Space plays or pauses; ← → (a clicker's PageUp and
+// PageDown) and 1 to 5 step by hand. Links: ?case=gloves&step=gap opens a step, paused.
 
 import { bus, newRunId } from "./events.js";
 import { createSimulationPlayer } from "./simulation.js";
@@ -28,6 +30,8 @@ const modelName = (id) => MODELS.find((m) => m.id === id)?.label || id;
 const player = createSimulationPlayer({ getSpeed: () => Infinity, getWorld: () => W, getFx: () => FX, getParams: () => DEFAULTS });
 const estimates = new Map();
 const S = { scenario: null, step: 0, mode: "simulation", model: DEFAULT_MODEL, runId: null, events: [], view: null, clock: { start: null, stop: null }, live: null, follow: false, frame: 0 };
+/** Play: on, the frame it asked for, the time spent reading the step, the step it timed. */
+const P = { on: false, raf: 0, at: 0, last: 0, step: -1 };
 
 export async function start() {
   const q = new URLSearchParams(location.search);
@@ -36,14 +40,28 @@ export async function start() {
   bus.onAny((ev) => { if (ev.run_id && ev.run_id === S.runId) { S.events.push(ev); schedule(); } });
   buildCaseMenu();
   bindKeys();
-  $("next").addEventListener("click", () => go(S.step + 1));
+  // Next goes on at once and keeps Play going; a step chosen in the bar or by key hands over the controls.
+  $("next").addEventListener("click", () => go(S.step + 1, { keep: true }));
+  $("play").addEventListener("click", () => (P.on ? pause() : play()));
   $("start").addEventListener("click", openStart);
-  $("start-sim").addEventListener("click", () => { $("start-dialog").close(); openCase(S.scenario, 0); });
+  $("start-sim").addEventListener("click", () => { $("start-dialog").close(); openCase(S.scenario, 0); play(); });
   $("key-form").addEventListener("submit", (e) => { e.preventDefault(); startLive(); });
   $("stop").addEventListener("click", () => S.live?.abort("Stopped by you."));
   document.querySelectorAll("#steps .vc-step__button").forEach((b, i) => b.addEventListener("click", () => go(i)));
+  for (const t of ["pointerdown", "keydown", "wheel"]) document.addEventListener(t, nudge, { capture: true, passive: true });
+  // The guide opens by itself on a new tab; closing it starts the clock and Play, unless a link asked
+  // for a step. Start on a guide opened later plays the case.
   const guide = $("guide");
-  if (guide.open) guide.addEventListener("vc:guideclose", () => { if (!S.clock.start) S.clock.start = Date.now(); }, { once: true });
+  let firstClose = guide.open;
+  guide.addEventListener("vc:guideclose", (e) => {
+    const done = e.detail?.returnValue === "done";
+    if (firstClose) {
+      firstClose = false;
+      if (!S.clock.start) S.clock.start = Date.now();
+      if (at < 0) play();
+    } else if (done) play();
+    if (done && P.on) $("play").focus({ preventScroll: true });
+  });
   setInterval(tick, 1000);
   const status = $("boot-status");
   if (status) status.textContent = `Comparing the ${first.short.toLowerCase()}' prices…`;
@@ -51,9 +69,12 @@ export async function start() {
   await openCase(first, 0, { keepClock: true });
   await rested();
   render();
-  // A link to a later step opens it once the run has played up to it, or the furthest step it reached.
-  if (at > 0) go(Math.min(at, S.view.steps.findLastIndex((st) => st.ready)), { focus: false });
-  if (!guide.open) S.clock.start = Date.now();
+  // A link to a step opens it, paused, once the run has played up to it, or the furthest step it reached.
+  if (at >= 0) go(Math.min(at, S.view.steps.findLastIndex((st) => st.ready)), { focus: false });
+  if (!guide.open) {
+    S.clock.start = Date.now();
+    if (at < 0) play();
+  }
 }
 
 /** Resolves once the run waits for the person or has ended, so the first screen shows every figure. */
@@ -85,6 +106,16 @@ async function openCase(scenario, step = 0, { keepClock = false } = {}) {
   bus.emit("run_start", { run_id: S.runId, mode: "simulation", entry: "scenario", scenario_id: scenario.id, title: scenario.title, seed: scenario.seed, sim_source: SCRIPTS[scenario.id].source });
   player.play(SCRIPTS[scenario.id], { scenario });
   estimateFor(scenario).then(() => schedule());
+  Object.assign(P, { step, at: 0 });
+  fill(0);
+  // A case opened on the page starts from its tip, and the address says which case (at boot it already does).
+  if (!keepClock) {
+    const url = new URL(location.href);
+    url.searchParams.set("case", slug(scenario));
+    url.searchParams.delete("step");
+    history.replaceState(null, "", url);
+    $("announce").textContent = `${title(scenario)}. Step 1 of 5: The tip.`;
+  }
   schedule();
 }
 
@@ -95,8 +126,11 @@ function stopRun() {
   bus.endRun();
 }
 
-function go(i, { focus = true } = {}) {
+/** Shows step i. A step the presenter chooses pauses Play (keep: Next and Play itself go on playing). */
+function go(i, { focus = true, keep = false } = {}) {
+  if (!keep) pause();
   S.step = Math.max(0, Math.min(STEP_IDS.length - 1, i));
+  if (P.step !== S.step) Object.assign(P, { step: S.step, at: 0 });
   // In a live run the page follows the agent's step until the presenter looks back.
   if (S.mode === "live") S.follow = S.step >= digest(S.events).reached;
   const url = new URL(location.href);
@@ -104,7 +138,10 @@ function go(i, { focus = true } = {}) {
   url.searchParams.set("step", STEP_IDS[S.step]);
   history.replaceState(null, "", url);
   render();
-  $("announce").textContent = `Step ${S.step + 1} of 5: ${S.view.steps[S.step].label}`;
+  const shown = S.view.steps[S.step];
+  $("announce").textContent = `Step ${S.step + 1} of 5: ${shown.label}.${shown.turn ? ` Your turn: ${shown.turn}` : ""}`;
+  fill(0);
+  nudge();
   // The step's title takes the focus, so a screen reader reads where the presenter is.
   if (focus) $("story-title").focus({ preventScroll: true });
 }
@@ -132,11 +169,11 @@ function render() {
   });
   const step = view.steps[S.step];
   const next = view.steps[S.step + 1];
-  // One primary action a step: Next, unless the step waits for the person's own click.
+  // One primary action a step: Next, or where the step waits for the person, their own click (the
+  // Your turn callout points at it) and no Next at all.
   const nextButton = $("next");
-  nextButton.hidden = !next;
+  nextButton.hidden = !next || step.waits;
   nextButton.disabled = !next || !next.ready;
-  nextButton.classList.toggle("vc-button--secondary", !!step.waits);
   $("next-text").textContent = next ? `Next: ${next.label}` : "Next";
   renderStep(step, { approve, accept, draft, confirm });
   renderLog(S.step >= 3 ? view.log : []);
@@ -145,6 +182,112 @@ function render() {
   alert.textContent = view.ended ? `The live run stopped. ${view.ended.text}` : "";
   kpis(view, run);
   document.body.dataset.step = step.id;
+  drawPlay();
+  drawFoot();
+}
+
+// ---- Play: the steps go by themselves and stop where the person acts ------------------------------
+
+/** The story is over: the last step, with nothing left for the person to do. */
+const finished = () => !!S.view && S.step === STEP_IDS.length - 1 && !S.view.steps[S.step].waits;
+/** A dialog or the case menu covers the page: Play holds its time until it closes. */
+function covered() {
+  if (document.querySelector("dialog[open]")) return true;
+  try { return $("case-menu").matches(":popover-open"); } catch { return false; }
+}
+
+function play() {
+  if (S.mode === "live") return;
+  // Replay: the case again from the tip, with its decision open again.
+  if (finished()) openCase(S.scenario, 0);
+  P.on = true;
+  P.last = 0;
+  $("next").classList.remove("vc-attention");
+  drawPlay();
+  drawFoot();
+  if (!P.raf) P.raf = requestAnimationFrame(frame);
+}
+
+function pause() {
+  if (!P.on) return;
+  P.on = false;
+  cancelAnimationFrame(P.raf);
+  P.raf = 0;
+  drawPlay();
+  drawFoot();
+  nudge();
+}
+
+function frame(now) {
+  P.raf = 0;
+  if (!P.on) return;
+  // Time away from the tab (or a slow frame) does not count.
+  const dt = P.last ? Math.min(now - P.last, 100) : 0;
+  P.last = now;
+  if (S.view) {
+    if (P.step !== S.step) Object.assign(P, { step: S.step, at: 0 });
+    const step = S.view.steps[S.step];
+    const next = S.view.steps[S.step + 1];
+    const total = step.read;
+    if (step.waits) {
+      // The person's turn: Play waits; once they have acted, the step's new words get their reading time.
+      P.at = 0;
+    } else if (!next) {
+      fill(0);
+      pause();
+      return;
+    } else if (next.ready && !covered()) {
+      P.at += dt;
+      if (P.at >= total) {
+        go(S.step + 1, { focus: false, keep: true });
+        P.raf = requestAnimationFrame(frame);
+        return;
+      }
+    }
+    fill(step.waits ? 0 : P.at / total);
+    drawFoot();
+  }
+  P.raf = requestAnimationFrame(frame);
+}
+
+/** How far the current step is read: the line to the next step and the bar in Next fill with it. */
+function fill(p) {
+  const v = Math.max(0, Math.min(1, p)).toFixed(4);
+  document.querySelectorAll("#steps .vc-step").forEach((li, i) => li.style.setProperty("--vc-step-fill", i === S.step ? v : "0"));
+  $("next").style.setProperty("--fill", v);
+}
+
+/** Play, Pause or Replay; in a live run the page follows the agent, so Stop takes Play's place. */
+function drawPlay() {
+  const b = $("play");
+  b.hidden = S.mode === "live";
+  const state = P.on ? "pause" : finished() ? "replay" : "play";
+  if (b.dataset.state === state) return;
+  b.dataset.state = state;
+  b.querySelector(".vc-icon").className = `vc-icon vc-icon--${state === "pause" ? "pause" : state === "replay" ? "refresh" : "play"}`;
+  $("play-text").textContent = state === "pause" ? "Pause" : state === "replay" ? "Replay" : "Play";
+}
+
+/** Beside Next, in words: when Play moves on, or that the move is the person's while it is paused. */
+function drawFoot() {
+  const note = $("foot-note");
+  const next = $("next");
+  const shown = !next.hidden && !next.disabled && S.view;
+  const left = shown && P.on ? Math.max(1, Math.ceil((S.view.steps[S.step].read - P.at) / 1000)) : 0;
+  const words = !shown ? "" : P.on ? `Plays on in ${left} s` : "Your move";
+  if (note.textContent !== words) note.textContent = words;
+  note.dataset.tone = shown && !P.on ? "move" : "";
+}
+
+/** Paused, Next draws the eye after six seconds without a click, a key or a scroll (Vici's vc-attention). */
+let idle = 0;
+function nudge() {
+  clearTimeout(idle);
+  $("next").classList.remove("vc-attention");
+  idle = setTimeout(() => {
+    const next = $("next");
+    if (!P.on && !next.hidden && !next.disabled && !covered()) next.classList.add("vc-attention");
+  }, 6000);
 }
 
 // ---- the person's decisions, on the bus as the old console sent them -----------------------------
@@ -232,16 +375,24 @@ async function fillGuide() {
 // ---- cases, keys, mode -------------------------------------------------------------------------------
 
 function buildCaseMenu() {
-  $("case-menu").replaceChildren(...CASES.map((c) => h("button", { type: "button", class: "vc-menu__item", role: "menuitemradio", "aria-checked": "false", dataset: { case: c.id }, onclick: () => { $("case-menu").hidePopover?.(); openCase(c, 0); } },
+  $("case-menu").replaceChildren(...CASES.map((c) => h("button", { type: "button", class: "vc-menu__item", role: "menuitemradio", "aria-checked": "false", dataset: { case: c.id }, onclick: () => { $("case-menu").hidePopover?.(); openCase(c, 0); play(); } },
     h("span", { class: "case-item" }, h("span", { class: "case-item-title" }, title(c)), h("span", { class: "case-item-tip" }, c.seed)))));
 }
 
 function bindKeys() {
   document.addEventListener("keydown", (e) => {
     if (e.altKey || e.ctrlKey || e.metaKey || document.querySelector("dialog[open]") || e.target.closest?.("input, select, textarea, [popover]")) return;
+    // Space plays or pauses, unless it presses the button that has the focus.
+    if (e.key === " ") {
+      if (e.target.closest?.("button, a, summary, [role=button]")) return;
+      e.preventDefault();
+      if (!e.repeat) (P.on ? pause() : play());
+      return;
+    }
     const n = Number(e.key);
-    if (e.key === "ArrowRight") go(S.step + 1);
-    else if (e.key === "ArrowLeft") go(S.step - 1);
+    // A clicker sends the arrow keys or PageDown and PageUp.
+    if (e.key === "ArrowRight" || e.key === "PageDown") go(S.step + 1);
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") go(S.step - 1);
     else if (n >= 1 && n <= 5) go(n - 1);
     else return;
     if (!S.view.steps[S.step].ready) go(S.view.steps.findLastIndex((st) => st.ready));
@@ -290,6 +441,7 @@ async function startLive() {
   if (!check.ok) { msg.textContent = check.message; return; }
   $("start-dialog").close();
   $("live-key").value = "";
+  pause();
   stopRun();
   S.model = $("live-model").value;
   S.mode = "live";

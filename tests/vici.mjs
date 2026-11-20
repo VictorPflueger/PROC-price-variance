@@ -98,7 +98,7 @@ for (const sc of SCENARIOS) {
     const cut = [r.events.findIndex((e) => e.type === "option_decision"), r.events.length].filter((i) => i > 0);
     for (const n of cut) {
       const v = story({ world: WORLD, scenario: sc, run: digest(r.events.slice(0, n)), params: DEFAULTS });
-      collect(v.steps.map(({ label, title, lead, agent, recommendation, stage }) => ({ label, title, lead, agent, recommendation, stage })));
+      collect(v.steps.map(({ label, title, lead, agent, recommendation, turn, stage }) => ({ label, title, lead, agent, recommendation, turn, stage })));
       collect([v.kpis, v.log.map((l) => l.what)]);
     }
   }

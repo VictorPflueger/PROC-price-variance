@@ -12,6 +12,8 @@
 //   exports  AC-16: the file names, the report's banner, the group analysis as CSV against the engine
 //            (RFC 4180 quoting, a byte order mark, CRLF), and the audit export of a run valid against
 //            AuditExport, with planted faults each refused
+//   story    Play's pace and the person's turn, on every decision path of the six cases: every step
+//            reads for 7 to 14 seconds, and a step says whose turn it is exactly when it waits
 // Usage: node tests/unit.mjs              (all groups)
 //        node tests/unit.mjs static       (only these groups)
 import assert from "node:assert/strict";
@@ -20,7 +22,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { APP_ROOT, ONLY } from "./lib/harness.mjs";
 
-const GROUPS = ["stream", "cost", "format", "schema", "static", "tools", "exports"];
+const GROUPS = ["stream", "cost", "format", "schema", "static", "tools", "exports", "story"];
 const chosen = ONLY.length ? ONLY : GROUPS;
 const unknown = chosen.filter((g) => !GROUPS.includes(g));
 if (unknown.length) { console.error(`Unknown group(s): ${unknown.join(", ")}. Groups: ${GROUPS.join(", ")}`); process.exit(2); }
@@ -360,6 +362,47 @@ if (chosen.includes("exports")) {
     check("exports", `the validator refuses an export with ${what}`, !r.ok && where.test(formatErrors(r.errors).join(" ")), formatErrors(r.errors).join("; ").slice(0, 200));
   }
   audit.resetAudit();
+}
+
+// ---- story ----------------------------------------------------------------------------------------
+if (chosen.includes("story")) {
+  const vm = await import("node:vm");
+  const sandbox = { window: {} };
+  vm.createContext(sandbox);
+  for (const f of ["fx.js", "world.js", "scenarios.js", "sim_runs.js"]) vm.runInContext(read(`data/${f}`), sandbox);
+  const { WORLD, FX, SCENARIOS, SIM_RUNS } = sandbox.window;
+  const { DEFAULTS } = await mod("js/params.js");
+  const { playPath } = await mod("js/sim_check.js");
+  const { digest } = await mod("js/run.js");
+  const { story } = await mod("js/story.js");
+  let views = 0;
+  const slow = [], wrong = [];
+  for (const sc of SCENARIOS) {
+    const def = SIM_RUNS[sc.id];
+    const confirms = JSON.stringify(def.steps).includes("\"confirm\"") ? ["confirmed", "rejected"] : [null];
+    for (const confirm of confirms) for (const option of ["recommended", "accept", "reject-then-approve"]) {
+      const r = await playPath(WORLD, FX, DEFAULTS, def, { confirm, option });
+      // Every moment a person could see: each prefix of the run, then the decisions a person takes on
+      // the page (the headless path takes them inside the tools), one after the other.
+      const ev = r.events;
+      const opts = ev.find((e) => e.type === "options")?.payload;
+      const people = opts ? [{ type: "option_decision", payload: { options_seq: opts.options_seq, option_id: option === "accept" ? "accept" : opts.recommended, decision: "approved", reason: "supply security", by: "user" } },
+        ...ev.filter((e) => e.type === "action_draft").map((e) => ({ type: "action_decision", payload: { action_id: e.payload.action_id, decision: "approved", by: "user" } }))] : [];
+      const all = [...ev, ...people];
+      for (let n = 1; n <= all.length; n++) {
+        const v = story({ world: WORLD, scenario: sc, run: digest(all.slice(0, n)), params: DEFAULTS });
+        views += 1;
+        for (const st of v.steps) {
+          if (!(st.read >= 7000 && st.read <= 14000)) slow.push(`${sc.short} ${st.id} ${st.read}`);
+          if (st.waits !== (typeof st.turn === "string" && st.turn.length > 20)) wrong.push(`${sc.short} ${st.id} waits=${st.waits} turn=${st.turn}`);
+        }
+      }
+    }
+  }
+  check("story", `every step of ${views} views of the six cases reads for 7 to 14 seconds`, views > 500 && !slow.length, slow.slice(0, 3).join("; "));
+  check("story", "a step says whose turn it is exactly when it waits for the person", !wrong.length, wrong.slice(0, 3).join("; "));
+  const tip = story({ world: WORLD, scenario: SCENARIOS[0], run: digest([]), params: DEFAULTS });
+  check("story", "before anything has run, no step waits and none says it is your turn", tip.steps.every((st) => !st.waits && st.turn === null));
 }
 
 for (const f of failures) console.log(`FAIL  ${f}`);

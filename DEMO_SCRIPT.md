@@ -15,20 +15,20 @@
 
 1. Chrome or Edge, full screen (F11), standard zoom, light theme; other tabs closed, notifications off.
 2. Walk the five steps once. The simulation needs no key and no network.
-3. Let the guide open, or start at `?guide=0` if you explain the prototype yourself.
+3. Let the guide open, or start at `?guide=0` if you explain the prototype yourself. A link to a step, such as `?step=tip`, opens it paused, so the page waits for you.
 4. For a live run, bring your own Anthropic API key from a workspace with a spend limit, and keep the simulation as the fallback.
 
 ## The five minutes
 
-The same script as the guide's last chapter, *How to present*. Next, the number keys or the arrows move between the steps.
+The same script as the guide's last chapter, *How to present*. Closing the guide starts Play: each step stays 7 to 14 seconds, as long as its words take to read, and Play stops wherever you act, with **Your turn** above the button to press. To give a step its minute, press Space to pause; → or a clicker moves on, ← goes back.
 
-1. **The tip: a buyer's hunch. Point at the four figures.** Close the guide with Start. (1 min)
+1. **The tip: a buyer's hunch. Point at the four figures.** Close the guide with Start, then press Space. (1 min)
    “The gap's worth and width, your time to decide, the agent's cost.”
 2. **Like for like.** Point at the card that converts one order. (1 min)
    “Birmingham's £6.20 per 100 looks cheap. In euros, delivered, it's €7.56.”
 3. **The gap.** Point at the green mark through every bar. (1 min)
    “Lyon pays €9.80, the contract €6.90: €14,146 a year no reason explains.”
-4. **Your decision: approve the recommended option.** Click Approve on the option framed in lilac; the first figure falls to €1,644 and the clock stops. (1 min)
+4. **Your decision: approve the recommended option.** Under **Your turn**, click the marked Approve on the option framed in lilac; the first figure falls to €1,644 and the clock stops. (1 min)
    “Savings of €12,501 a year, the first after 30 days.”
 5. **The drafts: approve both.** Click Approve on each draft, then open the decision log. (1 min)
    “The agent writes them. Nothing leaves without a person's approval.”
@@ -49,4 +49,5 @@ The same script as the guide's last chapter, *How to present*. Next, the number 
 
 - **The page stays on its loading screen.** It was opened from a file; serve the folder over http.
 - **A live run stops early.** The story says why: the key, the network, 40 model calls or €3. Start agent, then Run the simulation.
+- **The page moved on while you talked.** Press ← to go back; Space pauses. Replay at the end plays the case again from the tip.
 - **Someone asks for a case where nothing is wrong.** Open the boxes from the case menu: the delivery terms explain the gap, and the agent proposes nothing.

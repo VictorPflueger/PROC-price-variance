@@ -1,19 +1,24 @@
 // The presenter in a browser, against the engine's own figures (computed here in Node, not read from
 // the page's code). Cases, each runnable alone:
-//   steps    five steps by click, the arrow keys, the number keys, Next and ?step=; the current step is
-//            marked; the address follows; at most 12 controls on the first screen
+//   play     the page plays by itself: it starts when the guide closes, reads each step for its time and
+//            stops where the person acts, with a Your turn callout and the recommended button marked;
+//            it goes on after they act and ends on Replay; Space, a chosen step, Next, a dialog, a link
+//   steps    five steps by click, the arrow keys, PageDown and PageUp, the number keys, Next and ?step=;
+//            the current step is marked; the address follows; at most 13 controls on the first screen
 //   kpis     four tiles marked data-vc-kpi, filled before anything happens with the engine's figures;
 //            after the recommended option is approved: what is left, the approval, the clock stopped
 //   decide   every way out of the gloves case: each option approved, the gap accepted with a reason;
 //            the drafts each allows, one approved and one rejected, the outcome
 //   cases    all six cases from the case menu and from ?case=, through every step, the consultants'
 //            confirmation and the boxes' honest negative included: the engine's figure on the tile, no
-//            unit codes, pair ids, line numbers, cluster ids or option letters, no em dash, no error
+//            unit codes, pair ids, line numbers, cluster ids or option letters, no em dash, no error;
+//            a Your turn callout and one marked button exactly where a step waits; never "null"
 //   guide    opens by itself once per tab; every chapter fits 1280×720 and 1366×768 without scrolling;
 //            the key figures' rows and the talk track carry the engine's figures; Vici's own browser
 //            test of the guide (check-guide-render.mjs) passes against the page over http
-//   layout   1920×1080, 1366×768 and 1280×720, light and dark, every step of the gloves case: no page
-//            scroll, no panel that must scroll, nothing wider than its box, every target at least 24 px
+//   layout   1920×1080, 1366×768 and 1280×720, light and dark, every step of the gloves case with its
+//            Your turn callouts: no page scroll, no panel that must scroll, nothing wider than its box,
+//            every target at least 24 px
 // Usage: node tests/showcase.mjs [case…] [--require-vici]
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -39,7 +44,9 @@ const failures = [];
 let checks = 0;
 const expect = (name, what, ok, detail = "") => { checks += 1; if (!ok) failures.push(`${name}: ${what}${detail !== "" ? ` (${String(detail).slice(0, 240)})` : ""}`); };
 
-async function open(query = "", { size = [1600, 900], theme = "light", guide = false } = {}) {
+/** Opens the page. Unless a case tests Play, it opens on a step (a link to a step opens it paused). */
+async function open(query = "", { size = [1600, 900], theme = "light", guide = false, play = false } = {}) {
+  if (!play && !/(^|&)step=/.test(query)) query = query ? `${query}&step=tip` : "step=tip";
   const context = await browser.newContext({ viewport: { width: size[0], height: size[1] }, colorScheme: theme });
   await context.route(/^https?:\/\/(?!127\.0\.0\.1)/, (route) => route.abort("blockedbyclient"));
   await context.addInitScript((t) => { try { localStorage.setItem("vc-theme", t); } catch { /* blocked */ } }, theme);
@@ -70,6 +77,24 @@ const settle = (page) => page.evaluate(() => new Promise((r) => requestAnimation
 const text = (page, sel) => page.locator(sel).innerText().then((t) => t.replace(/\s+/g, " ").trim());
 const current = (page) => page.evaluate(() => document.querySelector("#steps .vc-step--current")?.dataset.step);
 async function key(page, k) { await page.keyboard.press(k); await settle(page); }
+/** Play's button, the Your turn callout, the marked button and Next, as the person sees them. */
+const shown = (page) => page.evaluate(() => {
+  const stage = document.getElementById("stage-body");
+  const marked = [...stage.querySelectorAll(".vc-attention")];
+  return {
+    step: document.querySelector("#steps .vc-step--current")?.dataset.step,
+    waits: document.querySelector("#steps .vc-step--current")?.dataset.waits === "true",
+    play: document.getElementById("play-text").textContent,
+    turn: stage.querySelector(":scope > .turn") ? stage.querySelector(".turn").innerText.replace(/\s+/g, " ").trim() : null,
+    marked: marked.length, markedText: marked[0]?.textContent.trim() || "", markedRecommended: !!marked[0]?.closest(".option[data-recommended='true']"),
+    next: !document.getElementById("next").hidden, fill: Number(getComputedStyle(document.getElementById("next")).getPropertyValue("--fill") || 0),
+    foot: document.getElementById("foot-note").textContent, nudged: document.getElementById("next").classList.contains("vc-attention"),
+    rail: Number(document.querySelector("#steps .vc-step--current")?.style.getPropertyValue("--vc-step-fill") || 0),
+    announce: document.getElementById("announce").textContent, focus: document.activeElement?.id || document.activeElement?.tagName
+  };
+});
+/** Waits until the page shows a step, up to a time (Play's longest step is 14 s). */
+const reach = (page, id, ms = 16000) => page.waitForFunction((x) => document.querySelector("#steps .vc-step--current")?.dataset.step === x, id, { timeout: ms }).then(() => true, () => false);
 async function approveRecommended(page) {
   await key(page, "4");
   await page.click(".option[data-recommended='true'] .option-approve");
@@ -90,6 +115,95 @@ async function decideDrafts(page, optionId, decisions = []) {
   await settle(page);
 }
 
+// ---- play -------------------------------------------------------------------------------------------
+if (wanted("play")) {
+  // A new tab: the guide opens; Start closes it and Play starts, on the Play button.
+  const { context, page, errors } = await open("case=gloves", { guide: true, play: true });
+  expect("play", "Play waits while the guide is open", (await shown(page)).play === "Play");
+  const chapters = await page.$$eval("#guide .vc-guide__chapter", (els) => els.length);
+  for (let i = 0; i < chapters; i++) await page.click("#guide [data-vc-guide-next]");
+  await settle(page);
+  let s = await shown(page);
+  expect("play", "Start on the guide starts Play, and Play's button has the focus", s.play === "Pause" && s.focus === "play" && s.step === "tip", JSON.stringify(s));
+  await page.waitForTimeout(3000);
+  s = await shown(page);
+  expect("play", "while Play reads the tip, the bar in Next and the rail to step 2 fill", s.step === "tip" && s.fill > 0.1 && s.fill < 0.6 && Math.abs(s.rail - s.fill) < 0.05, JSON.stringify(s));
+  expect("play", "beside Next, the page says when it moves on", /^Plays on in \d{1,2} s$/.test(s.foot), s.foot);
+  // A dialog holds Play: How it works over the page, then closed again.
+  await page.click("[data-vc-guide-open]");
+  const held = (await shown(page)).fill;
+  await page.waitForTimeout(1500);
+  const after = (await shown(page)).fill;
+  await page.keyboard.press("Escape");
+  await settle(page);
+  expect("play", "an open dialog holds Play", Math.abs(after - held) < 0.02 && (await shown(page)).play === "Pause", `${held} → ${after}`);
+  expect("play", "Play reads the tip and moves on to Like for like by itself", await reach(page, "compare"));
+  expect("play", "the address follows Play", new URL(page.url()).searchParams.get("step") === "compare", page.url());
+  // Space pauses and plays again (the focus is on no button now).
+  await page.evaluate(() => document.activeElement?.blur());
+  await key(page, " ");
+  s = await shown(page);
+  const paused = s.fill;
+  await page.waitForTimeout(1200);
+  expect("play", "Space pauses Play, and the bar stops", s.play === "Play" && Math.abs((await shown(page)).fill - paused) < 0.01 && (await current(page)) === "compare", JSON.stringify(s));
+  expect("play", "paused, the words beside Next say the move is yours", s.foot === "Your move", s.foot);
+  await key(page, " ");
+  expect("play", "Space plays again", (await shown(page)).play === "Pause");
+  // A step chosen by key hands over the controls; Play starts again from there.
+  await key(page, "3");
+  s = await shown(page);
+  expect("play", "a step chosen by key pauses Play", s.play === "Play" && s.step === "gap", JSON.stringify(s));
+  await page.click("#play");
+  await settle(page);
+  expect("play", "Play goes on from the step on screen", (await shown(page)).play === "Pause" && (await current(page)) === "gap");
+  // Next goes on at once and keeps Play going; at the decision Play stops and says it is your turn.
+  await page.click("#next");
+  await settle(page);
+  s = await shown(page);
+  expect("play", "Next goes on at once and keeps Play going", s.step === "decide" && s.play === "Pause", JSON.stringify(s));
+  expect("play", "at the decision: a Your turn callout, the recommended Approve marked, Next and its words stepped aside", s.waits && /^Your turn Approve one way to close the gap/.test(s.turn || "") && s.marked === 1 && s.markedRecommended && !s.next && !s.foot, JSON.stringify(s));
+  expect("play", "the turn is announced", /Your turn: Approve one way to close the gap/.test(s.announce), s.announce);
+  await page.waitForTimeout(2000);
+  expect("play", "Play waits for the person", (await current(page)) === "decide" && (await shown(page)).fill === 0);
+  await page.click(".option[data-recommended='true'] .option-approve");
+  await settle(page);
+  s = await shown(page);
+  expect("play", "after the approval the callout goes and Next comes back, filling", !s.turn && s.next && s.step === "decide", JSON.stringify(s));
+  expect("play", "Play moves on to the drafts by itself once the approval is read", await reach(page, "drafts"));
+  await page.waitForFunction(() => document.querySelectorAll(".draft").length >= 2, null, { timeout: 15000 });
+  s = await shown(page);
+  expect("play", "at the drafts: Your turn again, the first draft's Approve marked", /^Your turn Approve or reject each draft/.test(s.turn || "") && s.marked === 1 && s.markedText === "Approve" && !s.next, JSON.stringify(s));
+  for (let k = 0; k < 2; k++) {
+    await page.locator(".draft[data-status='pending'] .draft-actions .vc-button:not(.vc-button--ghost)").first().click();
+    await settle(page);
+    if (k === 0) { const t = await shown(page); expect("play", "after one draft the mark moves to the other", /Approve or reject the draft\./.test(t.turn || "") && t.marked === 1, JSON.stringify(t)); }
+  }
+  await page.waitForSelector(".outcome", { timeout: 10000 }).catch(() => {});
+  await settle(page);
+  s = await shown(page);
+  expect("play", "after the drafts the story ends on Replay, with nothing left to press", s.play === "Replay" && !s.turn && !s.marked && !s.next, JSON.stringify(s));
+  await page.click("#play");
+  await settle(page);
+  await page.waitForFunction(() => document.querySelector('#steps .vc-step[data-step="decide"]')?.dataset.waits === "true", null, { timeout: 10000 }).catch(() => {});
+  s = await shown(page);
+  expect("play", "Replay plays the case again from the tip, its decision open again", s.step === "tip" && s.play === "Pause" && (await page.getAttribute('#steps .vc-step[data-step="decide"]', "data-waits")) === "true" && !new URL(page.url()).searchParams.has("step"), JSON.stringify(s));
+  expect("play", "no error", !errors.length, errors.join(" | "));
+  await context.close();
+  // Without the guide, Play starts at once; a link to a step opens it paused.
+  const plain = await open("case=gloves", { play: true });
+  expect("play", "without the guide Play starts at once", (await shown(plain.page)).play === "Pause");
+  await plain.context.close();
+  const link = await open("case=gloves&step=compare", { play: true });
+  await link.page.waitForTimeout(1200);
+  s = await shown(link.page);
+  expect("play", "a link to a step opens it paused, and says the move is yours", s.play === "Play" && s.step === "compare" && s.fill === 0 && s.foot === "Your move" && !s.nudged, JSON.stringify(s));
+  await link.page.waitForTimeout(5600);
+  expect("play", "paused, Next draws the eye after six seconds without a click or a key", (await shown(link.page)).nudged);
+  await link.page.mouse.click(5, 300);
+  expect("play", "a click calms it", !(await shown(link.page)).nudged);
+  await link.context.close();
+}
+
 // ---- steps ------------------------------------------------------------------------------------------
 if (wanted("steps")) {
   const { context, page, errors } = await open("case=gloves");
@@ -102,7 +216,7 @@ if (wanted("steps")) {
     };
     return [...document.querySelectorAll("button, a[href], input, select, textarea, [role=button], [role=menuitem]")].filter(shown).map((e) => (e.getAttribute("aria-label") || e.textContent).trim().replace(/\s+/g, " ").slice(0, 30));
   });
-  expect("steps", "at most 12 controls on the first screen", controls.length <= 12, `${controls.length}: ${controls.join(" | ")}`);
+  expect("steps", "at most 13 controls on the first screen", controls.length <= 13, `${controls.length}: ${controls.join(" | ")}`);
   const ids = ["tip", "compare", "gap", "decide"];
   for (const [i, id] of ids.entries()) {
     await page.click(`#steps .vc-step[data-step="${id}"] .vc-step__button`);
@@ -112,13 +226,15 @@ if (wanted("steps")) {
     expect("steps", `the address names step ${i + 1}`, new URL(page.url()).searchParams.get("step") === id, page.url());
     expect("steps", `step ${i + 1}'s title takes the focus`, await page.evaluate(() => document.activeElement?.id === "story-title"));
   }
-  // Next cannot pass an open decision: the drafts stay closed until the person decides.
-  expect("steps", "at the open decision, Next and the drafts are closed and the decision's marker is merlot", (await page.isDisabled("#next")) && (await page.isDisabled('#steps .vc-step[data-step="drafts"] .vc-step__button')) && (await page.getAttribute('#steps .vc-step[data-step="decide"]', "data-waits")) === "true");
+  // Next cannot pass an open decision: it steps aside, and the drafts stay closed until the person decides.
+  expect("steps", "at the open decision, Next steps aside, the drafts are closed and the decision's marker is merlot", (await page.isHidden("#next")) && (await page.isDisabled('#steps .vc-step[data-step="drafts"] .vc-step__button')) && (await page.getAttribute('#steps .vc-step[data-step="decide"]', "data-waits")) === "true");
+  const turn = await shown(page);
+  expect("steps", "the open decision says it is your turn and marks the recommended Approve", turn.turn === "Your turn Approve one way to close the gap, or accept the gap with a reason." && turn.marked === 1 && turn.markedRecommended && turn.markedText === "Approve", JSON.stringify(turn));
   await key(page, "5");
   expect("steps", "the 5 key stops at the open decision", (await current(page)) === "decide");
   await page.click(".option[data-recommended='true'] .option-approve");
   await settle(page);
-  expect("steps", "the decision opens the drafts", !(await page.isDisabled('#steps .vc-step[data-step="drafts"] .vc-step__button')) && !(await page.isDisabled("#next")));
+  expect("steps", "the decision opens the drafts and brings Next back", !(await page.isDisabled('#steps .vc-step[data-step="drafts"] .vc-step__button')) && (await page.isVisible("#next")) && !(await page.isDisabled("#next")) && !(await shown(page)).turn);
   await page.click('#steps .vc-step[data-step="drafts"] .vc-step__button');
   await settle(page);
   expect("steps", "a click shows step 5", (await current(page)) === "drafts");
@@ -128,6 +244,10 @@ if (wanted("steps")) {
   expect("steps", "→ moves to Like for like", (await current(page)) === "compare");
   await key(page, "ArrowLeft");
   expect("steps", "← moves back to the tip", (await current(page)) === "tip");
+  await key(page, "PageDown");
+  expect("steps", "a clicker's PageDown moves on", (await current(page)) === "compare");
+  await key(page, "PageUp");
+  expect("steps", "and PageUp back", (await current(page)) === "tip");
   await page.click("#next");
   await settle(page);
   expect("steps", "Next moves on", (await current(page)) === "compare");
@@ -207,21 +327,29 @@ if (wanted("decide")) {
 
 // ---- cases ------------------------------------------------------------------------------------------
 if (wanted("cases")) {
-  const FORBIDDEN = [[/—/, "an em dash"], [/\b\d{4} \/ \d{5}\b/, "a pair id"], [/\bper (100 |1,000 )?(EA|PD)\b/, "a unit code"], [/\b4500\d{6}-\d{5}\b/, "a line number"], [/\b(CL|CAND)-\d+\b/, "a cluster id"], [/\b[Oo]ption [HRB]\b/, "an option letter"]];
+  const FORBIDDEN = [[/—/, "an em dash"], [/\b(null|undefined|NaN)\b/, "null, undefined or NaN"], [/\b\d{4} \/ \d{5}\b/, "a pair id"], [/\bper (100 |1,000 )?(EA|PD)\b/, "a unit code"], [/\b4500\d{6}-\d{5}\b/, "a line number"], [/\b(CL|CAND)-\d+\b/, "a cluster id"], [/\b[Oo]ption [HRB]\b/, "an option letter"]];
   for (const sc of SCENARIOS) {
     const name = `case ${slug(sc)}`;
     const { context, page, errors } = await open(`case=${slug(sc)}`);
     const seen = [];
-    for (const k of ["1", "2"]) { await key(page, k); seen.push(await page.locator(".workspace").innerText()); }
+    // Where a step waits for the person, and only there: the callout, one marked button, no Next.
+    const turnOk = async (where) => {
+      const t = await shown(page);
+      const ok = t.waits ? /^Your turn \S/.test(t.turn || "") && t.marked === 1 && !t.next : !t.turn && t.marked === 0;
+      expect(name, `${where}: Your turn and one marked button exactly where the step waits`, ok, JSON.stringify(t));
+    };
+    for (const k of ["1", "2"]) { await key(page, k); seen.push(await page.locator(".workspace").innerText()); await turnOk(`step ${k}`); }
     const confirm = await page.locator(".confirm-actions .vc-button").count();
     expect(name, sc.id === "SC-CONSULT" ? "the person confirms the cluster in step 2" : "no confirmation", sc.id === "SC-CONSULT" ? confirm === 2 : confirm === 0);
     if (confirm) {
       await page.locator(".confirm-actions .vc-button").first().click();
       await opened(page, "gap");
       seen.push(await page.locator(".workspace").innerText());
+      await turnOk("step 2 confirmed");
     }
     await key(page, "3");
     seen.push(await page.locator(".workspace").innerText());
+    await turnOk("step 3");
     const title = await text(page, "#story-title");
     const group = sc.group_id ? A[sc.group_id] : null;
     if (group) {
@@ -230,16 +358,23 @@ if (wanted("cases")) {
       expect(name, group.flagged ? "a flagged gap" : "the honest negative says nothing is worth acting on", group.flagged ? /no reason explains/.test(title) : /^Nothing worth acting on/.test(title), title);
     } else expect(name, "the confirmed cluster's gap is in euros a year", /€[\d,]+ a year/.test(title), title);
     await key(page, "4");
+    await turnOk("step 4");
     if (await page.locator(".option[data-recommended='true'] .option-approve").count()) {
       const id = await page.getAttribute(".option[data-recommended='true']", "data-option");
       await page.click(".option[data-recommended='true'] .option-approve");
       await settle(page);
       seen.push(await page.locator(".workspace").innerText());
+      await turnOk("step 4 decided");
+      await key(page, "5");
+      await page.waitForFunction((n) => document.querySelectorAll(".draft").length >= n, DRAFTS_BY_OPTION[id].length, { timeout: 15000 });
+      seen.push(await page.locator(".workspace").innerText());
+      await turnOk("step 5");
       await decideDrafts(page, id);
     } else {
       seen.push(await page.locator(".workspace").innerText());
       await key(page, "5");
     }
+    await turnOk("the end");
     seen.push(await page.locator(".workspace").innerText(), await page.locator(".app-header").innerText());
     const all = seen.join("\n");
     for (const [re, what] of FORBIDDEN) expect(name, `no ${what} on screen`, !re.test(all), (all.match(new RegExp(`.{0,30}${re.source}.{0,30}`)) || [])[0]);
@@ -300,8 +435,9 @@ if (wanted("layout")) {
   for (const size of [[1920, 1080], [1366, 768], [1280, 720]]) {
     for (const theme of ["light", "dark"]) {
       const { context, page, errors } = await open("case=gloves", { size, theme });
-      for (const n of ["1", "2", "3", "4", "4+", "5"]) {
+      for (const n of ["1", "2", "3", "4", "4+", "5-", "5"]) {
         if (n === "4+") await page.click(".option[data-recommended='true'] .option-approve");
+        else if (n === "5-") { await key(page, "5"); await page.waitForFunction(() => document.querySelectorAll(".draft").length >= 2, null, { timeout: 15000 }); }
         else if (n === "5") await decideDrafts(page, "H");
         else await key(page, n);
         await settle(page);
@@ -327,7 +463,7 @@ if (wanted("layout")) {
         expect("layout", `${where}: the stage and the story fit`, m.stage <= 1 && m.story <= 1, `stage ${m.stage}, story ${m.story}`);
         expect("layout", `${where}: nothing wider than its box`, !m.wide.length, m.wide.join(", "));
         expect("layout", `${where}: every target at least 24 px`, !m.small.length, m.small.join(", "));
-        if (theme === "light" && ["1", "3", "4+", "5"].includes(n)) await page.screenshot({ path: path.join(OUT, `layout-${size[0]}-${n.replace("+", "b")}.png`) });
+        if (theme === "light" && ["1", "3", "4", "4+", "5-", "5"].includes(n)) await page.screenshot({ path: path.join(OUT, `layout-${size[0]}-${n.replace("+", "b").replace("-", "a")}.png`) });
       }
       expect("layout", `${size[0]}×${size[1]} ${theme}: no error`, !errors.length, errors.join(" | "));
       await context.close();
@@ -348,7 +484,7 @@ if (wanted("layout")) {
 
 await browser.close();
 await server.close();
-const ran = ["steps", "kpis", "decide", "cases", "guide", "layout"].filter(wanted);
+const ran = ["play", "steps", "kpis", "decide", "cases", "guide", "layout"].filter(wanted);
 if (failures.length) {
   console.log(failures.map((f) => `FAIL  ${f}`).join("\n"));
   console.log(`\n${failures.length} of ${checks} checks failed (${ran.join(", ")}). Screenshots: ${OUT}`);

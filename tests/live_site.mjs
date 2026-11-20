@@ -4,10 +4,11 @@
 //   files   index.html, the config, the engine, the tools, the world, the rates and the scripts as
 //           served equal this checkout (Pages caches for up to ten minutes, so it retries for up to
 //           twelve)
-//   run     the gloves case in the simulation, through its five steps: the engine's opportunity on the
-//           first figure, the best price on the gap chart, the recommended option approved, both drafts
-//           approved, the outcome; no page error, nothing loaded from another host (up to three runs a
-//           minute apart, for a deployment the CDN is still taking up)
+//   run     the gloves case in the simulation, through its five steps: it plays by itself, the engine's
+//           opportunity on the first figure, the best price on the gap chart, Your turn at the decision
+//           with the recommended Approve marked, the option approved, both drafts approved, the outcome;
+//           no page error, nothing loaded from another host (up to three runs a minute apart, for a
+//           deployment the CDN is still taking up)
 // In GitHub Actions every problem is also printed as an annotation (::error / ::warning).
 // Usage: node tests/live_site.mjs [url]   (default: the repository's GitHub Pages address; LIVE_URL)
 import fs from "node:fs";
@@ -16,7 +17,7 @@ import crypto from "node:crypto";
 import { APP_ROOT, launchBrowser } from "./lib/harness.mjs";
 
 const URL_BASE = (process.argv[2] || process.env.LIVE_URL || "https://victorpflueger.github.io/PROC-price-variance/").replace(/\/?$/, "/");
-const FILES = ["index.html", "css/app.css", "js/app.js", "js/story.js", "js/config.js", "js/tools.js", "js/variance.js", "data/fx.js", "data/world.js", "data/sim_runs.js"];
+const FILES = ["index.html", "css/app.css", "js/app.js", "js/story.js", "js/view.js", "vici/dist/vici.min.css", "js/config.js", "js/tools.js", "js/variance.js", "data/fx.js", "data/world.js", "data/sim_runs.js"];
 const WAIT_MS = Number(process.env.LIVE_WAIT_MS || 12 * 60 * 1000);
 const sha = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
 const problems = [];
@@ -58,12 +59,16 @@ async function simulationRun() {
   try {
     await page.goto(`${URL_BASE}?case=gloves&guide=0`, { waitUntil: "load" });
     await page.waitForSelector('html[data-boot="ready"]', { timeout: 30000 });
+    const playing = (await page.locator("#play-text").innerText()).trim();
+    if (playing !== "Pause") found.push(`Play reads "${playing}" on a page opened without a step, so it does not play`);
     const tile = (await page.locator("#kpi-unexplained-value").innerText()).trim();
     if (tile !== "€14,146") found.push(`the first figure reads "${tile}"`);
     await page.keyboard.press("3");
     const gap = await page.locator(".legend").innerText();
     if (!/best price at volume, €6\.90 per 100 gloves/.test(gap)) found.push(`the gap chart's legend reads "${gap.replace(/\s+/g, " ")}"`);
     await page.keyboard.press("4");
+    const turn = (await page.locator("#stage-body > .turn").innerText().catch(() => "")).replace(/\s+/g, " ").trim();
+    if (!/^Your turn /.test(turn) || !(await page.locator(".option[data-recommended='true'] .vc-attention").count())) found.push(`the decision shows no Your turn callout with the recommended Approve marked ("${turn}")`);
     await page.click(".option[data-recommended='true'] .option-approve");
     await page.keyboard.press("5");
     await page.waitForFunction(() => document.querySelectorAll(".draft").length >= 2, null, { timeout: 60000 });
