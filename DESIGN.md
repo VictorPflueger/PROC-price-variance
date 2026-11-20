@@ -34,8 +34,9 @@ reach the screen that the engine did not compute.
   the euros a year at the row's end, always with a word ("✕ €12,351 a year", "benchmark", "at or below",
   "✓ approved"). The lines sit as small hexagons in a lane above their pair, each at its price, nudged into
   a honeycomb ribbon where they share one (a contract pair's lines all do), so none hides under its pair.
-  They are marks, not targets: the row is the target, and it opens a popover listing every line with its
-  day and price, each a button to its normalisation and back. On a short board (the drawer open on a
+  They are marks, not targets of their own: the row is the target. A click on a line's mark opens that
+  line's normalisation at once; anywhere else on the row, or Enter, opens a popover listing every line
+  with its day and price, each a button to its normalisation and back. On a short board (the drawer open on a
   laptop) the ladder is compact and each line sits on its pair's row.
 - **The portfolio.** The flagged groups as bars of opportunity from zero, largest first, each with its
   spread and index; below them the value pipeline as four labelled bars, approved "a year", realised "to

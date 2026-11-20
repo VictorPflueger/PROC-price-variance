@@ -304,6 +304,19 @@ try {
     }
     check("board: every pair lists exactly its lines, and every line opens the engine's six steps, its rate, its delivery terms with their Incoterms group and its normalised price", wrong.length === 0 && opened.size === a.lines.length, `${opened.size} of ${a.lines.length} opened; ${wrong.slice(0, 3).join(" | ")}`);
     check("board: every line's button is at least 40 px high and wide", small.length === 0, small.slice(0, 5).join(", "));
+    // A pointer on a line's mark opens that line at once (the mark is not a target of its own: the row
+    // maps the click to the nearest mark), with the way back to its pair's lines.
+    const direct = [];
+    for (const p of a.pairs) {
+      const first = await s.page.$eval(`.ladder .ladder-row[data-pair="${p.id}"] .ladder-line .line-hex`, (e) => { const r = e.getBoundingClientRect(); return { id: e.closest(".ladder-line").dataset.line, x: r.left + r.width / 2, y: r.top + r.height / 2 }; }).catch(() => null);
+      if (!first) { direct.push(`${p.id}: no line mark`); continue; }
+      await s.page.mouse.click(first.x, first.y);
+      const title = await s.page.waitForSelector(".board-pop .norm-steps", { timeout: 3000 }).then(() => s.page.$eval(".board-pop .pop-title", (e) => e.textContent)).catch(() => "");
+      const back = await s.page.$(".board-pop .pop-back");
+      if (!title.includes(first.id) || !back) direct.push(`${p.id}: clicked ${first.id}, opened "${title}"`);
+      await s.page.keyboard.press("Escape");
+    }
+    check("board: a click on a line's mark opens that line's normalisation, with a way back to its pair", direct.length === 0, direct.slice(0, 3).join(" | "));
     // By keyboard: Tab reaches the rows; Enter opens a pair; Tab and Enter open a line; Escape returns.
     const kp = a.pairs[a.pairs.length - 1];
     await s.page.focus(`.ladder .ladder-row[data-pair="${kp.id}"]`);

@@ -81,6 +81,8 @@
 .value-approved { fill: var(--vc-success-text) !important; }
 .value-below { fill: var(--vc-text-muted) !important; font-weight: var(--vc-weight-regular); }
 .row-sub { font-size: 11.5px; }
+/* The benchmark is drawn over the rows but is no target: a click on it reaches the row (and the line) below. */
+.ladder-benchmark { pointer-events: none; }
 .ladder-benchmark line { stroke: var(--vc-text); stroke-width: 2; }
 .ladder-benchmark text { font-weight: var(--vc-weight-semibold); font-size: 12.5px; }
 @media (prefers-reduced-motion: reduce) {

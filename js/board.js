@@ -195,10 +195,12 @@ export function createBoard(root, { world, analyse, pipeline }) {
     const compact = rect.height > 0 && rect.height < 300;
     const model = ladderModel(world, g.analysis, { compared: g.compared, marks: st.marks, size: { width: Math.max(420, rect.width - 8), height: Math.max(220, rect.height - 8), compact } });
     // A row opens its pair's lines and contract; a line there opens its normalisation, with a way back.
-    const openPair = (id, el) => openPop(el, `Pair ${id}`, pairContent(world, g.analysis, id, {
+    // A click on a line's mark opens that line at once, with the same way back to its pair's lines.
+    const openLine = (id, el, lineId) => openPop(el, `Line ${lineId}: its normalisation`, normalisationContent(world, g.analysis, lineId, { onBack: () => openPair(id, el) }));
+    const openPair = (id, el, { line = null } = {}) => (line ? openLine(id, el, line) : openPop(el, `Pair ${id}`, pairContent(world, g.analysis, id, {
       marks: st.marks.lines,
-      onLine: (lineId) => openPop(el, `Line ${lineId}: its normalisation`, normalisationContent(world, g.analysis, lineId, { onBack: () => openPair(id, el) }))
-    }));
+      onLine: (lineId) => openLine(id, el, lineId)
+    })));
     canvas.append(renderLadder(model, { onPair: openPair }));
     if (g.analysis.excluded.length) {
       canvas.append(h("p", { class: "board-excluded" }, icon("alert", 16), `Excluded from every figure: ${g.analysis.excluded.map((e) => `line ${e.id} (${e.reason})`).join("; ")}.`));

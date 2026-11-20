@@ -30,7 +30,9 @@ export function hexPoints(cx, cy, r) {
 }
 
 /**
- * The ladder as an SVG element. model: ladderModel(); handlers: { onPair(id, el) }.
+ * The ladder as an SVG element. model: ladderModel(); handlers: { onPair(id, el, { line }) }. A row is
+ * the target for its pair and its lines (at least 40 px high); a click that lands on one of its line marks
+ * opens that line straight away (line: its id), any other click or the keyboard opens the pair's lines.
  */
 export function renderLadder(model, { onPair } = {}) {
   const { width, height, rows, left, right, top } = model;
@@ -104,7 +106,17 @@ export function renderLadder(model, { onPair } = {}) {
       if (r.justified > 0 && !model.compact) g.append(svg("text", { class: "row-sub value-justified", x: vx, y: r.cy + 10, "text-anchor": "end", "dominant-baseline": "middle" }, `${r.justifiedText} justified (urgent)`));
     }
     g.append(value);
-    g.addEventListener("click", () => onPair?.(r.id, g));
+    g.addEventListener("click", (e) => {
+      // The pointer's position in the ladder's own units (the SVG may be drawn smaller than its viewBox).
+      const box = root.getBoundingClientRect();
+      const px = ((e.clientX - box.left) * width) / (box.width || width);
+      const py = ((e.clientY - box.top) * height) / (box.height || height);
+      const hit = model.compact || !e.clientX ? null : r.lines
+        .map((l) => ({ l, d: Math.hypot(l.x - px, l.y - py) }))
+        .filter((x) => x.d <= LINE_R + 3)
+        .sort((x, y) => x.d - y.d)[0];
+      onPair?.(r.id, g, hit ? { line: hit.l.id } : {});
+    });
     g.addEventListener("keydown", (e) => { if (e.target === g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onPair?.(r.id, g); } });
     root.append(g);
   }
