@@ -10,6 +10,11 @@
 //   N     normalisation: price units, the person-day, missing conversions, a currency without a rate,
 //         every Incoterms 2020 rule, and every unit conversion and currency of the world
 //   D     display rules: rounding to 1e-9 before Intl, the half-euro tie, unit prices per EA
+//   GR    the guardrail policy (js/guards.js) and the toolbox's refusals in Node: verified alert, one group
+//         per comparison, confirmed clusters only, options from the latest comparison, decisions once per
+//         set, drafts by decision, report outcome, figure scopes, schema checks
+//   S     the script checker (js/sim_check.js): the six scripts pass on every path (positive control), and
+//         each planted fault is caught (negative controls, AC-13)
 // Raw values must lie within 1e-9 of the exact values; display strings must match exactly.
 // Usage: node tests/engine.mjs            (all groups)
 //        node tests/engine.mjs G1 G2 G3   (only these groups)
@@ -23,7 +28,7 @@ import { analyseGroup } from "../js/variance.js";
 import { realisedValue, valuePipeline } from "../js/pipeline.js";
 import { eur, unitPrice, pct, qty } from "../js/format.js";
 
-const GROUPS = ["G1", "G2", "G3", "G4", "G4b", "G5", "N", "D"];
+const GROUPS = ["G1", "G2", "G3", "G4", "G4b", "G5", "N", "D", "GR", "S"];
 const chosen = ONLY.length ? ONLY : GROUPS;
 const unknown = chosen.filter((g) => !GROUPS.includes(g));
 if (unknown.length) { console.error(`Unknown group(s): ${unknown.join(", ")}. Groups: ${GROUPS.join(", ")}`); process.exit(2); }
@@ -274,6 +279,196 @@ if (chosen.includes("D")) {
   same("D", "quantities whole with their unit", [qty(137000, "EA"), qty(240, "PD")], ["137,000 EA", "240 PD"]);
   const src = ["js/format.js", "js/normalise.js", "js/variance.js", "js/options.js", "js/pipeline.js", "js/groups.js", "js/params.js"].map((f) => readFileSync(path.join(APP_ROOT, f), "utf8")).join("\n");
   same("D", "no toFixed in the engine (Intl after rounding to 1e-9 only)", /\.toFixed\(/.test(src), false);
+}
+
+// ---- GR and S: guardrails and the script checker ----------------------------------------------------------
+const loadData = (files) => {
+  const sandbox = { window: {} };
+  vm.createContext(sandbox);
+  for (const f of files) vm.runInContext(readFileSync(path.join(APP_ROOT, "data", f), "utf8"), sandbox);
+  return sandbox.window;
+};
+const truthy = (group, what, ok, detail = "") => { checks += 1; if (!ok) failures.push(`${group} ${what}${detail ? `: ${detail}` : ""}`); };
+
+if (chosen.includes("GR")) {
+  const D = loadData(["fx.js", "world.js"]);
+  const W = D.WORLD;
+  const { createToolbox } = await import("../js/tools.js");
+  const G = await import("../js/guards.js");
+  const { ACCEPT_REASONS } = await import("../js/options.js");
+  const headless = () => {
+    const h = {};
+    const q = { option: [], confirmation: [] };
+    const events = [];
+    const drafts = new Map();
+    let phase = null;
+    const tb = createToolbox({
+      world: W, fx: D.FX, params: DEFAULTS, emit: (t, p) => { events.push({ t, p }); if (t === "options") h.onOptions?.(p); },
+      waitUntil: async (test) => { const v = test(); if (!v) throw new Error("waits with nothing to answer"); return v; },
+      takeDecision: (k) => q[k].shift() || null, drafts, onPhase: (x) => { phase = x; }, getPhase: () => phase, isEnded: () => false,
+      ecbRate: async () => ({ ok: false, error: "offline" }), mode: "authored", entry: "scenario"
+    });
+    let n = 0;
+    Object.assign(h, { tb, q, events, drafts, call: (name, input) => tb.call(`t${++n}`, name, input) });
+    return h;
+  };
+  const refused = async (h, name, input, rule, text) => {
+    const o = await h.call(name, input);
+    truthy("GR", `${name} refused (${text})`, o.isError && o.guard === rule && (!text || o.result.error.includes(text)), o.isError ? `${o.guard}: ${o.result.error.slice(0, 140)}` : "accepted");
+    return o;
+  };
+
+  // Rule 2: one comparable group per comparison; clusters only once confirmed; the schema first.
+  {
+    const h = headless();
+    await refused(h, "pv_compare", { group_id: "SRV-CON" }, "groups", "material group");
+    await refused(h, "pv_compare", { group_id: "20001001+20001003" }, "groups", "several");
+    await refused(h, "pv_compare", { group_id: "CL-01" }, "cluster", "not a cluster a person confirmed");
+    await h.call("pv_match", { material_group: "SRV-CON" });
+    await refused(h, "pv_compare", { group_id: "CAND-1" }, "cluster", "candidate");
+    await refused(h, "erp_query", { product: "po_line", limit: "ten" }, "input", "schema");
+    await refused(h, "erp_query", { product: "po_line", extra: 1 }, "input", "schema");
+    await refused(h, "ui_propose_options", { compare_id: "CMP-1", options: [], recommended: "Z", reason: "x" }, "input", "schema");
+    const ok = await h.call("pv_compare", { group_id: "20001001" });
+    truthy("GR", "a material number is a comparable group", !ok.isError && ok.result.compare_id === "CMP-1");
+    const mpn = await h.call("pv_compare", { group_id: "20001002" });
+    truthy("GR", "a material inside a part-number group points to that group", mpn.isError && /MPN:Brekholt:BH-7730-S3/.test(mpn.result.error));
+  }
+
+  // Rule 3: the verified alert, its evidence and what it says it checked.
+  {
+    const h = headless();
+    const a = (await h.call("pv_compare", { group_id: "20001001" })).result;
+    const line = (pair, i = 0) => a.pairs.find((p) => p.pair === pair).lines[i];
+    await refused(h, "ui_report_alert", { compare_id: a.compare_id, title: "t", summary: "s" }, "alert", "at least three");
+    await h.call("pv_normalise", { line_id: line(a.benchmark.pair) });
+    await h.call("pv_normalise", { line_id: line(a.benchmark.pair, 1) });
+    await h.call("pv_normalise", { line_id: line("2010 / 80001") });
+    const noHigh = await refused(h, "ui_report_alert", { compare_id: a.compare_id, title: "t", summary: "s" }, "alert", "highest-priced pair");
+    truthy("GR", "three lines are not enough without one of the highest pair", !/at least three/.test(noHigh.result.error));
+    await h.call("pv_normalise", { line_id: line(a.highest.pair) });
+    await refused(h, "ui_report_alert", { compare_id: a.compare_id, title: "t", summary: "s" }, "alert", "contract");
+    await h.call("erp_query", { product: "contract", filters: [{ field: "supplier", op: "eq", value: a.benchmark.supplier }] });
+    await refused(h, "ui_report_alert", { compare_id: a.compare_id, title: "t", summary: "s", line_ids: ["4500010001-00010"] }, "groups", "not lines of group");
+    await refused(h, "ui_report_alert", { compare_id: a.compare_id, title: "Lyon pays €9.90 per 100 EA", summary: "s" }, "figures", "€9.90");
+    const ok = await h.call("ui_report_alert", { compare_id: a.compare_id, title: "Lyon pays above the benchmark", summary: "Lyon pays €9.80 per 100 EA; the benchmark is €6.90 per 100 EA, and €14,146 a year is unexplained." });
+    const alert = h.events.find((e) => e.t === "alert");
+    truthy("GR", "a verified alert passes with its evidence", !ok.isError && !!alert, ok.result.error || "");
+    truthy("GR", "the card says what was checked in this run", alert && alert.p.checked.length === 3 && /contract of supplier 30024: 4600000101/.test(alert.p.checked[2]) && /4 lines normalised/.test(alert.p.checked[1]), JSON.stringify(alert?.p.checked));
+    // A contract query that finds nothing still counts as the lookup.
+    const ev = new G.RunEvidence();
+    ev.noteContracts(new Set(["30059"]), { product: "contract", rows: [] });
+    truthy("GR", "a contract lookup that finds none counts", ev.contracts.has("30059") && ev.contracts.get("30059").size === 0);
+  }
+
+  // Rule 4: options from the latest comparison of the alert's group, material only, decided once.
+  {
+    const h = headless();
+    const a = (await h.call("pv_compare", { group_id: "20001003" })).result;
+    const opts = [{ id: "H", title: "Harmonise", description: "Move the lines.", residual_risk: "None known." }, { id: "R", title: "Renegotiate", description: "Ask the suppliers.", residual_risk: "They may refuse." }];
+    await refused(h, "ui_propose_options", { compare_id: a.compare_id, options: opts, recommended: "H", reason: "Best net." }, "options", "verified alert first");
+    for (const pair of [a.benchmark.pair, a.highest.pair]) await h.call("pv_normalise", { line_id: a.pairs.find((p) => p.pair === pair).lines[0] });
+    await h.call("pv_normalise", { line_id: a.pairs.find((p) => p.pair === a.highest.pair).lines[1] });
+    await h.call("erp_get_record", { product: "supplier", id: a.benchmark.supplier });
+    const al = await h.call("ui_report_alert", { compare_id: a.compare_id, title: "Duisburg pays above the benchmark", summary: "Routine orders pay the urgent price." });
+    truthy("GR", "a supplier record with its contracts counts as the contract lookup", !al.isError, al.result.error || "");
+    const b = (await h.call("pv_compare", { group_id: "20001003" })).result;
+    await refused(h, "ui_propose_options", { compare_id: a.compare_id, options: opts, recommended: "H", reason: "Best net." }, "options", "not the latest");
+    const other = (await h.call("pv_compare", { group_id: "20001001" })).result;
+    await refused(h, "ui_propose_options", { compare_id: other.compare_id, options: opts, recommended: "H", reason: "Best net." }, "options", "one group at a time");
+    await refused(h, "ui_propose_options", { compare_id: b.compare_id, options: opts.slice(0, 1), recommended: "H", reason: "Best net." }, "options", "two or three");
+    await refused(h, "ui_propose_options", { compare_id: b.compare_id, options: [opts[0], opts[0]], recommended: "H", reason: "Best net." }, "options", "once");
+    await refused(h, "ui_propose_options", { compare_id: b.compare_id, options: opts, recommended: "B", reason: "Best net." }, "options", "must be one of");
+    // Decisions bind to the options on screen and count once; anything else shows a Guardrail line.
+    h.q.option.push({ payload: { options_seq: 0, option_id: "H", decision: "approved" } });
+    h.onOptions = (p) => {
+      h.q.option.push({ payload: { options_seq: p.options_seq, option_id: "accept", decision: "approved" } });
+      h.q.option.push({ payload: { options_seq: p.options_seq, option_id: "R", decision: "rejected" } });
+    };
+    const first = await h.call("ui_propose_options", { compare_id: b.compare_id, options: opts, recommended: "H", reason: "Best net." });
+    const notes = () => h.events.filter((e) => e.t === "notice" && e.p.guard).map((e) => e.p.text);
+    truthy("GR", "a decision queued for an earlier set shows a Guardrail line and does not count", notes().some((t) => /earlier set/.test(t)) && first.result.decision === "rejected", JSON.stringify(first.result).slice(0, 120));
+    truthy("GR", "accepting without a reason does not count", notes().some((t) => /needs a reason/.test(t)));
+    h.q.option.push({ payload: { options_seq: 1, option_id: "R", decision: "approved" } });
+    h.q.option.push({ payload: { options_seq: 1, option_id: "H", decision: "approved" } });
+    const second = await h.call("ui_await_decision", {});
+    truthy("GR", "a rejected option cannot be approved afterwards", notes().some((t) => /already rejected/.test(t)) && second.result.decision === "approved" && second.result.option_id === "H", JSON.stringify(second.result).slice(0, 120));
+    await refused(h, "ui_await_decision", {}, "options", "already taken");
+    await refused(h, "ui_propose_options", { compare_id: b.compare_id, options: opts, recommended: "H", reason: "Best net." }, "options", "already taken");
+    await refused(h, "ui_draft_action", { type: "tender_memo", recipient: "Category manager", subject: "Tender", body: "A tender." }, "drafts", "allows only change_request");
+    await refused(h, "ui_final_report", { outcome: "variance_accepted", markdown: "## Report\n\nOption H was approved for the hydraulic hoses." }, "report", "outcome is option_approved");
+    const rep = await h.call("ui_final_report", { outcome: "option_approved", markdown: "## Report\n\nOption H was approved for the hydraulic hoses." });
+    const shown = h.events.find((e) => e.t === "report");
+    truthy("GR", "the report follows the decision and carries the simulation footer in code", !rep.isError && shown && /Simulated run \(authored script\)/.test(shown.p.markdown));
+  }
+
+  // Pure policy functions.
+  {
+    const ok = (what, got) => truthy("GR", what, got === null, got || "");
+    const err = (what, got, text) => truthy("GR", what, typeof got === "string" && got.includes(text), got || "null");
+    err("no draft before a decision", G.draftError({ type: "buyer_notice", approved: null }), "follow a person's decision");
+    ok("H allows a change request", G.draftError({ type: "change_request", approved: { id: "H" } }));
+    ok("H allows a buyer notice", G.draftError({ type: "buyer_notice", approved: { id: "H" } }));
+    err("H allows no tender memo", G.draftError({ type: "tender_memo", approved: { id: "H" } }), "allows only change_request");
+    ok("R allows a negotiation brief", G.draftError({ type: "negotiation_brief", approved: { id: "R" } }));
+    err("R allows no change request", G.draftError({ type: "change_request", approved: { id: "R" } }), "negotiation_brief");
+    ok("B allows a tender memo", G.draftError({ type: "tender_memo", approved: { id: "B" } }));
+    ok("accepting allows a variance memo", G.draftError({ type: "variance_memo", approved: { id: "accept" } }));
+    err("accepting allows nothing else", G.draftError({ type: "buyer_notice", approved: { id: "accept" } }), "variance was accepted");
+    const ro = (x) => G.reportOutcome(x);
+    truthy("GR", "report refused while drafts wait", !!ro({ requested: "option_approved", optionsShown: true, approved: { id: "H" }, pendingDrafts: 1 }).error);
+    truthy("GR", "report refused while a confirmation is open", !!ro({ requested: "stopped", confirmationOpen: true }).error);
+    truthy("GR", "report outcome follows an approval", ro({ requested: "option_approved", optionsShown: true, approved: { id: "B" } }).outcome === "option_approved" && !!ro({ requested: "variance_accepted", optionsShown: true, approved: { id: "B" } }).error);
+    truthy("GR", "report outcome follows accepting", ro({ requested: "variance_accepted", optionsShown: true, approved: { id: "accept" } }).outcome === "variance_accepted");
+    truthy("GR", "report refused while the options wait", !!ro({ requested: "nothing_found", optionsShown: true, approved: null }).error);
+    truthy("GR", "without options: nothing_found or stopped", ro({ requested: "nothing_found" }).outcome === "nothing_found" && ro({ requested: "stopped" }).outcome === "stopped" && !!ro({ requested: "option_approved" }).error);
+    const seq = { optionsSeq: 2, options: [{ id: "H" }, { id: "R" }, { id: "accept" }], rejected: new Set(["R"]), approved: null };
+    err("a decision on an earlier set is stale", G.decisionError({ options_seq: 1, option_id: "H", decision: "approved" }, seq), "earlier set");
+    err("a rejected option cannot be decided again", G.decisionError({ options_seq: 2, option_id: "R", decision: "approved" }, seq), "already rejected");
+    err("an option not on screen", G.decisionError({ options_seq: 2, option_id: "B", decision: "approved" }, seq), "not on screen");
+    err("accepting needs a reason", G.decisionError({ options_seq: 2, option_id: "accept", decision: "approved" }, seq), "needs a reason");
+    ok("accepting with a reason counts", G.decisionError({ options_seq: 2, option_id: "accept", decision: "approved", reason: ACCEPT_REASONS[0] }, seq));
+    err("nothing counts after an approval", G.decisionError({ options_seq: 2, option_id: "H", decision: "approved" }, { ...seq, approved: { id: "H" } }), "already taken");
+  }
+
+  // Figure scopes: a draft quotes only the comparison its option rests on; a sensitivity only in the alert and report.
+  {
+    const L = new G.FigureLedger(W, DEFAULTS);
+    L.addCompare("CMP-1", { group: "x", base_unit: "EA", display_quantity: 1, opportunity: 11736.4 });
+    L.addCompare("CMP-2", { group: "y", base_unit: "EA", display_quantity: 1, opportunity: 36155.4 }, { base_unit: "EA", display_quantity: 1, opportunity: 41000.2 });
+    truthy("GR", "a draft quotes its own comparison", L.offending("Savings of €11,736 a year.", "draft", "CMP-1").length === 0);
+    truthy("GR", "a draft does not quote another comparison", L.offending("Savings of €36,155 a year.", "draft", "CMP-1").join() === "€36,155");
+    truthy("GR", "a sensitivity is quoted in the alert", L.offending("At today's rate €41,000 a year.", "alert").length === 0);
+    truthy("GR", "a sensitivity is not quoted in a draft", L.offending("At today's rate €41,000 a year.", "draft", "CMP-2").join() === "€41,000");
+    truthy("GR", "world ids exist for every text", L.offending("Plant 1010 buys from supplier 30024 under contract 4600000101.", "draft", "CMP-1").length === 0 && L.offending("Plant 1011 buys from supplier 30024.", "draft", "CMP-1").join() === "1011");
+  }
+}
+
+if (chosen.includes("S")) {
+  const D = loadData(["fx.js", "world.js", "scenarios.js", "sim_runs.js"]);
+  const { checkSimRun, checkSimRuns } = await import("../js/sim_check.js");
+  const clone = (x) => JSON.parse(JSON.stringify(x));
+  const S = D.SIM_RUNS;
+  const all = await checkSimRuns(D.WORLD, D.FX, DEFAULTS, S, D.SCENARIOS);
+  truthy("S", "positive control: the six scripts pass on every path", all.scripts === 6 && all.checks.every((c) => c.ok) && all.paths >= 30, all.checks.filter((c) => !c.ok).map((c) => c.detail).join(" | "));
+  const faults = {
+    "an alert before the evidence (no line normalised)": [() => { const d = clone(S["SC-GLOVES"]); d.steps = d.steps.filter((s) => s.tool !== "pv_normalise"); return d; }, /at least three of the group's lines/],
+    "no contract lookup": [() => { const d = clone(S["SC-GLOVES"]); d.steps = d.steps.filter((s) => !(s.tool === "erp_query" && s.input.product === "contract")); return d; }, /contract/],
+    "no visible revision": [() => { const d = clone(S["SC-SHOES"]); d.steps = d.steps.filter((s) => !(s.say && /^Revised/.test(s.say))); return d; }, /Revised:/],
+    "no hypothesis": [() => { const d = clone(S["SC-SHOES"]); d.steps = d.steps.filter((s) => !(s.say && /^Hypothesis/.test(s.say))); return d; }, /Hypothesis:/],
+    "fewer than eight tool calls": [() => { const d = clone(S["SC-SHOES"]); d.steps = d.steps.filter((s) => !(s.tool === "erp_get_overview" || (s.tool === "erp_query" && s.input.product !== "contract") || s.tool === "erp_get_record")); return d; }, /at least 8 are needed/],
+    "a typed figure in the narration": [() => { const d = clone(S["SC-GLOVES"]); d.steps.splice(3, 0, { say: "Lyon pays €9.90 per 100 EA." }); return d; }, /€9\.90/],
+    "a typed figure in an alert": [() => { const d = clone(S["SC-SHOES"]); const a = d.steps.find((s) => s.alert); a.alert.summary = "Lyon pays €81.00 per EA."; return d; }, /€81\.00/],
+    "a draft the option does not allow": [() => { const d = clone(S["SC-GLOVES"]); d.decisions = { H: [{ draft: { type: "tender_memo", recipient: "Category manager", subject: "Tender", body: "A tender." } }] }; return d; }, /allows only change_request/],
+    "a report outcome that does not follow the decision": [() => { const d = clone(S["SC-BOXES"]); d.steps[d.steps.length - 1].report.outcome = "option_approved"; return d; }, /nothing_found/],
+    "options on a group below materiality": [() => { const d = clone(S["SC-BOXES"]); d.steps.splice(d.steps.length - 1, 1, { tool: "pv_normalise", input: { line_id: "{{highest.line}}" } }, { alert: { title: "Boxes", summary: "Boxes differ." } }, { propose: true }); return d; }, /below materiality/],
+    "an unresolved placeholder": [() => { const d = clone(S["SC-GLOVES"]); d.steps.splice(3, 0, { say: "{{group.nothing}}" }); return d; }, /unresolved placeholder/],
+    "a script without a source": [() => { const d = clone(S["SC-GLOVES"]); delete d.source; return d; }, /source must be/]
+  };
+  for (const [what, [make, expect]] of Object.entries(faults)) {
+    const r = await checkSimRun(D.WORLD, D.FX, DEFAULTS, make());
+    truthy("S", `the checker catches ${what}`, r.errors.some((e) => expect.test(e)), r.errors.slice(0, 2).join(" | ") || "no error");
+  }
 }
 
 for (const f of failures) console.log(`FAIL  ${f}`);
