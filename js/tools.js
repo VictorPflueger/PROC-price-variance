@@ -27,7 +27,7 @@ import { normaliseLine, METHOD_VERSION } from "./normalise.js";
 import { valuePipeline } from "./pipeline.js";
 import { contextOf, ratesOf } from "./world.js";
 import { validate, formatErrors } from "./schema.js";
-import { RunEvidence, FigureLedger, verifiedAlert, linesOutsideGroup, optionsError, decisionError, draftError, reportOutcome, OUTCOMES, OPTION_LETTERS } from "./guards.js";
+import { RunEvidence, FigureLedger, verifiedAlert, linesOutsideGroup, optionsError, decisionError, draftError, reportOutcome, valueClaims, OUTCOMES, OPTION_LETTERS } from "./guards.js";
 import { finalizeDraft, DRAFT_TYPES, DRAFTS_BY_OPTION, DRAFT_WORDS } from "./drafts.js";
 import { ACCEPT_REASONS, OPTION_TITLES } from "./options.js";
 import { summarizeToolResult, replayTag } from "./summaries.js";
@@ -42,7 +42,9 @@ export const REPORT_FOOTERS = {
   authored: "*Simulated run (authored script). GlobalCorp SE and its data are fictional; every figure was recomputed by the engine at playback.*",
   recorded: "*Recorded live run, replayed. GlobalCorp SE and its data are fictional; every figure was recomputed by the engine at playback.*"
 };
-const BOARD_STATES = ["checking", "above", "justified", "approved", "neutral"];
+// The states the agent may mark on the board. "approved" and "accepted" (justified) are a person's
+// decisions: only the code marks them, after the decision (review R1).
+const BOARD_STATES = ["checking", "above", "neutral"];
 
 // ---- schemas ----------------------------------------------------------------------------------------
 
@@ -107,7 +109,7 @@ const DEFINITIONS = [
   },
   {
     name: "ui_mark_board",
-    description: "Screen: highlights a group, pairs (\"1010 / 30024\") or lines on the price board. state: checking (what you are reading), above (paid above the benchmark), justified, approved or neutral.",
+    description: "Screen: highlights a group, pairs (\"1010 / 30024\") or lines on the price board. state: checking (what you are reading), above (paid above the benchmark: only pairs and lines the latest pv_compare of the named group puts above it) or neutral. The app marks approved and accepted pairs itself after a person's decision.",
     input_schema: obj({ state: { type: "string", enum: BOARD_STATES }, group_id: str("The group to show."), pair_ids: strings("Pairs, \"plant / supplier\"."), line_ids: strings("Order lines.") }, ["state"])
   },
   {
@@ -178,7 +180,7 @@ export function phaseForTool(name, phase, entry) {
  *        (kind "option" or "confirmation", oldest first), drafts: Map, onPhase(state), getPhase(),
  *        isEnded(), signal, ecbRate(input, io) → Promise (resolves, never throws), mode ("live" |
  *        "authored" | "recorded"), entry ("scenario" | "sweep" | "custom"), beforeExecute?(name) → Promise
- *        (the player's pacing) }
+ *        (the player's pacing), session? (js/session.js: approvals of earlier runs, recorded on approval) }
  */
 export function createToolbox(ctx) {
   const world = ctx.world;
@@ -207,6 +209,7 @@ export function createToolbox(ctx) {
     rejected: new Set(),
     approved: null,
     approvals: [],
+    decidedGroups: new Set(), // groups a person decided in this run (their earlier session approvals no longer count)
     figureRejections: { alert: 0, options: 0, draft: 0, report: 0, cluster: 0 },
     guardrails: 0,
     normalisedCount: 0,
@@ -285,7 +288,7 @@ export function createToolbox(ctx) {
   /** A tool call with its run events (tool_call, then tool_result), for either producer. */
   async function call(callId, name, input = {}) {
     if (!UI_BLOCKING_TOOLS.has(name)) ctx.onPhase(phaseForTool(name, ctx.getPhase(), ctx.entry));
-    emit("tool_call", { call_id: callId, name, input, plain: toolPlain(name, input, world), server: false });
+    emit("tool_call", { call_id: callId, name, input, plain: toolPlain(name, input, world, ctx.mode), server: false });
     if (ctx.beforeExecute) await ctx.beforeExecute(name);
     const out = await execute(name, input);
     if (ctx.isEnded?.()) throw ABORT;
@@ -299,18 +302,22 @@ export function createToolbox(ctx) {
 
   const guard = (error, rule) => ({ error, guardrail: rule });
 
+  // The session's approvals of earlier runs (review R13): ctx.session from the live agent or the player.
+  const prior = ctx.session ? ctx.session.list() : [];
+  const approvalsNow = () => [...prior.filter((a) => !run.decidedGroups.has(a.group)), ...run.approvals];
+
   // -- engine ---------------------------------------------------------------------------------------
 
   function pipelineNow(identified) {
     const index = groupIndex(world, { clusters: run.clusters });
-    return valuePipeline({ valueLog: world.value_log || [], approvals: run.approvals, identified, lines: world.po_line || [], unitOf: (l) => unitOfLine(index, l), ctx: engineCtx() });
+    return valuePipeline({ valueLog: world.value_log || [], approvals: approvalsNow(), identified, lines: world.po_line || [], unitOf: (l) => unitOfLine(index, l), ctx: engineCtx() });
   }
 
   function emitKpi() {
     const scope = run.scanned ? run.scanned.analyses : [...run.compared.values()];
     const flagged = scope.filter((a) => a.flagged);
     const identified = flagged.reduce((s, a) => s + a.opportunity, 0);
-    const approvals = run.approvals.filter((x) => scope.some((a) => a.id === x.group));
+    const approvals = approvalsNow().filter((x) => scope.some((a) => a.id === x.group));
     const pi = portfolioIndex(scope, approvals);
     const pipe = pipelineNow(identified);
     emit("kpi_update", {
@@ -588,6 +595,17 @@ export function createToolbox(ctx) {
     const okLines = lines.filter((id) => ix.po_line.has(id)).slice(0, 60);
     const okPairs = pairs.filter((p) => /^\S+ \/ \S+$/.test(p) && ix.plant.has(p.split(" / ")[0]) && ix.supplier.has(p.split(" / ")[1])).slice(0, 20);
     const ignored = [...lines.filter((x) => !okLines.includes(x)), ...pairs.filter((x) => !okPairs.includes(x)), ...(gid && !knownGroup ? [gid] : [])];
+    if (i.state === "above") {
+      // "above" says a price is paid above the benchmark, so it needs the benchmark: only the pairs and
+      // lines the latest comparison of the named group puts above it (review R1).
+      if (!gid) return guard("state above needs the group (group_id) whose latest pv_compare puts these pairs or lines above the benchmark.", "board");
+      const a = run.compares.get(run.latestCompare.get(gid));
+      if (!a) return guard(`state above needs the benchmark of group ${gid}: compare it first (pv_compare), then mark what the comparison puts above the benchmark.`, "board");
+      const strangers = [...pairs.filter((p) => !a.pairs.some((x) => x.id === p)), ...lines.filter((l) => !a.lines.some((x) => x.id === l))];
+      if (strangers.length) return guard(`${strangers.slice(0, 5).join(", ")} ${strangers.length === 1 ? "is" : "are"} not a pair or line of group ${gid}'s latest comparison.`, "board");
+      const below = [...a.pairs.filter((p) => pairs.includes(p.id) && !(p.gap > 1e-9)).map((p) => `pair ${p.id}`), ...a.lines.filter((l) => lines.includes(l.id) && !(l.gap > 1e-9)).map((l) => `line ${l.id}`)];
+      if (below.length) return guard(`${below.slice(0, 5).join(", ")} ${below.length === 1 ? "is" : "are"} not above the benchmark of group ${gid} (${a.compare_id}); mark only what is paid above it.`, "board");
+    }
     emit("board_update", { view: knownGroup && run.candidates.has(gid) ? "candidate" : "group", ...(knownGroup ? { group_id: gid, focus: gid } : {}), pair_ids: okPairs, line_ids: okLines, state: i.state });
     return { ok: true, marked: okLines.length + okPairs.length + (knownGroup ? 1 : 0), ...(ignored.length ? { ignored_unknown_ids: ignored } : {}) };
   }
@@ -603,6 +621,8 @@ export function createToolbox(ctx) {
     if (v.error) return guard(v.error, "alert");
     let title = String(i.title || "Price variance finding").trim().slice(0, 160);
     let summary = String(i.summary || "").trim().slice(0, 700);
+    const words = valueCheck(`${title}\n${summary}`, "alert", null, "ui_report_alert");
+    if (words) return words;
     const audit = figureCheck(`${title}\n${summary}`, "alert", null, "ui_report_alert");
     if (audit.reject) return audit.reject;
     if (audit.flag) { title = strike(title, audit.bad); summary = strike(summary, audit.bad); }
@@ -626,6 +646,8 @@ export function createToolbox(ctx) {
     const err = optionsError({ approved: run.approved, alert: run.alert, compare, latestCompareId: compare ? run.latestCompare.get(compare.id) : null, input: i });
     if (err) return guard(err, "options");
     const texts = i.options.flatMap((o) => [o.title, o.description, o.residual_risk]);
+    const words = valueCheck([...texts, i.reason].join("\n"), "options", compare.compare_id, "ui_propose_options");
+    if (words) return words;
     const audit = figureCheck([...texts, i.reason].join("\n"), "options", compare.compare_id, "ui_propose_options");
     if (audit.reject) return audit.reject;
     const fix = (s, n) => (audit.flag ? strike(String(s || "").slice(0, n), audit.bad) : String(s || "").slice(0, n));
@@ -683,7 +705,9 @@ export function createToolbox(ctx) {
     if (decision === "approved") {
       const label = id === "accept" ? `Accept the variance (${reason})` : `Option ${id}: ${card.title}`;
       run.approved = { id, label, reason: id === "accept" ? reason : null, compare_id: compare.compare_id, group_id: compare.id };
+      run.decidedGroups.add(compare.id);
       if (id !== "accept") run.approvals.push({ group: compare.id, option: id, savings: card.savings, bundle: card.bundle });
+      ctx.session?.record(id === "accept" ? { group: compare.id, option: "accept" } : { group: compare.id, option: id, savings: card.savings, bundle: card.bundle });
       emitKpi();
       const o = compare.options[id === "accept" ? "accept" : id];
       emit("board_update", {
@@ -718,6 +742,8 @@ export function createToolbox(ctx) {
     const subject = String(i.subject || "").trim().slice(0, 200);
     const raw = String(i.body || "").trim();
     if (!subject || !raw) return { error: "subject and body are required." };
+    const words = valueCheck(`${subject}\n${raw}`, "draft", run.optionsCompare, "ui_draft_action");
+    if (words) return words;
     const audit = figureCheck(`${subject}\n${raw}`, "draft", run.optionsCompare, "ui_draft_action");
     if (audit.reject) return audit.reject;
     const body = finalizeDraft(i.type, audit.flag ? `${raw}\n\nUnchecked figures (no tool returned them): ${audit.flag}. Check them against the option card before approving.` : raw);
@@ -754,6 +780,8 @@ export function createToolbox(ctx) {
     if (o.error) return guard(o.error, "report");
     let markdown = String(i.markdown || "").trim().slice(0, 19000);
     if (markdown.length < 40) return { error: "The report is empty. Write a short Markdown report." };
+    const words = valueCheck(markdown, "report", null, "ui_final_report");
+    if (words) return words;
     const audit = figureCheck(markdown, "report", null, "ui_final_report");
     if (audit.reject) return audit.reject;
     if (audit.flag) markdown = `${markdown}\n\n*Unchecked figures (no tool returned them): ${audit.flag}.*`;
@@ -784,6 +812,14 @@ export function createToolbox(ctx) {
     const where = { draft: "draft", report: "report", options: "option cards", alert: "alert", cluster: "cluster note" }[kind];
     emit("notice", { level: "warn", text: `The ${where} quote${kind === "options" ? "" : "s"} figures no tool returned (${list}); they are shown with an Unchecked tag.` });
     return { flag: list, bad };
+  }
+
+  // Value words (review R5): nothing is saved or realised before later order lines show it, so a text that
+  // says so is refused every time, whatever it says about figures.
+  function valueCheck(text, kind, compareId, tool) {
+    const bad = valueClaims(text, run.ledger.scope(kind, compareId));
+    if (!bad.length) return null;
+    return guard(`Nothing is saved or realised before later order lines show it: approved savings are a decision, written "a year" ("savings of €… a year", "would save"), and realised value is only what the value pipeline returned "to date". Reword: ${bad.map((x) => `"${x}"`).join("; ")}. Then call ${tool} again.`, "value");
   }
 
   function guardNotice(text) {

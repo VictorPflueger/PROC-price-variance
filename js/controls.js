@@ -15,7 +15,7 @@ const STATE_TONE = {
 const TONE_TAG = { "": "", active: "", waiting: "vc-tag--accent", done: "vc-tag--success", stopped: "vc-tag--danger" };
 
 /**
- * handlers: { onStart, onLiveScan, onSelectScenario(id), onSelectCustom(), onSelectModel(id), onSpeed(n), onAbort, onReset, onDiagnostics }
+ * handlers: { onStart, onLiveScan, onSelectScenario(id), onSelectCustom(), onSelectModel(id), onSpeed(n), onAbort, onReset, onMethod, onDiagnostics }
  */
 export function createControls(root, scenarios, handlers) {
   const startBtn = h("button", { class: "vc-button", type: "button", id: "btn-start" }, icon("play", 18), h("span", {}, "Start agent"));
@@ -60,6 +60,9 @@ export function createControls(root, scenarios, handlers) {
   resetBtn.addEventListener("click", () => handlers.onReset());
   const diagBtn = h("button", { class: "vc-button vc-button--ghost", type: "button", id: "btn-diagnostics", title: "Test every external service from this browser" }, icon("pulse", 18), h("span", { class: "btn-text" }, "Diagnostics"));
   diagBtn.addEventListener("click", () => handlers.onDiagnostics());
+  // The method, its parameters and the exchange rates (brief §9).
+  const methodBtn = h("button", { class: "vc-button vc-button--ghost", type: "button", id: "btn-method", title: "How the engine compares prices, its parameters and the exchange rates" }, icon("book", 18), h("span", { class: "btn-text" }, "Method"));
+  methodBtn.addEventListener("click", () => handlers.onMethod?.());
 
   root.append(
     startBtn,
@@ -71,6 +74,7 @@ export function createControls(root, scenarios, handlers) {
     pill,
     abortBtn,
     withTooltip(resetBtn, "Reset", { below: true }),
+    withTooltip(methodBtn, "Method", { below: true }),
     withTooltip(diagBtn, "Diagnostics", { below: true })
   );
 

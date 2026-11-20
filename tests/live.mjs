@@ -15,6 +15,14 @@
 //            accepts and the player replays
 //   entries  G15: Live sweep starts from pv_scan without a tip (the portfolio equals the engine's scan);
 //            Custom what-if passes the person's words; both are Live only
+//   marks    review R1: the agent cannot mark pairs approved or accepted (only a person's decision does),
+//            nor mark "above" what the comparison does not put above the benchmark; each refusal a
+//            Guardrail line
+//   words    review R2 and R5: an alert with disguised figures ("a price level 45%", "2026 euros", "fifteen
+//            thousand euros") and texts that call value saved or realised are refused, each with a
+//            Guardrail line; the honest versions pass
+//   params   M3-2: a parameter changed in the Method dialog before a live run is the one that run's engine
+//            uses; the audit export records it; the run cannot be saved as a simulation
 // Usage: node tests/live.mjs [case…]
 import path from "node:path";
 import vm from "node:vm";
@@ -91,9 +99,11 @@ async function newPage(fake, { rates = { mode: "ok" }, routeData = null } = {}) 
   return { context, page, log };
 }
 
-async function startLive(page, { scenario = "SC-GLOVES", entry = "scenario", custom = "" } = {}) {
-  await page.goto(BASE);
-  await page.waitForSelector('html[data-boot="ready"]', { timeout: 20000 });
+async function startLive(page, { scenario = "SC-GLOVES", entry = "scenario", custom = "", reload = true } = {}) {
+  if (reload) {
+    await page.goto(BASE);
+    await page.waitForSelector('html[data-boot="ready"]', { timeout: 20000 });
+  }
   if (entry === "sweep") await page.click("#btn-scan");
   else {
     if (entry === "custom") {
@@ -451,10 +461,143 @@ if (wanted("entries")) {
   }
 }
 
+// ---- marks: only a person's decision marks the board approved or accepted (review R1) ---------------
+if (wanted("marks")) {
+  const a = A["20001001"];
+  const script = [
+    { usage: usage(), stop: "tool_use", blocks: [text("Check: I compare the gloves."), tool("k1", "pv_compare", { group_id: a.id })] },
+    { usage: usage(), stop: "tool_use", blocks: [
+      tool("k2", "ui_mark_board", { state: "approved", group_id: a.id, pair_ids: ["3010 / 80002", "2010 / 80001"] }),
+      tool("k3", "ui_mark_board", { state: "justified", group_id: a.id, pair_ids: ["1020 / 30024"] }),
+      tool("k4", "ui_mark_board", { state: "above", group_id: a.id, pair_ids: [a.benchmark.pair] }),
+      tool("k5", "ui_mark_board", { state: "above", group_id: a.id, pair_ids: ["3010 / 80002"] })
+    ] },
+    { usage: usage(), stop: "tool_use", blocks: [tool("k6", "ui_final_report", { outcome: "nothing_found", markdown: "## Gloves\n\nThis test run stops after the board marks." })], expect: (req, { check }) => {
+      const r = lastResults(req);
+      check(r.length === 4 && r[0].isError && /schema/.test(r[0].json.error) && r[1].isError && /schema/.test(r[1].json.error), `approved and justified are refused by the schema (got ${r.map((x) => x.raw.slice(0, 80)).join(" | ")})`);
+      check(r[2]?.isError && /not above the benchmark/.test(r[2].json.error), `above on the benchmark pair is refused (got ${r[2]?.raw.slice(0, 160)})`);
+      check(r[3] && !r[3].isError, `above on Lyon's pair passes (got ${r[3]?.raw.slice(0, 160)})`);
+    } },
+    { usage: usage(), stop: "end_turn", blocks: [text("Done.")] }
+  ];
+  const fake = createFakeClaude(script);
+  const t = await newPage(fake);
+  // Every text the status pill shows during the run.
+  await t.context.addInitScript(() => {
+    window.__pill = new Set();
+    new MutationObserver(() => { const e = document.querySelector(".status-pill .text"); if (e) window.__pill.add(e.textContent); })
+      .observe(document, { subtree: true, childList: true, characterData: true });
+  });
+  await startLive(t.page, { scenario: "SC-GLOVES" });
+  const end = await waitEnd(t.page);
+  expect("marks", "the run completes", /Done/.test(end), end);
+  const lines = await guardLines(t.page);
+  expect("marks", "Guardrail lines: the board marks were refused, three times", lines.filter((l) => /board mark was refused/.test(l)).length === 3, lines.join(" | "));
+  const rows = await t.page.$$eval(".ladder .ladder-row", (els) => els.map((e) => ({ pair: e.dataset.pair, state: e.dataset.state, text: e.textContent })));
+  const pills = await t.page.evaluate(() => [...(window.__pill || [])]);
+  expect("marks", "a live run's status reads Calculating while the engine compares, never Simulating (review R6)", pills.includes("Calculating") && !pills.some((x) => /Simulating/.test(x)), pills.join(" | "));
+  expect("marks", "no row reads approved or accepted, since nobody decided", rows.length > 0 && rows.every((r) => !["approved", "justified"].includes(r.state) && !/approved|accepted/.test(r.text)), JSON.stringify(rows.map((r) => [r.pair, r.state])));
+  await finish("marks", t, fake);
+}
+
+// ---- words: disguised figures and value claims are refused in a live run (review R2, R5) -------------
+if (wanted("words")) {
+  const a = A["20001001"];
+  const bench = pairLine(a, a.benchmark.pair);
+  const high = pairLine(a, a.highest.pair);
+  const other = pairLine(a, "2010 / 80001");
+  const opp = `€${Math.round(a.opportunity).toLocaleString("en-GB")}`;
+  const H = a.options.H;
+  const savings = `€${Math.round(H.savings).toLocaleString("en-GB")}`;
+  const honest = [{ id: "H", title: "Move Lyon and Duisburg to the contract supplier", description: "Order at the benchmark under Frankfurt's contract.", residual_risk: "Birmingham stays as it is." }, { id: "R", title: "Renegotiate above the benchmark", description: "Ask the suppliers to match the benchmark.", residual_risk: "They may not agree." }];
+  const boasting = [{ ...honest[0], title: `Move Lyon and Duisburg: this saves ${savings} a year`, description: "Realised at once under Frankfurt's contract." }, honest[1]];
+  const refusedWith = (re) => (req, { check }) => { const r = lastResults(req)[0]; check(r?.isError && re.test(r.json.error), `refused as expected (${re}) (got ${r?.raw.slice(0, 200)})`); };
+  const script = [
+    { usage: usage(), stop: "tool_use", blocks: [tool("w01", "pv_compare", { group_id: a.id }), tool("w02", "pv_normalise", { line_id: bench }), tool("w03", "pv_normalise", { line_id: high }), tool("w04", "pv_normalise", { line_id: other }), tool("w05", "erp_query", { product: "contract", filters: [{ field: "supplier", op: "eq", value: a.benchmark.supplier }] })] },
+    { usage: usage(), stop: "tool_use", blocks: [tool("w06", "ui_report_alert", { compare_id: "CMP-1", title: "Lyon pays at a price level 45% above the benchmark", summary: "Lyon overpays by 2026 euros a month; roughly twenty-five thousand euros a year stay unexplained." })] },
+    { usage: usage(), stop: "tool_use", blocks: [tool("w07", "ui_report_alert", { compare_id: "CMP-1", title: "Lyon pays €9.80 per 100 EA for gloves Frankfurt buys at €6.90 per 100 EA", summary: `This saved ${opp} a year already.` })], expect: (req, { check }) => {
+      const r = lastResults(req)[0];
+      check(r?.isError && /45%/.test(r.json.error) && /2026 euros/.test(r.json.error) && /twenty-five thousand euros/.test(r.json.error), `the disguised figures are named (got ${r?.raw.slice(0, 240)})`);
+    } },
+    { usage: usage(), stop: "tool_use", blocks: [tool("w08", "ui_report_alert", { compare_id: "CMP-1", title: "Lyon pays €9.80 per 100 EA for gloves Frankfurt buys at €6.90 per 100 EA", summary: `Unexplained: ${opp} a year, spread 42.0%.` })], expect: refusedWith(/Nothing is saved or realised/) },
+    { usage: usage(), stop: "tool_use", blocks: [tool("w09", "ui_propose_options", { compare_id: "CMP-1", options: boasting, recommended: "H", reason: "Highest savings less one-off cost." })], expect: (req, { check }) => { const r = lastResults(req)[0]; check(r && !r.isError && r.json.shown === true, `the honest alert passes (got ${r?.raw.slice(0, 160)})`); } },
+    { usage: usage(), stop: "tool_use", blocks: [tool("w10", "ui_propose_options", { compare_id: "CMP-1", options: honest, recommended: "H", reason: "Highest savings less one-off cost." })], expect: refusedWith(/Nothing is saved or realised/) },
+    { usage: usage(), stop: "tool_use", blocks: [tool("w11", "ui_draft_action", { type: "change_request", recipient: "Procurement master data", subject: "Change request: gloves to supplier 30024", body: `Move the gloves to supplier 30024 at €6.90 per 100 EA. This saved ${savings} a year.` })], expect: (req, { check }) => { const r = lastResults(req)[0]; check(r && !r.isError && r.json.decision === "approved", `the decision counts (got ${r?.raw.slice(0, 160)})`); } },
+    { usage: usage(), stop: "tool_use", blocks: [tool("w12", "ui_draft_action", { type: "change_request", recipient: "Procurement master data", subject: "Change request: gloves to supplier 30024", body: "Move the gloves to supplier 30024 at €6.90 per 100 EA." }), tool("w13", "ui_draft_action", { type: "buyer_notice", recipient: "Buyer, MRO, Lyon", subject: "Gloves: new source of supply", body: "Please order the gloves from supplier 30024 at €6.90 per 100 EA." })], expect: refusedWith(/Nothing is saved or realised/) },
+    { usage: usage(), stop: "tool_use", blocks: [tool("w14", "ui_await_approvals", {})] },
+    { usage: usage(), stop: "tool_use", blocks: [tool("w15", "ui_final_report", { outcome: "option_approved", markdown: `## Gloves\n\nOption H was approved: we saved ${savings} a year, realised from today. The drafts were decided in the Outbox; nothing was sent.` })] },
+    { usage: usage(), stop: "tool_use", blocks: [tool("w16", "ui_final_report", { outcome: "option_approved", markdown: `## Gloves\n\nOption H was approved: savings of ${savings} a year, which count as realised only when later order lines show them. The drafts were decided in the Outbox; nothing was sent.` })], expect: refusedWith(/Nothing is saved or realised/) },
+    { usage: usage(), stop: "end_turn", blocks: [text("The report is published.")], expect: (req, { check }) => { const r = lastResults(req)[0]; check(r && !r.isError && r.json.published === true, `the honest report passes (got ${r?.raw.slice(0, 160)})`); } }
+  ];
+  const fake = createFakeClaude(script);
+  const t = await newPage(fake);
+  await startLive(t.page, { scenario: "SC-GLOVES" });
+  await t.page.waitForSelector('.option-card[data-option="H"] [data-action="approve"]', { timeout: 30000 });
+  await t.page.click('.option-card[data-option="H"] [data-action="approve"]');
+  await t.page.waitForSelector('.action-card[data-status="pending"]', { timeout: 20000 });
+  await t.page.waitForTimeout(600);
+  // Each approval redraws the Outbox, so approve one pending draft at a time until none is left.
+  for (let k = 0; k < 10; k += 1) {
+    const button = await t.page.$('.action-card[data-status="pending"] [data-action="approve"]');
+    if (!button) break;
+    await button.click().catch(() => {});
+    await t.page.waitForTimeout(300);
+  }
+  const end = await waitEnd(t.page).catch(async () => `no end: ${(await t.page.$eval("#console", (e) => e.innerText).catch(() => "")).slice(-600)}`);
+  expect("words", "the run completes", /Done/.test(end), end);
+  expect("words", "every request was used", fake.remaining() === 0, fake.remaining());
+  const lines = await guardLines(t.page);
+  const has = (re) => lines.filter((l) => re.test(l)).length;
+  expect("words", "Guardrail lines: the disguised figures, and a value claim in the alert, the options, a draft and the report", has(/alert was refused.*match nothing/) === 1 && has(/alert was refused.*Nothing is saved/) === 1 && has(/options were refused.*Nothing is saved/) === 1 && has(/draft was refused.*Nothing is saved/) === 1 && has(/report was refused.*Nothing is saved/) === 1, lines.join(" | ").slice(0, 600));
+  const shown = await t.page.$$eval("#console .alert-card, #drawer .option-card, #drawer .action-card, #console .report-card", (els) => els.map((e) => e.textContent).join(" "));
+  expect("words", "nothing on screen says saved or realised at once", !/\bsav(ed|es)\b|realised at once|realised from today/i.test(shown), shown.match(/.{0,40}\b(sav(ed|es)|realised (at once|from today))\b.{0,40}/i)?.[0] || "");
+  await finish("words", t, fake);
+}
+
+// ---- params: the Method dialog's parameters in a live run (M3-2) -------------------------------------
+if (wanted("params")) {
+  // The person sets the urgent allowance to 0 % before a live run: the engine's comparison in that run
+  // justifies nothing, so the unexplained part equals the whole gap; the audit export records the value in
+  // effect and the change; the run cannot become a simulation, whose scripts play at the defaults.
+  const a = A["20001001"];
+  const script = [
+    { usage: usage(), stop: "tool_use", blocks: [text("Check: I compare the gloves."), tool("p1", "pv_compare", { group_id: a.id })] },
+    { usage: usage(), stop: "tool_use", blocks: [tool("p2", "ui_final_report", { outcome: "nothing_found", markdown: "## Gloves\n\nThis test run stops after the comparison." })], expect: (req, { check }) => {
+      const r = lastResults(req)[0];
+      check(!!r && !r.isError && a.justified > 0 && Math.abs(r.json.justified) < 1e-9 && Math.abs(r.json.unexplained - a.gap) < 1e-6, `pv_compare used the person's urgent allowance of 0 % (justified ${r?.json?.justified}, unexplained ${r?.json?.unexplained}, gap ${a.gap}; ${a.justified} justified at the defaults)`);
+    } },
+    { usage: usage(), stop: "end_turn", blocks: [text("Done.")] }
+  ];
+  const fake = createFakeClaude(script);
+  const t = await newPage(fake);
+  await t.page.goto(BASE);
+  await t.page.waitForSelector('html[data-boot="ready"]');
+  await t.page.click("#btn-method");
+  await t.page.fill('.method-input[data-param="urgent_allowance"]', "0");
+  await t.page.press('.method-input[data-param="urgent_allowance"]', "Enter");
+  await t.page.keyboard.press("Escape");
+  // The parameters live in the page until it is reloaded, so the run starts on this page.
+  await startLive(t.page, { scenario: "SC-GLOVES", reload: false });
+  const end = await waitEnd(t.page);
+  expect("params", "the live run with a changed parameter completes", /Done/.test(end), end);
+  expect("params", "the model's comparison used the person's parameter", fake.violations.length === 0, fake.violations.join(" | "));
+  await t.page.click('#drawer [role="tab"]:has-text("Audit")').catch(() => {});
+  await t.page.waitForTimeout(300);
+  const [download] = await Promise.all([t.page.waitForEvent("download"), t.page.click('#panel-audit button:has-text("Export JSON")')]);
+  const doc = JSON.parse(await readFile(await download.path(), "utf8"));
+  const changed = doc.parameters?.changed_from_defaults || [];
+  expect("params", "the audit export records the value in effect and the change from the default",
+    doc.parameters?.in_effect?.urgent_allowance === 0 && changed.length === 1 && changed[0].name === "urgent_allowance" && changed[0].value === 0 && changed[0].default === DEFAULTS.urgent_allowance
+      && (doc.parameters?.changes || []).some((c) => c.name === "urgent_allowance" && c.to === 0), JSON.stringify({ changed, changes: doc.parameters?.changes }).slice(0, 600));
+  const save = await t.page.$eval('#panel-audit button:has-text("Save run as simulation")', (b) => ({ disabled: b.disabled || b.getAttribute("aria-disabled") === "true", why: b.getAttribute("title") || b.closest("[title]")?.getAttribute("title") || "" }));
+  expect("params", "a run with changed parameters cannot be saved as a simulation", save.disabled && /changed parameters/.test(save.why), JSON.stringify(save));
+  await finish("params", t, fake);
+}
+
 await browser.close();
 await close();
 const failed = results.filter((r) => r.failure);
 for (const f of failed) console.log(`FAIL  ${f.name}: ${f.failure}`);
-const label = ONLY.length ? ONLY.join(" ") : "guard rates caps record entries";
+const label = ONLY.length ? ONLY.join(" ") : "guard rates caps record entries marks words params";
 if (failed.length) { console.log(`LIVE FAILED: ${failed.length} of ${checks} checks`); process.exit(1); }
 console.log(`LIVE OK: ${label} (${checks} checks)`);

@@ -10,6 +10,9 @@
 //   tools    the sixteen tool schemas: within the strict-tool limits (TECH_NOTES §1), only supported
 //            keywords, every object closed; every tool's input checked by the app's own validator; a
 //            plain sentence and a result line for every tool
+//   exports  AC-16: the file names, the report's banner, the group analysis as CSV against the engine
+//            (RFC 4180 quoting, a byte order mark, CRLF), and the audit export of a run valid against
+//            AuditExport, with planted faults each refused
 // Usage: node tests/unit.mjs              (all groups)
 //        node tests/unit.mjs static       (only these groups)
 import assert from "node:assert/strict";
@@ -18,7 +21,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { APP_ROOT, ONLY } from "./lib/harness.mjs";
 
-const GROUPS = ["stream", "cost", "format", "schema", "static", "tools"];
+const GROUPS = ["stream", "cost", "format", "schema", "static", "tools", "exports"];
 const chosen = ONLY.length ? ONLY : GROUPS;
 const unknown = chosen.filter((g) => !GROUPS.includes(g));
 if (unknown.length) { console.error(`Unknown group(s): ${unknown.join(", ")}. Groups: ${GROUPS.join(", ")}`); process.exit(2); }
@@ -225,6 +228,9 @@ if (chosen.includes("tools")) {
   const wrongType = await tb.execute("pv_normalise", { line_id: 4500010001 });
   check("tools", "a wrong type names the field and what it expects", wrongType.isError && /line_id: expected string/.test(wrongType.result.error), wrongType.result.error);
   check("tools", "a plain sentence for every tool call (js/tool_plain.js)", tools.every((t) => typeof toolPlain(t.name, {}, globalThis.WORLD) === "string"));
+  // A replay fetches no rate, so its console line says it replays one (review R14).
+  const rateLines = ["live", "authored", "recorded"].map((m) => toolPlain("open_ecb_rate", { currency: "GBP" }, globalThis.WORLD, m));
+  check("tools", "a rate request reads Fetches in Live, Replays a representative or recorded rate in a simulation", /^Fetches .* through Frankfurter$/.test(rateLines[0]) && /^Replays a representative .*not fetched/.test(rateLines[1]) && /^Replays .*recorded, not fetched again/.test(rateLines[2]) && !/Fetches/.test(rateLines[1] + rateLines[2]), rateLines.join(" | "));
   check("tools", "a result line for every tool (js/summaries.js)", tools.every((t) => summarizeToolResult(t.name, { ok: true }) !== "Result received"));
 }
 
@@ -284,6 +290,80 @@ if (chosen.includes("static")) {
   // Diagnostics runs the golden cases in the browser from js/golden_data.js: it must be the fixtures'.
   const { goldenText } = await import(pathToFileURL(path.join(APP_ROOT, "tools", "build_golden.mjs")).href);
   check("static", "js/golden_data.js is current with tests/fixtures (node tools/build_golden.mjs writes it)", read("js/golden_data.js") === goldenText());
+}
+
+// ---- exports: AC-16 ---------------------------------------------------------------------------------
+if (chosen.includes("exports")) {
+  const vm = await import("node:vm");
+  const sandbox = { window: {} };
+  vm.createContext(sandbox);
+  for (const f of ["fx.js", "world.js", "reference_cases.js"]) vm.runInContext(read(`data/${f}`), sandbox);
+  const D = sandbox.window;
+  globalThis.WORLD = D.WORLD;
+  globalThis.FX = D.FX;
+  const { exportFileName, fileSlug, reportFile, groupAnalysisCsv, parseCsv, csvField, ANALYSIS_COLUMNS } = await mod("js/exports.js");
+  const { analyseWorld, ratesOf } = await mod("js/world.js");
+  const { validate, formatErrors } = await mod("js/schema.js");
+  const { SCHEMAS } = await mod("js/schemas.js");
+  const { DEFAULTS } = await mod("js/params.js");
+  check("exports", "file names: price-variance-, the run, its mode in capitals, the kind",
+    exportFileName("report", { runId: "run-20261120-1012-ab3x", mode: "simulation" }) === "price-variance-run-20261120-1012-ab3x-SIMULATION-report.md"
+    && exportFileName("audit", { runId: "run-1", mode: "live" }) === "price-variance-run-1-LIVE-audit.json"
+    && exportFileName("analysis", { runId: "run-1", mode: "live", groupId: "MPN:Brekholt:BH-7730-S3" }) === "price-variance-run-1-LIVE-MPN-Brekholt-BH-7730-S3-analysis.csv"
+    && exportFileName("report", {}) === "price-variance-report.md" && fileSlug("CL-01") === "CL-01");
+  check("exports", "a simulation's report opens with its banner; a live one is left as it is",
+    reportFile("# R", { mode: "simulation" }).startsWith("> SIMULATION: scripted replay") && reportFile("# R", { mode: "simulation", simSource: "recorded" }).startsWith("> SIMULATION: replay of a recorded live run") && reportFile("# R", { mode: "live" }) === "# R");
+  check("exports", "RFC 4180 quoting: commas, quotes and line breaks", csvField('a,"b"') === '"a,""b"""' && csvField("x\ny") === '"x\ny"' && csvField("plain") === "plain" && csvField(null) === "");
+  const { analyses } = analyseWorld(D.WORLD, ratesOf(D.FX), { clusters: [D.REFERENCE_CASES.cases["SC-CONSULT"].cluster] });
+  for (const id of [D.REFERENCE_CASES.cases["SC-GLOVES"].group_id, "CL-01", D.REFERENCE_CASES.cases["SC-PALLETS"].group_id]) {
+    const a = analyses.find((x) => x.id === id);
+    const text = groupAnalysisCsv(D.WORLD, a, { ratesLabel: D.FX.label });
+    const rows = parseCsv(text);
+    const head = text.replace(/^﻿/, "").split("\r\n")[0].split(",");
+    const lines = rows.filter((r) => r.status === "included");
+    const ok = text.startsWith("﻿") && JSON.stringify(head) === JSON.stringify(ANALYSIS_COLUMNS) && !/[^\r]\n/.test(text.replace(/"[^"]*"/g, ""))
+      && lines.length === a.lines.length && rows.length === a.lines.length + a.excluded.length
+      && lines.every((r) => { const l = a.lines.find((x) => x.id === r.line_id); return l && Math.abs(Number(r.normalised_price_eur_per_base_unit) - l.price) <= 1e-9 && Math.abs(Number(r.gap_eur) - l.gap) <= 1e-6 && Math.abs(Number(r.unexplained_eur) - l.unexplained) <= 1e-6 && r.group_id === a.id; })
+      && Math.abs(lines.reduce((x, r) => x + Number(r.unexplained_eur || 0), 0) - a.unexplained) <= 1e-6;
+    check("exports", `the analysis of ${id} as CSV: header, one row per line and exclusion, figures equal to the engine's`, ok, `${lines.length}/${a.lines.length}`);
+  }
+  const before = groupAnalysisCsv(D.WORLD, analyses[0], { compared: false });
+  check("exports", "before the engine compares a group, its CSV leaves the benchmark and the gaps empty", parseCsv(before).every((r) => r.status === "excluded" || (r.gap_eur === "" && r.benchmark_price_eur_per_base_unit === "")));
+  // The audit export of a run, built as the page builds it, valid against AuditExport.
+  const { bus } = await mod("js/events.js");
+  const audit = await mod("js/audit.js");
+  audit.resetAudit();
+  bus.beginRun({ run_id: "run-unit-1", mode: "live" });
+  bus.emit("run_start", { run_id: "run-unit-1", mode: "live", entry: "scenario", title: "Scenario 1", scenario_id: "SC-GLOVES", model: "claude-sonnet-5-5", parameters: { ...DEFAULTS, materiality_eur: 4000 }, parameters_changed: [{ name: "materiality_eur", default: 5000, value: 4000 }] });
+  bus.emit("tool_result", { call_id: "t1", name: "open_ecb_rate", ok: true, summary: "rate", result: { ok: true, currency: "GBP", date: "2026-11-19", per_eur: 0.84, rate_to_eur: 1 / 0.84, source: "ECB via Frankfurter" } });
+  bus.emit("option_decision", { options_seq: 1, option_id: "H", decision: "approved", by: "user" });
+  bus.emit("action_decision", { action_id: "act-1", decision: "approved", by: "user" });
+  bus.emit("run_end", { status: "done" });
+  bus.endRun();
+  const doc = JSON.parse(audit.buildAuditExport());
+  const good = validate(doc, "AuditExport", { defs: SCHEMAS });
+  check("exports", "a run's audit export validates against AuditExport", good.ok, formatErrors(good.errors).join("; "));
+  check("exports", "the export records the parameters in effect, those changed and the rate fetched in the run",
+    doc.parameters.in_effect.materiality_eur === 4000 && doc.parameters.changed_from_defaults[0]?.name === "materiality_eur" && doc.rates.fetched_in_run[0]?.currency === "GBP" && doc.decisions.length === 2 && doc.decisions.every((d) => d.reviewer));
+  check("exports", "the audit file is named after the run and its mode", audit.auditFileName() === "price-variance-run-unit-1-LIVE-audit.json", audit.auditFileName());
+  const planted = [
+    ["the AI disclosure missing", (d) => { delete d.ai_disclosure; }, /ai_disclosure/],
+    ["a mode that is not live or simulation", (d) => { d.mode = "LIVE"; }, /mode/],
+    ["a version that is not x.y.z", (d) => { d.app_version = "1.0"; }, /app_version/],
+    ["a negative parameter", (d) => { d.parameters.in_effect.urgent_allowance = -0.1; }, /urgent_allowance/],
+    ["an unknown parameter", (d) => { d.parameters.in_effect.extra = 1; }, /extra/],
+    ["an event without its time", (d) => { delete d.events[0].ts; }, /events\[0\]/],
+    ["an event of an unknown type", (d) => { d.events[0].type = "telemetry"; }, /events\[0\]\.type/],
+    ["a decision without its reviewer", (d) => { delete d.decisions[0].reviewer; }, /decisions\[0\]/],
+    ["a fetched rate without ok", (d) => { delete d.rates.fetched_in_run[0].ok; }, /fetched_in_run\[0\]/]
+  ];
+  for (const [what, spoil, where] of planted) {
+    const bad = JSON.parse(JSON.stringify(doc));
+    spoil(bad);
+    const r = validate(bad, "AuditExport", { defs: SCHEMAS });
+    check("exports", `the validator refuses an export with ${what}`, !r.ok && where.test(formatErrors(r.errors).join(" ")), formatErrors(r.errors).join("; ").slice(0, 200));
+  }
+  audit.resetAudit();
 }
 
 for (const f of failures) console.log(`FAIL  ${f}`);

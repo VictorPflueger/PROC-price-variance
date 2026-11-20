@@ -12,7 +12,8 @@ import { createDrawer } from "./drawer.js";
 import { createOptionsPanel } from "./options_panel.js";
 import { createOutbox } from "./outbox.js";
 import { createAuditPanel } from "./audit_panel.js";
-import { resetAudit } from "./audit.js";
+import { resetAudit, auditEvents } from "./audit.js";
+import { openMethod } from "./method.js";
 import { createControls } from "./controls.js";
 import { chooseMode, askApiKey, askCustomScenario, showReport } from "./dialogs.js";
 import { openClusterDialog } from "./cluster.js";
@@ -20,11 +21,12 @@ import { openDiagnostics } from "./diagnostics_view.js";
 import { openIntro, introSeen } from "./intro.js";
 import { createSimulationPlayer } from "./simulation.js";
 import { createLiveAgent } from "./agent.js";
+import { sessionApprovals } from "./session.js";
 import { hasKey, forgetKey } from "./keystore.js";
 import { worldPipeline, contextOf, ratesOf } from "./world.js";
 import { buildGroups } from "./groups.js";
 import { analyseGroup } from "./variance.js";
-import { createParams } from "./params.js";
+import { createParams, DEFAULTS, PARAMETERS } from "./params.js";
 import { indexOf } from "./erp.js";
 import { MODELS } from "./config.js";
 import { h, withTooltip } from "./dom.js";
@@ -38,15 +40,37 @@ export function initUI() {
   const fx = window.FX;
   const scenarios = window.SCENARIOS || [];
   const byId = (id) => scenarios.find((s) => s.id === id);
-  // The method's parameters: the defaults, locked in Simulation (the Method panel edits them in Live, M3).
+  // The method's parameters (TECH_NOTES §2): the person edits them between runs in the Method dialog,
+  // and a live run uses them; a simulation always runs at the defaults its script was written for. A
+  // run's parameters are frozen at its start and stay in force until the workspace is reset.
   const params = createParams({ locked: false });
-  const engine = () => ({ world, fx, params: params.get() });
+  let runParams = null;
+  const activeParams = () => runParams || params.get();
+  // The parameter changes a person made since the last live run started. Each is a decision of that
+  // person, so the next live run's audit log carries it with the time it was made (resetting the log at
+  // the run's start would otherwise drop it); a simulation plays at the defaults and leaves them pending.
+  const pendingParamChanges = [];
+  // Opens the options and brings the recommended card into view: on a laptop the cards sit in two rows
+  // and are taller than the drawer, so its Approve could start out of sight (review R9).
+  const recommendedIntoView = () => document.querySelector('#panel-options .option-card[data-recommended="true"][data-status=""]')?.scrollIntoView({ block: "nearest" });
+  const showOptions = () => {
+    drawer.show("options");
+    requestAnimationFrame(recommendedIntoView);
+  };
+  // The cards reflow when the window changes size; while a decision waits, the recommended one comes back.
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { if (document.getElementById("drawer")?.dataset.open === "true") recommendedIntoView(); }, 150);
+  });
+  const engine = () => ({ world, fx, params: activeParams() });
   const analyse = (groupId, clusters = []) => {
-    const ctx = contextOf(world, ratesOf(fx), params.get());
+    const ctx = contextOf(world, ratesOf(fx), activeParams());
     const g = buildGroups(world, ctx, { clusters }).find((x) => x.id === groupId);
     return g ? analyseGroup(g, ctx) : null;
   };
-  const pipeline = worldPipeline(world, fx);
+  // The value pipeline before a run: the value log and the session's earlier approvals (review R13).
+  const pipeline = () => worldPipeline(world, fx, { approvals: sessionApprovals.list() });
   setState({ keyPresent: hasKey() });
 
   // ---- components ------------------------------------------------------------------------------
@@ -58,9 +82,9 @@ export function initUI() {
     scenarios,
     onPickScenario: (id) => pickScenario(id),
     onRunScenario: (id) => { pickScenario(id); start("scenario"); },
-    onOpenOptions: () => drawer.show("options"),
+    onOpenOptions: () => showOptions(),
     onOpenOutbox: () => drawer.show("outbox"),
-    onOpenReport: (md) => showReport(md, { mode: getState().mode, simSource: getState().simSource }),
+    onOpenReport: (md) => showReport(md, { mode: getState().mode, simSource: getState().simSource, runId: getState().runId }),
     onOpenConfirmation: () => { if (openRequest && !confirmDialog) showConfirmation(openRequest); },
     onSaveSimulation: async () => {
       const r = await auditPanel.saveSimulation();
@@ -84,9 +108,9 @@ export function initUI() {
     onCount: (n, attention) => drawer.setCount("outbox", n, attention)
   });
   const auditPanel = createAuditPanel(drawer.panel("audit"), { onCount: (n) => drawer.setCount("audit", n), getEngine: engine });
-  const player = createSimulationPlayer({ getSpeed: () => getState().speed, getWorld: () => world, getFx: () => fx, getParams: () => params.get() });
+  const player = createSimulationPlayer({ getSpeed: () => getState().speed, getWorld: () => world, getFx: () => fx, getParams: () => DEFAULTS, session: sessionApprovals });
   const agent = createLiveAgent({
-    getWorld: () => world, getFx: () => fx, getParams: () => params.get(),
+    getWorld: () => world, getFx: () => fx, getParams: () => activeParams(), session: sessionApprovals,
     onKeyRejected: () => { forgetKey(); setState({ keyPresent: false }); }
   });
 
@@ -101,8 +125,23 @@ export function initUI() {
     onSelectModel: (id) => setState({ model: id }),
     onSpeed: (n) => setState({ speed: n }),
     onAbort: () => abort("Stopped by the user."),
-    onReset: () => resetWorkspace(),
-    onDiagnostics: () => openDiagnostics({ params: params.get() })
+    // Reset starts the session again: approvals of earlier runs no longer count (review R13).
+    onReset: () => { sessionApprovals.clear(); resetWorkspace(); },
+    onMethod: () => openMethod({
+      params,
+      isRunning: () => isRunning(getState()),
+      // The parameters of the run on screen (running or finished), so the method's text names the values
+      // its figures were computed with (review R11).
+      onScreen: () => (runParams ? { values: runParams, mode: getState().mode } : null),
+      onChange: (change) => {
+        const made = { ...change, at: new Date().toISOString() };
+        pendingParamChanges.push(made);
+        bus.emit("param_change", made);
+      },
+      fx,
+      fetched: auditEvents().filter((e) => e.type === "tool_result" && e.payload?.name === "open_ecb_rate" && e.payload?.ok).map((e) => e.payload.result)
+    }),
+    onDiagnostics: () => openDiagnostics({ params: activeParams() })
   });
 
   function pickScenario(id) {
@@ -148,7 +187,7 @@ export function initUI() {
     confirmDialog?.close();
     confirmDialog = null;
   });
-  bus.on("options", () => drawer.show("options"));
+  bus.on("options", () => showOptions());
   bus.on("action_draft", () => drawer.show("outbox"));
   bus.on("confirmation_request", (ev) => { openRequest = ev.payload; showConfirmation(ev.payload); });
   bus.on("confirmation_decision", () => { openRequest = null; confirmDialog = null; });
@@ -157,7 +196,8 @@ export function initUI() {
     const ix = indexOf(world);
     confirmDialog = openClusterDialog(req, {
       plantName: (id) => `${(ix.plant.get(id)?.city || id).replace(" am Main", "")} (${id})`,
-      personDayHours: params.get().person_day_hours,
+      // The run's own value: a simulation runs at the defaults, whatever the person set for live runs (review R11).
+      personDayHours: activeParams().person_day_hours,
       onAnswer: (answer) => {
         confirmDialog = null;
         if (!isRunning(getState())) return notice("warn", "This run has ended. Start a new run to confirm a cluster.");
@@ -199,8 +239,9 @@ export function initUI() {
     const run_id = newRunId();
     const model = MODELS.find((m) => m.id === s.model) || MODELS[0];
     resetWorkspace({ keepMode: true, silent: true });
-    // Simulation keeps the parameters at their defaults, so the scripted runs stay valid.
-    if (mode === "simulation") params.reset();
+    // A simulation runs at the defaults, so its script stays valid; a live run at the person's values.
+    runParams = mode === "simulation" ? DEFAULTS : params.get();
+    const changed = PARAMETERS.filter((p) => runParams[p.key] !== DEFAULTS[p.key]).map((p) => ({ name: p.key, default: DEFAULTS[p.key], value: runParams[p.key] }));
     setState({ mode, runState: "scanning", runId: run_id });
     bus.beginRun({ run_id, mode });
     const title = entry === "sweep" ? "Live sweep for unexplained price variance" : entry === "custom" ? "Custom what-if" : `Scenario ${scenario.number}: ${scenario.title}`;
@@ -213,11 +254,14 @@ export function initUI() {
       seed: entry === "scenario" ? scenario.seed : entry === "custom" ? s.customText : null,
       model: mode === "live" ? model.id : null,
       model_label: mode === "live" ? model.label : null,
+      parameters: { ...runParams },
+      parameters_changed: changed,
       ...(mode === "simulation" ? {
         sim_source: recorded ? "recorded" : "authored",
         ...(recorded ? { recorded_on: def.recorded?.at ? dateWithYear(def.recorded.at) : null, recorded_model: modelLabel(def.recorded?.model) } : {})
       } : {})
     });
+    if (mode === "live") for (const change of pendingParamChanges.splice(0)) bus.emit("param_change", change);
     if (mode === "simulation") {
       if (!def) {
         bus.emit("notice", { level: "error", text: `No simulation script found for “${scenario?.title}”. Check that data/sim_runs.js is complete, or run Diagnostics.` });
@@ -247,6 +291,7 @@ export function initUI() {
     kpis.reset();
     optionsPanel.reset();
     outbox.reset();
+    runParams = null;
     resetAudit();
     auditPanel.refresh();
     drawer.setOpen(false);

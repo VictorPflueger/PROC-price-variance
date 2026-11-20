@@ -25,8 +25,9 @@ const VALUE = [
   { title: "People stay in charge", text: "The agent prepares, you decide, and every step is logged." }
 ];
 
-// How the same agent would run in production: GlobalCorp's systems and the products around it.
-const PATH = [
+// How the same agent would run in production: GlobalCorp's systems and the products around it (also
+// shown at the end of the Method dialog).
+export const PRODUCTION_PATH = [
   { title: "SAP S/4HANA or Ariba", text: "Order, requisition, invoice, contract and supplier data" },
   { title: "Microsoft Fabric", text: "Data Factory, OneLake, SQL, Spark or dbt: the variance analytics run here" },
   { title: "AI agents", text: "Azure OpenAI and Copilot Studio" },
@@ -57,7 +58,7 @@ export function openIntro({ startLabel = "Start agent", onStart = null } = {}) {
         h("span", { class: "vc-step__hint intro-step-text" }, s.text))));
     const value = h("ul", { class: "intro-value" }, VALUE.map((v) =>
       h("li", {}, h("strong", {}, v.title), h("span", {}, v.text))));
-    const path = h("ol", { class: "intro-path", "aria-label": "Production path" }, PATH.map((p) =>
+    const path = h("ol", { class: "intro-path", "aria-label": "Production path" }, PRODUCTION_PATH.map((p) =>
       h("li", {}, h("strong", {}, p.title), h("span", {}, p.text))));
 
     const footer = onStart

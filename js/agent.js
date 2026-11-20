@@ -74,7 +74,8 @@ export function createLiveAgent(deps = {}) {
       signal: r.ac.signal,
       ecbRate,
       mode: "live",
-      entry
+      entry,
+      session: deps.session || null
     });
 
     bus.emit("cost_update", r.cost.snapshot());

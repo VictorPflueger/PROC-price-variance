@@ -43,9 +43,17 @@ export function createKpis(container, { pipeline }) {
     if (sub !== undefined) { tile.sub.textContent = sub; tile.sub.title = sub; }
   };
 
+  // The bundle discount is part of the approved figure, so it comes first, on its own line, and the later
+  // stages follow; the line may wrap, never be cut (review R7).
   const showApproved = (p) => {
-    const bundle = p.approved_bundle > 0 ? `, of which bundle discount ${eur(p.approved_bundle)}` : "";
-    set(approved, eur(p.approved), " a year", "", `${eur(p.implemented)} implemented · ${eur(p.realised)} realised to date${bundle}`);
+    const implemented = `${eur(p.implemented)} implemented`;
+    const realised = `${eur(p.realised)} realised to date`;
+    const bundle = p.approved_bundle > 0 ? `incl. ${eur(p.approved_bundle)} bundle discount` : null;
+    set(approved, eur(p.approved), " a year", "", bundle ? `${bundle}; ${implemented} · ${realised}` : `${implemented} · ${realised}`);
+    // Each stage stays whole: the line breaks between stages, never inside one.
+    const stages = h("span", { class: "kpi-sub-line" }, h("span", { class: "kpi-stage" }, `${implemented} ·`), " ", h("span", { class: "kpi-stage" }, realised));
+    const bundleLine = bundle ? h("span", { class: "kpi-sub-line" }, `incl. ${eur(p.approved_bundle)} bundle`, h("span", { class: "kpi-bundle-word" }, " discount")) : null;
+    approved.sub.replaceChildren(...(bundle ? [bundleLine, h("span", { class: "vc-visually-hidden" }, "; "), stages] : [stages]));
   };
 
   const renderCost = () => {
@@ -104,7 +112,7 @@ export function createKpis(container, { pipeline }) {
     runCost = 0;
     set(identified, "—", "", "muted", "no run yet");
     set(index, "—", "", "muted", "no run yet");
-    showApproved(pipeline);
+    showApproved(typeof pipeline === "function" ? pipeline() : pipeline);
     renderCost();
   }
 

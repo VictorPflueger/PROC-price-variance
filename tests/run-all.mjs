@@ -10,18 +10,19 @@ const SUITES = [
   { id: "page-icon", what: "page icon: favicon, header and loading screen, as on the website's card", file: "tests/page-icon.mjs", browser: false },
   { id: "vici-files", what: "vici/ holds exactly the files its README lists, unchanged", file: "tests/vici-files.mjs", browser: false },
   { id: "world", what: "the world, the six scenarios and their frozen figures, the past cases (AC-05)", file: "tools/check_world.mjs", browser: false },
-  { id: "unit", what: "streaming client, cost maths, display, schema validator, the security policy (AC-07)", file: "tests/unit.mjs", browser: false },
+  { id: "unit", what: "streaming client, cost maths, display, schema validator, the security policy, the exports (AC-07, AC-16)", file: "tests/unit.mjs", browser: false },
   { id: "engine", what: "golden cases G1 to G5, normalisation, display rules (AC-01 to AC-03)", file: "tests/engine.mjs", browser: false },
   { id: "audit", what: "the figure audit: F01 to F16 and the rules around them (AC-04)", file: "tests/audit.mjs", browser: false },
   { id: "hygiene", what: "no private term and no e-mail address in any published file", file: "tests/hygiene.mjs", browser: false },
-  { id: "docs", what: "documents consistent with the code: every path and section they name exists", file: "tests/docs.mjs", browser: false },
+  { id: "docs", what: "documents complete for the release, every path and section they name exists (AC-23)", file: "tests/docs.mjs", browser: false, args: ["--complete"] },
   { id: "parity", what: "shared shell identical to the sister app's, two modules adapted (needs a Rebate Hunter checkout; AC-06)", file: "tests/parity.mjs", browser: false, optional: true },
-  { id: "smoke", what: "the page boots; idle board, scenarios, intro, drawer, keyboard, storage, a missing file; the board equals the engine (AC-14)", file: "tests/smoke.mjs", browser: true },
+  { id: "smoke", what: "the page boots; idle board, scenarios, intro, drawer, keyboard, storage, a missing file; the board equals the engine; a run by keyboard alone, reduced motion, names; the Method dialog (AC-14, AC-19)", file: "tests/smoke.mjs", browser: true },
   { id: "hexagon", what: "nothing round: the app's files, and the rendered app in both themes", file: "tests/hexagon.mjs", browser: true },
   { id: "design", what: "series colours: no chart uses merlot, fjord, lilac, honey or a state colour (AC-14)", file: "tests/design.mjs", browser: true },
-  { id: "accept", what: "the key: asked only for Live, checked, kept in this tab, never stored, exported or logged (AC-08)", file: "tests/accept.mjs", browser: true },
-  { id: "live", what: "the live agent against a scripted API stand-in: guardrails, rates, caps, recorder, entries (AC-09 to AC-11)", file: "tests/live.mjs", browser: true },
-  { id: "sims", what: "the six simulations along every decision path, the cluster dialog, the words (AC-10, AC-12, AC-15)", file: "tests/sims.mjs", browser: true }
+  { id: "accept", what: "the key: asked only for Live, checked, kept in this tab, never stored, exported or logged; the exports and their schema (AC-08, AC-16)", file: "tests/accept.mjs", browser: true },
+  { id: "layout", what: "1920×1080 to 1280×720 in both themes: no overflow, no ellipsis, 40 px targets (AC-17)", file: "tests/layout.mjs", browser: true },
+  { id: "live", what: "the live agent against a scripted API stand-in: guardrails, rates, caps, recorder, entries, parameters (AC-09 to AC-11)", file: "tests/live.mjs", browser: true },
+  { id: "sims", what: "the six simulations along every decision path, the cluster dialog, the words, the demo's timing at ×1 (AC-10, AC-12, AC-15, AC-21)", file: "tests/sims.mjs", browser: true }
 ];
 
 const only = process.argv.slice(2);

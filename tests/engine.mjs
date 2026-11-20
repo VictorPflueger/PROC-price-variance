@@ -335,6 +335,28 @@ if (chosen.includes("GR")) {
     truthy("GR", "a material inside a part-number group points to that group", mpn.isError && /MPN:Brekholt:BH-7730-S3/.test(mpn.result.error));
   }
 
+  // The board (review R1): approved and accepted are a person's decisions, so only the code marks them
+  // (after the decision, as the decision's own board update); "above" only on the pairs and lines the
+  // latest comparison of their group puts above the benchmark.
+  {
+    const h = headless();
+    await refused(h, "ui_mark_board", { state: "approved", group_id: "20001001", pair_ids: ["3010 / 80002"] }, "input", "schema");
+    await refused(h, "ui_mark_board", { state: "justified", group_id: "20001001", pair_ids: ["1020 / 30024"] }, "input", "schema");
+    await refused(h, "ui_mark_board", { state: "above", group_id: "20001001", pair_ids: ["3010 / 80002"] }, "board", "pv_compare");
+    const a = (await h.call("pv_compare", { group_id: "20001001" })).result;
+    const bench = a.pairs.find((p) => p.pair === a.benchmark.pair);
+    await refused(h, "ui_mark_board", { state: "above", pair_ids: ["3010 / 80002"] }, "board", "group_id");
+    await refused(h, "ui_mark_board", { state: "above", group_id: "20001001", pair_ids: [a.benchmark.pair] }, "board", "not above");
+    await refused(h, "ui_mark_board", { state: "above", group_id: "20001001", pair_ids: ["1020 / 30062"] }, "board", "not above");
+    await refused(h, "ui_mark_board", { state: "above", group_id: "20001001", line_ids: [bench.lines[0]] }, "board", "not above");
+    await refused(h, "ui_mark_board", { state: "above", group_id: "20001001", pair_ids: ["1010 / 30135"] }, "board", "not a pair");
+    const ok = await h.call("ui_mark_board", { state: "above", group_id: "20001001", pair_ids: ["3010 / 80002", "2010 / 80001"] });
+    truthy("GR", "above passes for pairs the comparison puts above the benchmark", !ok.isError && ok.result.marked === 3, JSON.stringify(ok.result));
+    const reading = await h.call("ui_mark_board", { state: "checking", group_id: "20001001", line_ids: [bench.lines[0]] });
+    truthy("GR", "checking passes for any line of the group", !reading.isError, JSON.stringify(reading.result));
+    truthy("GR", "no board update painted a decision", !h.events.some((e) => e.t === "board_update" && ["approved", "justified"].includes(e.p.state)));
+  }
+
   // Rule 3: the verified alert, its evidence and what it says it checked.
   {
     const h = headless();
@@ -468,6 +490,29 @@ if (chosen.includes("S")) {
   for (const [what, [make, expect]] of Object.entries(faults)) {
     const r = await checkSimRun(D.WORLD, D.FX, DEFAULTS, make());
     truthy("S", `the checker catches ${what}`, r.errors.some((e) => expect.test(e)), r.errors.slice(0, 2).join(" | ") || "no error");
+  }
+  // Scenario 2's texts follow the person's answer (review R4): confirmed in hours, the narration and the
+  // alert say the hour; split without Birmingham, option H no longer says Birmingham stays as it is.
+  {
+    const { playPath } = await import("../js/sim_check.js");
+    const texts = (r) => r.events.filter((e) => ["alert", "options", "report"].includes(e.type)).map((e) => JSON.stringify(e.payload)).join(" ");
+    const hour = await playPath(D.WORLD, D.FX, DEFAULTS, S["SC-CONSULT"], { confirm: "confirmed:other-unit", option: "recommended" });
+    const decided = hour.events.find((e) => e.type === "tool_result" && e.payload.name === "ui_confirm_cluster")?.payload?.result?.base_unit;
+    const said = JSON.stringify(S["SC-CONSULT"].steps);
+    truthy("S", "scenario 2 confirmed in hours: the alert says the hour, never the person-day, and the narration names the unit chosen", hour.errors.length === 0 && decided === "H" && /the hour/.test(texts(hour)) && !/person-day/.test(texts(hour)) && !/with the person-day as its base unit/.test(said), `${decided}; ${hour.errors.join(" | ")}; ${(texts(hour).match(/.{0,60}person-day.{0,40}/) || [""])[0]}`);
+    const req = hour.events.find((e) => e.type === "confirmation_request")?.payload;
+    const brum = req ? req.evidence.plants.indexOf("2010") : -1;
+    const split = await playPath(D.WORLD, D.FX, DEFAULTS, S["SC-CONSULT"], { confirm: `split:${brum}`, option: "recommended" });
+    const h = split.events.filter((e) => e.type === "options").pop()?.payload?.options?.find((o) => o.id === "H");
+    truthy("S", "scenario 2 split without Birmingham: option H says every plant moves, not that Birmingham stays", brum >= 0 && split.errors.length === 0 && !!h && !/Birmingham/.test(JSON.stringify(h)) && /Every plant above the benchmark moves/.test(h.residual_risk || ""), JSON.stringify(h || split.errors).slice(0, 240));
+    const whole = await playPath(D.WORLD, D.FX, DEFAULTS, S["SC-CONSULT"], { confirm: "confirmed", option: "recommended" });
+    const h2 = whole.events.filter((e) => e.type === "options").pop()?.payload?.options?.find((o) => o.id === "H");
+    truthy("S", "scenario 2 confirmed whole: option H names Birmingham as the plant it cannot move", !!h2 && /Birmingham stays as it is/.test(h2.residual_risk || ""), JSON.stringify(h2).slice(0, 200));
+    // The buyer notice of option H must not tell every moved plant that nothing justifies its price
+    // (review R16): in scenario 1, Lyon's urgent orders with a recorded reason are partly justified.
+    const gloves = await playPath(D.WORLD, D.FX, DEFAULTS, S["SC-GLOVES"], { option: "recommended" });
+    const notice = gloves.events.find((e) => e.type === "action_draft" && e.payload.type === "buyer_notice")?.payload?.body || "";
+    truthy("S", "scenario 1's buyer notice does not deny the reasons Lyon's urgent orders carry", gloves.errors.length === 0 && notice.length > 0 && !/without a documented reason/.test(notice) && /documented reason/.test(notice), notice.slice(0, 200));
   }
 }
 

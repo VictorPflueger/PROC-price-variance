@@ -8,6 +8,11 @@
 //                 "Awaiting your confirmation", and the rail never moving back
 //   words         in every state of every path played, no tile, card or label reads "saved", and
 //                 "realised" only as realised to date of the past case; approved savings read "a year"
+//   session       review R13: the approved savings tile counts the session's earlier approvals, a later
+//                 decision on a group replaces an earlier one, and Reset starts again
+//   timing        for AC-21: the demo's scenario (the one marked "Start here") played at ×1, a person
+//                 answering at once: the decision within 45 s and the end within 150 s of Start, so the
+//                 five-minute demo of DEMO_SCRIPT.md leaves the rest of its time for the room
 // Usage: node tests/sims.mjs [case…]
 import path from "node:path";
 import vm from "node:vm";
@@ -48,7 +53,7 @@ async function newPage() {
         const yours = steps.find((s) => s.dataset.state === "yours");
         window.__rail.push({ reached, yours: yours ? `${yours.dataset.step}:${yours.textContent}` : null });
       }
-      for (const el of document.querySelectorAll(".kpi, .option-card, .action-card .action-meta, .bar-row, .board-caption, .ladder .row-value, .status-pill, .alert-card .alert-sev")) window.__texts.add(el.textContent.replace(/\s+/g, " ").trim());
+      for (const el of document.querySelectorAll(".kpi, .option-card, .action-card .action-meta, .bar-row, .board-caption, .ladder .row-value, .status-pill, .alert-card .alert-sev, #console .phase")) window.__texts.add(el.textContent.replace(/\s+/g, " ").trim());
       void order;
     };
     new MutationObserver(snap).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-state"] });
@@ -210,12 +215,91 @@ if (wanted("words")) {
   expect("words", "the approved savings tile always reads a year and realised to date", approvedTiles.length > 0 && approvedTiles.every((x) => /a year/.test(x) && /realised to date/.test(x)), approvedTiles.slice(0, 2).join(" | "));
   const cards = texts.filter((x) => /Savings a year/.test(x));
   expect("words", "option cards state savings a year", cards.length > 0);
+  // The run state of Calculate reads "Calculating": "Simulating" would name the replay mode (review R6).
+  const simulating = texts.filter((x) => /\bSimulating\b/.test(x));
+  expect("words", "no status or phase line reads Simulating; Calculate reads Calculating", simulating.length === 0 && texts.some((x) => /Calculating/.test(x)), simulating.slice(0, 2).join(" | "));
   checks += texts.length > 0 ? 0 : 0;
+}
+
+// ---- session: approvals of earlier runs count until Reset (review R13) --------------------------------
+if (wanted("session")) {
+  const t = await newPage();
+  const { page } = t;
+  const tile = () => page.$eval("#kpi-approved-value", (e) => e.textContent.replace(/\s+/g, " ").trim());
+  // One run in this page: the scenario played at ×4, the recommended option (or the variance) approved.
+  const run = async (scenario, how) => {
+    // The console lists the tips before the first run; afterwards the Scenario menu picks one.
+    if (await page.$(`.scenario-pick__item[data-id="${scenario}"]`)) await page.click(`.scenario-pick__item[data-id="${scenario}"]`);
+    else { await page.click("#dd-scenario"); await page.click(`.vc-menu__item[data-id="${scenario}"]`); }
+    await page.click("button[aria-label='Replay speed ×4']");
+    await page.click("#btn-start");
+    await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
+    await page.waitForSelector('.option-card[data-recommended="true"][data-status=""] [data-action="approve"]', { timeout: 90000 });
+    const atDecision = await tile();
+    if (how === "accept") {
+      await page.selectOption(".accept-reason", { index: 1 });
+      await page.click('.option-card[data-kind="accept"] [data-action="accept"]');
+    } else await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
+    for (let i = 0; i < 12; i += 1) {
+      const b = await page.waitForSelector('.action-card[data-status="pending"] [data-action="approve"]', { timeout: 15000 }).catch(() => null);
+      if (!b) break;
+      await b.click().catch(() => {});
+      await page.waitForTimeout(250);
+      if (/Done/.test(await status(page))) break;
+    }
+    await waitEnd(page);
+    return { atDecision, atEnd: await tile() };
+  };
+  const shoesH = A["MPN:Brekholt:BH-7730-S3"].options.H.savings;
+  const glovesH = A[REF["SC-GLOVES"].group_id].options.H.savings;
+  const base = D.WORLD.value_log.reduce((s, e) => s + (e.approved_savings_eur || 0), 0);
+  const first = await run("SC-SHOES", "recommended");
+  expect("session", "the first approval adds to the value log's", first.atEnd === `${eur(base + shoesH)} a year`, first.atEnd);
+  const second = await run("SC-GLOVES", "recommended");
+  expect("session", "the next run starts with the session's earlier approval (in this session or before)", second.atDecision === `${eur(base + shoesH)} a year`, second.atDecision);
+  expect("session", "and adds its own", second.atEnd === `${eur(base + shoesH + glovesH)} a year`, second.atEnd);
+  const third = await run("SC-SHOES", "accept");
+  expect("session", "a later decision on a group replaces the earlier one (accepting the variance removes it)", third.atEnd === `${eur(base + glovesH)} a year`, third.atEnd);
+  await page.click("#btn-reset");
+  await page.waitForTimeout(300);
+  expect("session", "Reset starts the session again: the value log's approvals only", (await tile()) === `${eur(base)} a year`, await tile());
+  await done("session", t);
+}
+
+// ---- timing: AC-21 -----------------------------------------------------------------------------------
+if (wanted("timing")) {
+  const demo = D.SCENARIOS.find((x) => x.start_here);
+  expect("timing", "exactly one scenario is marked as the demo's start", D.SCENARIOS.filter((x) => x.start_here).length === 1 && !!demo);
+  const t = await newPage();
+  const { page } = t;
+  await page.click(`.scenario-pick__item[data-id="${demo.id}"]`);
+  const tag = await page.$eval(`.scenario-pick__item[data-id="${demo.id}"]`, (e) => e.textContent);
+  expect("timing", "the console marks it Start here", /Start here/.test(tag), tag);
+  await page.click("button[aria-label='Replay speed ×1']");
+  await page.click("#btn-start");
+  const t0 = Date.now();
+  await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
+  await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { timeout: 120000 });
+  const atDecision = (Date.now() - t0) / 1000;
+  await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
+  for (let i = 0; i < 20; i += 1) {
+    if (/Done/.test(await status(page))) break;
+    const b = await page.waitForSelector('.action-card[data-status="pending"] [data-action="approve"]', { timeout: 60000 }).catch(() => null);
+    if (b) await b.click().catch(() => {});
+    await page.waitForTimeout(300);
+  }
+  const end = await waitEnd(page, 180000);
+  const atEnd = (Date.now() - t0) / 1000;
+  expect("timing", "the run completes at ×1", /Done/.test(end), end);
+  expect("timing", `the decision waits within 45 s of Start (${atDecision.toFixed(1)} s)`, atDecision <= 45, atDecision.toFixed(1));
+  expect("timing", `the run ends within 150 s of Start (${atEnd.toFixed(1)} s)`, atEnd <= 150, atEnd.toFixed(1));
+  console.log(`timing: ${demo.id} at ×1: decision after ${atDecision.toFixed(1)} s, Done after ${atEnd.toFixed(1)} s`);
+  await done("timing", t);
 }
 
 await browser.close();
 await close();
 for (const f of failures) console.log(`FAIL  ${f}`);
-const label = ONLY.length ? ONLY.join(" ") : "paths confirmation words";
+const label = ONLY.length ? ONLY.join(" ") : "paths confirmation words session timing";
 if (failures.length) { console.log(`SIMS FAILED: ${failures.length} of ${checks} checks`); process.exit(1); }
 console.log(ONLY.length === 1 && ONLY[0] === "paths" ? `SIMS OK: paths (${global.__runs} runs, ${checks} checks)` : `SIMS OK: ${label} (${checks} checks)`);

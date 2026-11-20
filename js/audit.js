@@ -13,6 +13,7 @@ import { APP, MODELS } from "./config.js";
 import { redactSecrets } from "./keystore.js";
 import { computeRunFacts } from "./run_facts.js";
 import { METHOD_VERSION } from "./normalise.js";
+import { exportFileName } from "./exports.js";
 
 const events = [];
 const apiExchanges = [];
@@ -24,13 +25,15 @@ bus.onAny((ev) => {
   // Streaming narration arrives as many partial updates; the audit keeps only final texts.
   if ((ev.type === "narration" || ev.type === "reasoning") && !ev.payload?.done) return;
   const copy = safeClone(ev.type === "tool_result" && ev.payload?.detail ? { ...ev, payload: { ...ev.payload, detail: undefined } } : ev);
-  if (["option_decision", "confirmation_decision", "action_decision"].includes(ev.type)) copy.reviewer = "Presenter (the person in charge)";
+  if (["option_decision", "confirmation_decision", "action_decision", "param_change"].includes(ev.type)) copy.reviewer = "Presenter (the person in charge)";
   events.push(copy);
   if (ev.type === "run_start") {
     run = {
       run_id: ev.payload.run_id, mode: ev.payload.mode, entry: ev.payload.entry,
       scenario_id: ev.payload.scenario_id || null, title: ev.payload.title, model: ev.payload.model || null,
       sim_source: ev.payload.sim_source || null,
+      parameters: ev.payload.parameters || null,
+      parameters_changed: ev.payload.parameters_changed || [],
       started_at: ev.ts, ended_at: null, status: "running"
     };
   }
@@ -149,7 +152,14 @@ export function buildAuditExport() {
     usage: apiExchanges.length ? usage : null,
     cost: lastCost,
     rates: ratesUsed(),
-    parameters: events.filter((e) => e.type === "param_change").map((e) => e.payload),
+    // The method's parameters this run used (a simulation: the defaults), those that differ from the
+    // defaults, and any change logged during the run.
+    parameters: {
+      in_effect: run?.parameters || null,
+      changed_from_defaults: run?.parameters_changed || [],
+      // Each change with the time the person made it (a change made between runs joins the next live run).
+      changes: events.filter((e) => e.type === "param_change").map((e) => ({ ts: e.payload.at || e.ts, name: e.payload.name, from: e.payload.from, to: e.payload.to }))
+    },
     run,
     run_facts: run && run.status !== "running" ? safeFacts() : null,
     decisions: events.filter((e) => ["confirmation_decision", "option_decision", "action_decision"].includes(e.type)).map((e) => ({ type: e.type, ts: e.ts, reviewer: e.reviewer, ...e.payload })),
@@ -162,8 +172,7 @@ export function buildAuditExport() {
 
 /** price-variance-<run id>-SIMULATION-audit.json (brief §9: every export starts with price-variance-). */
 export function auditFileName() {
-  const id = run?.run_id || `run-${Date.now()}`;
-  return `price-variance-${id}${run?.mode === "simulation" ? "-SIMULATION" : run?.mode === "live" ? "-LIVE" : ""}-audit.json`;
+  return exportFileName("audit", { runId: run?.run_id || `run-${Date.now()}`, mode: run?.mode || null });
 }
 
 function safeFacts() {

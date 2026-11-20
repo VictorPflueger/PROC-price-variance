@@ -21,7 +21,7 @@
 //   confirmation_request  { request_id, candidate_id, lines, evidence, base_units, proposed_base_unit, note }
 //   confirmation_decision { request_id, decision: "confirmed"|"split"|"rejected", cluster_id?, base_unit?, line_ids? }
 //   fx_sensitivity   { group_id, currency, date, per_eur, figures }   a refreshed rate, beside the window's
-//   param_change     { name, from, to }
+//   param_change     { name, from, to, at }   at: when the person made it (a change between runs joins the next live run)
 //   action_draft     { action_id, type, recipient, subject, body, status: "pending", unchecked?: [token] }
 //   action_decision  { action_id, decision: "approved"|"rejected", by: "user", label? }
 //   report           { markdown, outcome: "option_approved"|"variance_accepted"|"nothing_found"|"stopped" }
@@ -36,7 +36,9 @@ export const RUN_STATES = {
   scanning: "Scanning",
   diagnosing: "Diagnosing",
   verifying: "Verifying",
-  simulating: "Simulating",
+  // The state keeps the shell's name (the rail maps it to Calculate); its label must not say "Simulating",
+  // which would read as the replay mode in a live run (review R6).
+  simulating: "Calculating",
   options: "Options",
   awaiting_approval: "Awaiting approval",
   executing: "Executing",

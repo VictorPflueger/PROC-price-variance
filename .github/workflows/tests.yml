@@ -30,6 +30,11 @@ jobs:
       - run: |
           git clone -q https://github.com/VictorPflueger/ViciDesign "$GITHUB_WORKSPACE/../ViciDesign"
           git -C "$GITHUB_WORKSPACE/../ViciDesign" checkout -q fdd868b
+      # Victor's website, next to this repository once its card for this prototype exists, so
+      # tests/page-icon.mjs compares the page icon with the card; until then that part is skipped.
+      - run: |
+          git clone -q --depth 1 https://github.com/VictorPflueger/VIP "$RUNNER_TEMP/VIP"
+          if grep -q 'name: "Price Variance Agent"' "$RUNNER_TEMP/VIP/data/prototypes.js"; then mv "$RUNNER_TEMP/VIP" "$GITHUB_WORKSPACE/../VIP"; else echo "The website has no card for this prototype yet: the page icon is not compared with it."; fi
       # The hygiene check reads its private term list from the HYGIENE_TERMS secret if the repository
       # has one; without it only the generic checks run (tests/hygiene.mjs).
       - run: node tests/run-all.mjs tokens page-icon vici-files world unit engine audit hygiene docs
@@ -42,7 +47,7 @@ jobs:
   browser:
     name: Browser suites (Playwright, Chromium)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     needs: node
     steps:
       - uses: actions/checkout@v4
@@ -55,7 +60,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-1.56.0-chromium-${{ runner.os }}
       - run: npm install -g playwright@1.56.0 && npx playwright install --with-deps chromium
-      - run: NODE_PATH="$(npm root -g)" node tests/run-all.mjs smoke hexagon design accept live sims
+      - run: NODE_PATH="$(npm root -g)" node tests/run-all.mjs smoke hexagon design accept layout live sims
         env:
           PV_TEST_OUT: ${{ runner.temp }}/price-variance-tests
       - if: failure()

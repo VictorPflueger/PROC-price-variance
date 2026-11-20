@@ -12,7 +12,8 @@ import { unitPrice, eur, pct, qty } from "./format.js";
 import { indexOf } from "./erp.js";
 import { INCOTERM_GROUPS } from "./normalise.js";
 
-const groupOf = (incoterm) => Object.entries(INCOTERM_GROUPS).find(([, rules]) => rules.includes(incoterm))?.[0] || null;
+/** The Incoterms 2020 group of a rule (INCOTERM_GROUPS maps each rule to its group: FCA → F). */
+const groupOf = (incoterm) => INCOTERM_GROUPS[String(incoterm || "").toUpperCase()] || null;
 const city = (world, id) => (indexOf(world).plant.get(String(id))?.city || String(id)).replace(" am Main", "");
 
 /** Nice axis ticks for a range: about `count` ticks at 1, 2 or 5 times a power of ten. */
@@ -69,7 +70,12 @@ export function lineLane(lines, x, cy, compact = false, rMax = PAIR_R_MAX) {
 export function ladderModel(world, analysis, { compared = false, marks = { lines: new Map(), pairs: new Map() }, size = {} } = {}) {
   const width = Math.max(420, size.width || 900);
   const compact = !!size.compact;
-  const labelW = Math.round(Math.min(300, Math.max(170, width * 0.27)));
+  // The label column fits its longest row label (the plant in 14 px semibold, the supplier in 12.5 px):
+  // measured by the page when it can (size.textWidth), estimated in Node; never more than 45 % of the width.
+  const textW = size.textWidth || ((text, px, bold) => text.length * px * (bold ? 0.6 : 0.55));
+  const ixL = indexOf(world);
+  const labelNeed = Math.max(0, ...analysis.pairs.map((p) => 8 + textW(city(world, p.plant), 14, true) + 6 + textW(ixL.supplier.get(String(p.supplier))?.name || String(p.supplier), 12.5, false) + 10));
+  const labelW = Math.round(Math.min(Math.max(300, width * 0.45), Math.max(170, width * 0.27, labelNeed)));
   const valueW = compact ? 150 : 176;
   const left = labelW + 12;
   const right = width - valueW - 12;
@@ -89,7 +95,8 @@ export function ladderModel(world, analysis, { compared = false, marks = { lines
   const x = (price) => left + ((price - lo) / (hi - lo)) * (right - left);
   // A full row holds the pair's hexagon on its centre line and, above it, the lane of its lines; on a
   // short board the hexagons get smaller (down to 8 px) before the rows outgrow the canvas.
-  const rowH = compact ? Math.max(30, Math.min(44, ((size.height || 360) - top - 24) / Math.max(1, pairs.length))) : Math.max(58, Math.min(92, ((size.height || 480) - top - 30) / Math.max(1, pairs.length)));
+  // A row is a target, so it is at least 40 px high even in the compact ladder (which then scrolls).
+  const rowH = compact ? Math.max(44, Math.min(52, ((size.height || 360) - top - 24) / Math.max(1, pairs.length))) : Math.max(58, Math.min(92, ((size.height || 480) - top - 30) / Math.max(1, pairs.length)));
   const rMax = compact ? Math.min(PAIR_R_MAX, rowH / 2 - 3) : Math.max(8, Math.min(PAIR_R_MAX, rowH / 2 - 2 - LANE_ABOVE));
   const qMax = Math.max(...pairs.map((p) => p.quantity));
   const bench = analysis.benchmark;
@@ -155,7 +162,7 @@ function tickLabel(v, span) {
 /** Stage definitions of the value pipeline (brief §6.7), shown one click away. */
 export const PIPELINE_DEFINITIONS = {
   identified: "The opportunity of the flagged groups this run's engine results show: unexplained variance over the window, read as euros a year.",
-  approved: "The savings a year of the options a person approved, in this session or before (the value log), bundle discounts included as their own part.",
+  approved: "The savings a year of the options a person approved, in this session (since the page was opened or last reset; a later decision on a group replaces an earlier one) or before (the value log), bundle discounts included as their own part.",
   implemented: "The approved savings of options with an implementation day. Nothing in the demo changes a system, so only past cases planted in the world are implemented.",
   realised: "For an implemented option: quantity × (baseline − paid price) over all later order lines of its plant and item, whichever supplier they went to. Lines that still go to another supplier are leakage."
 };

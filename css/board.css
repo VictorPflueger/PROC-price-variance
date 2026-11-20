@@ -62,10 +62,9 @@
 .mark-approved { stroke: var(--vc-success-solid); }
 .pair-pulse, .line-pulse { fill: none; stroke: var(--vc-info-solid); stroke-width: 2; visibility: hidden; }
 .ladder-row[data-state="checking"] .pair-pulse { visibility: visible; animation: hexPulse 1.2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
-.ladder-line { cursor: pointer; outline: none; }
+.ladder-line { pointer-events: none; }
 .line-hex { fill: var(--vc-text-muted); stroke: var(--vc-surface); stroke-width: 1; }
-.ladder-line:hover .line-hex, .ladder-line:focus-visible .line-hex { fill: var(--vc-text); }
-.ladder-line:focus-visible .line-pulse { visibility: visible; stroke: var(--vc-focus); }
+.ladder-row:hover .line-hex, .ladder-row:focus-visible .line-hex { fill: var(--vc-text); }
 .ladder-line[data-mark="checking"] .line-pulse { visibility: visible; animation: hexPulse 1.2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
 .ladder-line[data-mark="checked"] .line-pulse { visibility: visible; }
 .ladder-line[data-mark="above"] .line-hex { fill: var(--vc-danger-solid); }
@@ -82,6 +81,8 @@
 .value-approved { fill: var(--vc-success-text) !important; }
 .value-below { fill: var(--vc-text-muted) !important; font-weight: var(--vc-weight-regular); }
 .row-sub { font-size: 11.5px; }
+/* The benchmark is drawn over the rows but is no target: a click on it reaches the row (and the line) below. */
+.ladder-benchmark { pointer-events: none; }
 .ladder-benchmark line { stroke: var(--vc-text); stroke-width: 2; }
 .ladder-benchmark text { font-weight: var(--vc-weight-semibold); font-size: 12.5px; }
 @media (prefers-reduced-motion: reduce) {
@@ -112,7 +113,7 @@
 .portfolio-empty { margin: 0 0 12px; color: var(--vc-text-muted); max-width: var(--vc-container-prose); }
 .bars { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
 .bar-row { display: grid; grid-template-columns: minmax(9rem, 15rem) minmax(80px, 1fr) auto; grid-template-areas: "label track value" ". sub sub"; align-items: center; column-gap: 12px; }
-.bar-label { grid-area: label; min-height: var(--hit); padding: 0; text-align: left; font: inherit; font-weight: var(--vc-weight-medium); color: var(--vc-text); background: none; border: 0; cursor: pointer; }
+.bar-label { grid-area: label; min-height: var(--hit); min-width: var(--hit); padding: 0; text-align: left; font: inherit; font-weight: var(--vc-weight-medium); color: var(--vc-text); background: none; border: 0; cursor: pointer; }
 .bar-label:hover { text-decoration: underline; }
 .bar-label--static { display: inline-flex; align-items: center; cursor: default; }
 .bar-label--static:hover { text-decoration: none; }
@@ -126,7 +127,7 @@
 .bar-sub { grid-area: sub; color: var(--vc-text-muted); font-size: var(--fs-xs); }
 .bar-sub:empty { display: none; }
 .pipeline-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.pipeline-defs summary { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); min-height: 32px; }
+.pipeline-defs summary { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); min-height: var(--hit); min-width: var(--hit); padding-inline: 4px; }
 .pipeline-defs dl { margin: 6px 0 10px; max-width: var(--vc-container-prose); font-size: var(--vc-font-size-sm); }
 .pipeline-defs dt { font-weight: var(--vc-weight-semibold); }
 .pipeline-defs dd { margin: 0 0 6px; color: var(--vc-text-muted); }
@@ -137,6 +138,9 @@
 .board-table caption { text-align: left; padding: 6px 0; font-weight: var(--vc-weight-semibold); color: var(--vc-text); }
 .board-table :is(th, td) { padding: 6px 9px; vertical-align: top; }
 .board-table .num { text-align: end; white-space: nowrap; }
+/* Headers wrap at spaces on a narrow board, so the table fits it instead of scrolling sideways; the
+   figures themselves never wrap (review R8: at 1280 × 720 the unexplained column was cut). */
+.board-table thead th, .board-table thead th.num { white-space: normal; overflow-wrap: normal; }
 
 /* ---- popovers: a line's normalisation, a pair's lines -------------------------------------------- */
 .board-pop { position: fixed; z-index: 900; max-height: calc(100vh - 24px); overflow: auto; padding: 12px 14px; box-shadow: var(--vc-shadow-lg); }
@@ -149,7 +153,23 @@
 .norm-note { display: block; color: var(--vc-text-subtle); font-size: var(--fs-xs); }
 .norm-result strong { font-size: var(--vc-font-size-md); }
 .norm-facts { color: var(--vc-text-muted); }
-.pop-lines { width: 100%; font-size: var(--fs-xs); }
+/* A pair's lines: each a full-width button of at least 40 px that opens the line's normalisation. */
+.pop-lines-head { color: var(--vc-text-muted); }
+.pop-lines { list-style: none; margin: 0 0 8px; padding: 0; max-height: min(320px, 46vh); overflow: auto; border-block: 1px solid var(--vc-border-subtle); }
+.pop-lines li + li { border-top: 1px solid var(--vc-border-subtle); }
+.pop-line {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 4px 10px; width: 100%; min-height: 40px;
+  padding: 6px 6px; border: 0; background: transparent; color: var(--vc-text); font: inherit; font-size: var(--vc-font-size-sm); text-align: left; cursor: pointer;
+}
+.pop-line:hover { background: var(--vc-surface-hover); }
+.pop-line:focus-visible { outline: 2px solid var(--vc-focus); outline-offset: -2px; }
+.pop-line-id { font-family: var(--vc-font-mono); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+.pop-line-day { color: var(--vc-text-muted); white-space: nowrap; }
+.pop-line-price { white-space: nowrap; }
+.pop-line-read { grid-column: 1 / 4; justify-self: start; }
+.pop-line > .vc-icon { grid-column: 4; grid-row: 1 / span 2; color: var(--vc-text-muted); }
+.pop-line[data-read="false"] .pop-line-read { display: none; }
+.pop-back { margin: 0 0 8px; min-height: 40px; }
 
 /* ---- the cluster confirmation (js/cluster.js) ----------------------------------------------------- */
 .cluster-proposal { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -160,9 +180,10 @@
 .cluster-col__supplier { margin: 0 0 6px; color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); }
 .cluster-col__texts { margin: 0 0 6px; padding-left: 1.1em; font-size: var(--vc-font-size-sm); }
 .cluster-col__sum { margin: 0 0 6px; color: var(--vc-text-muted); font-size: var(--fs-xs); }
-.cluster-col__lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 150px; overflow: auto; }
-.cluster-line { display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: var(--fs-xs); }
-.cluster-line label { cursor: pointer; }
+.cluster-col__lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.cluster-line { font-size: var(--fs-xs); }
+.cluster-line__label { display: flex; align-items: center; gap: 8px; min-height: 40px; width: 100%; cursor: pointer; }
+.cluster-line__label .vc-checkbox { flex: none; }
 .cluster-sub { margin: 8px 0 4px; font-size: var(--vc-font-size-md); }
 .cluster-evidence { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 4px; font-size: var(--vc-font-size-sm); }
 .cluster-evidence li { display: flex; align-items: flex-start; gap: 6px; }
@@ -245,3 +266,49 @@
 .accept-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .accept-reason { min-height: 40px; max-width: 100%; }
 .audit-table tr.audit-empty td { padding: 14px 12px; color: var(--vc-text-muted); }
+
+/* ---- the Method dialog (js/method.js) ------------------------------------------------------------ */
+.method-body { display: grid; gap: 18px; }
+.method-section h3 { margin: 0 0 6px; font-size: var(--vc-font-size-lg); }
+.method-section p { margin: 0 0 8px; max-width: 78ch; }
+.method-list { margin: 0 0 8px; padding-left: 1.3em; display: grid; gap: 4px; max-width: 78ch; }
+.method-defs { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0 0 8px; max-width: 90ch; }
+.method-defs dt { font-weight: var(--vc-weight-semibold); }
+.method-defs dd { margin: 0; color: var(--vc-text-muted); }
+.method-params, .method-rates { width: 100%; max-width: 900px; }
+.method-params th[scope="row"] { font-weight: var(--vc-weight-regular); }
+.method-params .num, .method-rates .num { text-align: end; }
+.method-input { width: 8.5em; min-height: 40px; text-align: end; font-variant-numeric: tabular-nums; }
+.method-input[aria-invalid="true"] { border-color: var(--vc-danger-solid); }
+.method-params tr[data-changed="true"] th { font-weight: var(--vc-weight-semibold); }
+.method-params tr[data-changed="true"] .method-default { color: var(--vc-accent-text); }
+.method-default { color: var(--vc-text-subtle); font-size: var(--vc-font-size-sm); }
+.method-param-note { color: var(--vc-text-muted); }
+.method-param-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; }
+.method-param-actions .method-reset { min-height: 40px; }
+.method-param-status { margin: 0; color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); }
+.method-fetched { color: var(--vc-info-text); font-size: var(--vc-font-size-sm); }
+
+/* ---- the production path (intro window and Method dialog): one small diagram, source to action ---- */
+.intro-path { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0 22px; }
+.intro-path > li { position: relative; display: grid; align-content: start; gap: 4px; padding: 10px 12px; background: var(--vc-bg-subtle); border: 1px solid var(--vc-border-subtle); font-size: var(--vc-font-size-sm); }
+.intro-path > li strong { color: var(--vc-text); }
+.intro-path > li span { color: var(--vc-text-muted); }
+/* An arrow between two steps: a triangle in ink, never a round shape. */
+.intro-path > li + li::before { content: ""; position: absolute; left: -16px; top: calc(50% - 6px); width: 10px; height: 12px; background: var(--vc-text-muted); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+@media (max-width: 1100px) {
+  .intro-path { grid-template-columns: minmax(0, 1fr); gap: 16px 0; }
+  .intro-path > li + li::before { left: calc(50% - 6px); top: -13px; width: 12px; height: 10px; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+}
+
+/* ---- disclosures in the console and Diagnostics: each summary a target of at least 40 px ------------ */
+:is(.alert-more, .report-full, .run-facts, .reasoning, .diag-section) > summary { display: flex; align-items: center; gap: 6px; min-height: 40px; cursor: pointer; list-style: none; }
+:is(.alert-more, .report-full, .run-facts, .diag-section) > summary::-webkit-details-marker { display: none; }
+:is(.alert-more, .report-full, .run-facts)[open] > summary > .vc-icon:first-child { transform: rotate(90deg); }
+
+/* The decision stays in view: a card taller than the drawer keeps its Approve and Reject (or the reason
+   and Accept) at the drawer's lower edge while any part of it shows (review R9). */
+.option-card > .option-actions { position: sticky; bottom: 0; z-index: 1; background-color: inherit; padding-block: 8px 2px; }
+/* Brought into view, a card keeps room above it for the recommended tag that sits 14 px over its edge,
+   less than the 20 px between rows, so the row above stays out of view rather than a sliver of it. */
+.option-card { scroll-margin-top: 16px; }

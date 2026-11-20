@@ -84,8 +84,9 @@ export function createOutbox(panel, { onDecision, onCount } = {}) {
           : null),
       status === "pending"
         ? h("div", { class: "action-buttons" },
-          h("button", { class: "vc-button", type: "button", dataset: { action: "approve" }, on: { click: () => decide(d, "approved") } }, icon("check", 18), "Approve"),
-          h("button", { class: "vc-button vc-button--outline", type: "button", dataset: { action: "reject" }, on: { click: () => decide(d, "rejected") } }, "Reject"))
+          // Named with the draft's subject and recipient, so each Approve and Reject says what it decides.
+          h("button", { class: "vc-button", type: "button", dataset: { action: "approve" }, "aria-label": `Approve draft: ${d.subject} (to ${d.recipient})`, on: { click: () => decide(d, "approved") } }, icon("check", 18), "Approve"),
+          h("button", { class: "vc-button vc-button--outline", type: "button", dataset: { action: "reject" }, "aria-label": `Reject draft: ${d.subject} (to ${d.recipient})`, on: { click: () => decide(d, "rejected") } }, "Reject"))
         : h("div", { class: "action-buttons" }));
     return el;
   }

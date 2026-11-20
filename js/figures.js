@@ -18,7 +18,12 @@
 //   - exempt from the number check but required to exist: record ids, plant and company codes after
 //     "plant" or "company code", supplier numbers after "supplier", "vendor" or "account", and the pair
 //     form "1010 / S-A"; exempt outright: dates in the app's display form or ISO form, times of day,
-//     version numbers and names with numbers ("Incoterms 2020", a known material description).
+//     version numbers and names with numbers ("Incoterms 2020", a known material description);
+//   - since the independent review (R2): a label ("level 45") or a year ("by 2026") is exempt only when no
+//     percentage, currency, scale or unit follows it; amounts and percentages written in words ("fifteen
+//     thousand euros", "forty-two per cent") are read and checked like digits; and an amount keeps its
+//     sign: a figure the engine gives as negative passes only with its minus sign or with words that say
+//     it is a loss ("loses", "costs more than it saves"), and a minus sign needs a negative figure.
 // Pure module: no DOM, no storage, no network.
 
 const SP = "[ \\u00a0\\u202f]";
@@ -91,16 +96,17 @@ export class KnownFigures {
     this.quantities = [];
     this.counts = new Set();
     this.rates = [];
+    this.realised = []; // amounts a tool returned as realised value (review R5: "realised to date")
     this.ids = new Set();
     this.codes = new Set();
     this.names = new Set();
     this.units = new Set(UNIT_CODES);
   }
 
-  /** An amount of money (its sign is ignored: figures match by size). */
+  /** An amount of money: its size, and whether the engine gives it as negative (review R2d). */
   addAmount(value, currency = "EUR") {
-    const v = Math.abs(Number(value));
-    if (Number.isFinite(v)) this.amounts.push({ value: v, currency });
+    const n = Number(value);
+    if (Number.isFinite(n)) this.amounts.push({ value: Math.abs(n), negative: n < 0, currency });
     return this;
   }
   /** A unit price: value per one unit, written at a display quantity (€6.90 per 100 EA). */
@@ -215,6 +221,7 @@ export class KnownFigures {
 
   #addNumber(key, v, ctx) {
     if (key === null) return;
+    if ((key === "realised" || key === "realised_eur") && Number.isFinite(v)) this.realised.push(Math.abs(v));
     if (AMOUNT_KEYS.has(key)) this.addAmount(v);
     else if (PRICE_KEYS.has(key)) { if (ctx.base_unit) this.addPrice(v, ctx.display_quantity, ctx.base_unit); }
     else if (SHARE_KEYS.has(key)) this.addShare(v);
@@ -237,6 +244,10 @@ export class KnownFigures {
 // ---- reading a text ----------------------------------------------------------------------------------
 
 const re = (source, flags = "g") => new RegExp(source, flags);
+// What makes the number before it a figure, not a label or a year: a percentage, a currency, a scale or a
+// unit (review R2a and R2b).
+const UNIT_ALT = [...UNIT_CODES, ...Object.keys(UNIT_WORDS)].sort((x, y) => y.length - x.length).map((u) => u.replace(/-/g, "\\-")).join("|");
+const FIGURE_AFTER = `${SP}?(?:%|per${SP}?cent\\b|percent\\b|(?:€|£)(?!${SP}?\\d)|EUR\\b|GBP\\b|euros?\\b|pounds?\\b|k\\b|bn\\b|m\\b|thousand\\b|million\\b|billion\\b|(?:${UNIT_ALT})\\b)`;
 const EXEMPT = [
   re(`\\b(?:(?:${WEEKDAYS}),?${SP})?\\d{1,2}${SP}(?:${MONTHS})\\.?(?:,?${SP}\\d{4})?\\b`),     // Thu 19 Nov, 19 Nov 2026
   re(`\\b(?:${MONTHS})\\.?${SP}(?:\\d{1,2},?${SP})?\\d{4}\\b`),                               // November 2026, Nov 19, 2026
@@ -246,8 +257,8 @@ const EXEMPT = [
   re(`\\bIncoterms®?${SP}?20\\d\\d\\b`, "gi"),
   re("\\bS\\/4\\s?HANA\\b|\\bR\\/3\\b", "gi"),
   re(`\\b(?:v|version${SP}|method${SP}|engine${SP})\\d+\\.\\d+\\.\\d+\\b`, "gi"),
-  re(`\\b(?:[Ii]n|[Ss]ince|[Uu]ntil|[Ff]rom|[Bb]y|[Dd]uring|[Oo]f|[Ff]or|FY)${SP}?(?:19|20)\\d\\d\\b(?![.,]\\d)(?!${SP}?(?:[A-Z]{1,4}\\b|%|pieces|boxes|cases|units|lines|orders))`),
-  re(`\\b(?:scenario|step|rule|section|phase|milestone|tier|level)${SP}\\d+\\b`, "gi"),
+  re(`\\b(?:[Ii]n|[Ss]ince|[Uu]ntil|[Ff]rom|[Bb]y|[Dd]uring|[Oo]f|[Ff]or|FY)${SP}?(?:19|20)\\d\\d\\b(?![.,]\\d)(?!${SP}?(?:[A-Z]{1,4}\\b|pieces|boxes|cases|units|lines|orders))(?!${FIGURE_AFTER})`, "g"),
+  re(`\\b(?:scenario|step|rule|section|phase|milestone|tier|level)${SP}\\d+\\b(?![.,]\\d)(?!${FIGURE_AFTER})`, "gi"),
   re("\\bQ[1-4]\\b")
 ];
 // Ids that must exist. Each pattern's numbered groups are ids (1, 2) or codes ("c").
@@ -262,6 +273,33 @@ const KEYWORD_PATTERNS = [
   { re: re(`\\b(?:plants?|company${SP}codes?)${SP}(${LIST("\\d{4}")})`, "gi"), kind: "code" },
   { re: re(`\\b(?:suppliers?|vendors?|accounts?|materials?|orders?|POs?|lines?|items?|contracts?|agreements?)(?:${SP}(?:no\\.?|number|id))?${SP}(${LIST("\\d{3,10}(?:-\\d{5})?")})`, "gi"), kind: "id" }
 ];
+
+// Numbers written in words (review R2c): "fifteen thousand", "forty-two", "half a million".
+const SMALL_WORDS = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19 };
+const TENS_WORDS = { twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
+const BIG_WORDS = { thousand: 1e3, million: 1e6, billion: 1e9 };
+const NUMBER_WORD = `(?:${[...Object.keys(SMALL_WORDS), ...Object.keys(TENS_WORDS)].join("|")})`;
+const WORDS_SPAN = re(`\\b(?:(?:an?|half(?:${SP}an?)?)(?=${SP}(?:hundred|thousand|million|billion)\\b)|${NUMBER_WORD}\\b)(?:(?:${SP}|-|${SP}and${SP})(?:${NUMBER_WORD}|hundred|thousand|million|billion)\\b)*`, "gi");
+
+/** A number written in words: { value, scale } (scale: the largest of thousand, million, billion, or 1). */
+export function readNumberWords(raw) {
+  let total = 0;
+  let current = 0;
+  let scale = 1;
+  let half = false;
+  for (const w of String(raw).toLowerCase().split(/[\s\u00a0\u202f-]+/).filter(Boolean)) {
+    if (w === "and") continue;
+    if (w === "a" || w === "an") { current += 1; continue; }
+    if (w === "half") { half = true; continue; }
+    if (w in SMALL_WORDS) current += SMALL_WORDS[w];
+    else if (w in TENS_WORDS) current += TENS_WORDS[w];
+    else if (w === "hundred") current = (current || 1) * 100;
+    else if (w in BIG_WORDS) { total += (current || 1) * BIG_WORDS[w]; current = 0; scale = Math.max(scale, BIG_WORDS[w]); }
+    else return null;
+  }
+  const value = (total + current) * (half ? 0.5 : 1);
+  return Number.isFinite(value) ? { value, scale } : null;
+}
 
 const unitCandidates = (word, known) => {
   if (known.units.has(word)) return { strict: true, units: [word] };
@@ -337,8 +375,8 @@ export function auditText(text, known, { floor = 0 } = {}) {
   const PREFIX = re(`(${SIGN})(€|£|EUR${SP}?(?=\\d)|GBP${SP}?(?=\\d))(${SIGN})(${NUM})(?:${SP}?(${SCALE}))?`);
   const SUFFIX = re(`(${SIGN})(${NUM})(?:${SP}?(${SCALE}))?${SP}?(€|EUR\\b|GBP\\b|euros?\\b|pounds?\\b)`);
   const money = [];
-  for (const m of s.matchAll(PREFIX)) money.push({ index: m.index, raw: m[0], num: m[4], scale: m[5], cur: m[2].trim() });
-  for (const m of s.matchAll(SUFFIX)) money.push({ index: m.index, raw: m[0], num: m[2], scale: m[3], cur: m[4] });
+  for (const m of s.matchAll(PREFIX)) money.push({ index: m.index, raw: m[0], num: m[4], scale: m[5], cur: m[2].trim(), sign: `${m[1]}${m[3]}` });
+  for (const m of s.matchAll(SUFFIX)) money.push({ index: m.index, raw: m[0], num: m[2], scale: m[3], cur: m[4], sign: m[1] });
   money.sort((x, y) => x.index - y.index);
   const TAIL = re(`^${SP}?(?:per|\\/|an?|each)${SP}?(?:(${NUM})${SP})?([A-Za-z][A-Za-z0-9-]*|€|£)`, "");
   for (const t of money) {
@@ -363,7 +401,8 @@ export function auditText(text, known, { floor = 0 } = {}) {
       continue;
     }
     take(t.index, end);
-    token(t.raw, "amount", Boolean(read) && matchAmount(read, scale, currency, known, floor), t.index);
+    const negative = /[-\u2212]/.test(t.sign);
+    token(t.raw, "amount", Boolean(read) && matchAmount(read, scale, currency, known, floor, { signed: negative, context: s.slice(Math.max(0, t.index - 60), t.index), after: s.slice(end, end + 60) }), t.index);
   }
 
   // 5. Percentages.
@@ -375,6 +414,40 @@ export function auditText(text, known, { floor = 0 } = {}) {
     const read = readEnglishNumber(m[2]);
     const ok = Boolean(read) && known.shares.some((x) => Math.abs(x * 100 - read.value) <= 0.5 * 10 ** -read.decimals + 1e-9);
     token(m[0].trim(), "share", ok, a);
+  }
+
+  // 5b. Numbers in words (review R2c): with a currency an amount, with "per cent" a percentage, with a
+  // scale word an amount, a count or a quantity; small counts in words ("three suppliers") pass as before.
+  const WORDS_AFTER = re(`^${SP}?(?:(%|per${SP}?cent\\b|percent\\b)|(euros?\\b|EUR\\b|pounds?\\b|GBP\\b))`, "i");
+  for (const m of s.matchAll(WORDS_SPAN)) {
+    const a = m.index; const b = a + m[0].length;
+    if (!free(a, b)) continue;
+    const read = readNumberWords(m[0]);
+    if (!read) continue;
+    const after = WORDS_AFTER.exec(s.slice(b));
+    if (after?.[1]) {
+      take(a, b + after[0].length);
+      const ok = known.shares.some((x) => Math.abs(x * 100 - read.value) <= 0.5 + 1e-9);
+      token(s.slice(a, b + after[0].length).trim(), "share", ok, a);
+      continue;
+    }
+    if (after?.[2]) {
+      take(a, b + after[0].length);
+      const currency = CURRENCY_OF[after[2].toLowerCase()] || "EUR";
+      const ok = matchAmount({ value: read.value / read.scale, decimals: 0 }, read.scale, currency, known, 0, { signed: false, context: s.slice(Math.max(0, a - 60), a), after: s.slice(b + after[0].length, b + after[0].length + 60) });
+      token(s.slice(a, b + after[0].length).trim(), "amount", ok, a);
+      continue;
+    }
+    if (read.scale > 1) {
+      take(a, b);
+      const v = read.value;
+      const half = 0.5 * read.scale + 1e-9;
+      const around = { signed: false, context: s.slice(Math.max(0, a - 60), a), after: s.slice(b, b + 60) };
+      const ok = matchAmount({ value: v / read.scale, decimals: 0 }, read.scale, "EUR", known, 0, around)
+        || matchAmount({ value: v / read.scale, decimals: 0 }, read.scale, "GBP", known, 0, around)
+        || (Number.isInteger(v) && known.counts.has(v)) || known.quantities.some((q) => Math.abs(q.value - v) <= half);
+      token(m[0], "amount", ok, a);
+    }
   }
 
   // 6. Everything else with a digit: quantities with a unit, counts, numbers written bare.
@@ -435,9 +508,21 @@ function tolerance(read, scale, figure, floor) {
   return Math.max(floor, Math.min(half, MAX_RELATIVE * Math.abs(figure))) + 1e-9;
 }
 
-function matchAmount(read, scale, currency, known, floor) {
+// Words around an amount that say it is a loss, so a negative figure may be written without its sign:
+// before it in the same clause ("loses €779"), or right after it ("€200 more than it saves").
+const LOSS_BEFORE = /\b(?:los(?:e|es|ing|t)|loss(?:es)?|negative|deficit|short(?:fall)?|minus|below|less|lower|cheaper|under|costs?\s+more|more\s+than\s+it\s+(?:saves|brings|returns))\b[^.;:!?]*$/i;
+const LOSS_AFTER = /^[^.;:!?]{0,40}?\b(?:more\s+than\s+it\s+(?:saves|brings|returns)|less|short|below|lower|cheaper|loss(?:es)?|in\s+the\s+red)\b/i;
+
+/**
+ * An amount against the run's amounts, of the same currency and within the tolerance. Its sign must agree
+ * (review R2d): a minus sign needs a negative figure; a negative figure written without one passes only
+ * when the words before it say it is a loss. sign: { signed: written with a minus, context: the text before }.
+ */
+function matchAmount(read, scale, currency, known, floor, { signed = false, context = "", after = "" } = {}) {
   const v = read.value * scale;
-  if (known.amounts.some((x) => x.currency === currency && Math.abs(x.value - v) <= tolerance(read, scale, x.value, floor))) return true;
+  const signOk = (x) => (signed ? x.negative : !x.negative || LOSS_BEFORE.test(context) || LOSS_AFTER.test(after));
+  if (known.amounts.some((x) => x.currency === currency && signOk(x) && Math.abs(x.value - v) <= tolerance(read, scale, x.value, floor))) return true;
+  if (signed) return false;
   // A bare amount may be a unit price at its item's display quantity ("Frankfurt €6.90").
   return known.prices.some((p) => p.currency === currency && Math.abs(p.value * p.display_quantity - v) <= tolerance(read, scale, p.value * p.display_quantity, floor));
 }

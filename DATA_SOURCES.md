@@ -43,7 +43,7 @@ value.
 | 124 supplier accounts | Rebate Hunter's fictional vendor accounts outside its five real corporate groups, one per duplicate-name group (`tools/source/accounts.json`); ids, names, cities, countries, currencies and categories kept, tax ids and bank digits dropped |
 | Eight added accounts, ids from 80001 | Invented here: seven in the Birmingham area invoicing in pounds, and a distributor in Lyon |
 | Material groups (fifteen, two levels) | Invented here (`tools/source/material_groups.json`), shared with the Data Quality Agent |
-| 64 materials, 24 contracts, 1,538 order lines, 12 buyers | Invented by `tools/build_world.mjs` from a fixed seed; buyers by role and team, given name and initial only |
+| 64 materials, 24 contracts, 1,540 order lines, 12 buyers | Invented by `tools/build_world.mjs` from a fixed seed; buyers by role and team, given name and initial only |
 | Order texts | In the language of the plant that bought: German in Frankfurt and Duisburg, French in Lyon, English in Birmingham |
 | The shoe's manufacturer and part number (Brekholt, BH-7730-S3) | Invented; no maker of that name found on 19 Nov 2026 |
 
@@ -84,7 +84,9 @@ last 365 days, read as euros a year at the current volume.
 | --- | --- | --- |
 | Incoterms 2020: eleven rules in force since 1 January 2020; groups E (EXW), F (FCA, FAS, FOB), C (CPT, CIP, CFR, CIF), D (DAP, DPU, DDP) | ICC's Incoterms page and a German chamber of commerce's summary (read on 19 Nov 2026) | Verified |
 | Net price and price unit of a purchase-order item: EKPO-NETPR, EKPO-PEINH; order price unit EKPO-BPRME | SAP knowledge-base previews (19 Nov 2026) | Verified |
-| Order header and Incoterms (EKKO, EKKO-INCO1), unit conversions (MARM), manufacturer part number (MARA-MFRPN) | Typical source fields | Not verified yet; checked before version 1.0.0 |
+| Order header EKKO with its Incoterms EKKO-INCO1 ("Incoterms (Part 1)", three characters, checked against table TINC) and the place in EKKO-INCO2; an item may carry Incoterms of its own that differ from the header's, which is why the world keeps the rule on each order line | Third-party data-dictionary references (leanx.eu) and SAP's help and knowledge-base previews on item Incoterms (read on 20 Nov 2026) | Verified |
+| Unit conversions MARM: per material and alternative unit, numerator UMREZ and denominator UMREN to the base unit MARA-MEINS (the world's `conversions` per material) | Third-party data-dictionary references (leanx.eu, sapstack.com, read on 20 Nov 2026) | Verified |
+| Manufacturer part number MARA-MFRPN (40 characters) with the manufacturer's number MARA-MFRNR, an account of the supplier master (the world keeps the manufacturer's name and part number, `manufacturer` and `mpn`) | An SAP knowledge-base preview naming MARA-MFRPN, and data-dictionary references (read on 20 Nov 2026) | Verified |
 
 ## 7. What the app does not use
 

@@ -13,7 +13,7 @@
 //   - figures: which tool results a text may quote, by where the text goes.
 // Pure module: no DOM, no storage, no network.
 
-import { KnownFigures, auditText } from "./figures.js";
+import { KnownFigures, readEnglishNumber, auditText } from "./figures.js";
 import { DRAFTS_BY_OPTION, DRAFT_WORDS, DRAFT_TYPES } from "./drafts.js";
 import { ACCEPT_REASONS } from "./options.js";
 
@@ -173,6 +173,7 @@ export function mergeKnown(list) {
     out.shares.push(...k.shares);
     out.quantities.push(...k.quantities);
     out.rates.push(...k.rates);
+    out.realised.push(...(k.realised || []));
     for (const x of k.counts) out.counts.add(x);
     for (const x of k.ids) out.ids.add(x);
     for (const x of k.codes) out.codes.add(x);
@@ -228,4 +229,51 @@ export class FigureLedger {
     const r = auditText(text, this.scope(kind, compareId));
     return r.ok ? [] : [...new Set(r.offending.map((t) => t.raw ?? t))];
   }
+}
+
+// ---- value words (review R5) --------------------------------------------------------------------------
+
+const CLAUSE_END = /[.;:!?\n]/;
+// A negation or a condition in the clause: "nothing is saved", "realised only when later orders show it".
+const NOT_A_CLAIM = /\b(?:not|nothing|never|no|none|neither|nor|cannot|unless|until|only|once|before|if|when|whether|would|could|might|yet)\b|n't\b/i;
+const AMOUNT_IN_TEXT = /[-\u2212]?(?:€|£|EUR ?|GBP ?)(\d(?:[\d.,]*\d)?)(?:\s?(k|m|bn|thousand|million|billion)\b)?|(\d(?:[\d.,]*\d)?)(?:\s?(k|m|bn|thousand|million|billion)\b)?\s?(?:euros?|EUR|pounds?|GBP)\b/gi;
+const SCALE_WORD = { k: 1e3, thousand: 1e3, m: 1e6, million: 1e6, bn: 1e9, billion: 1e9 };
+
+/**
+ * Claims that value is saved or realised (brief section 6.7: nothing reads saved before later order
+ * lines show it). "saved" and "saves" are claims unless the clause before them negates or conditions them
+ * ("nothing is saved", "it would save"); "realised" is one unless its clause negates or conditions it
+ * ("counts as realised only when later order lines show it") or it is "realised to date" for an amount a
+ * tool returned as realised (the value pipeline's). Returns the offending clauses, shortened.
+ */
+export function valueClaims(text, known) {
+  const s = String(text || "");
+  const bad = [];
+  const clause = (i, j) => {
+    let a = i; while (a > 0 && !CLAUSE_END.test(s[a - 1])) a -= 1;
+    let b = j; while (b < s.length && !CLAUSE_END.test(s[b])) b += 1;
+    return { text: s.slice(a, b), start: a };
+  };
+  const show = (c) => c.text.trim().replace(/\s+/g, " ").slice(0, 90);
+  for (const m of s.matchAll(/\bsav(?:ed|es)\b/gi)) {
+    const c = clause(m.index, m.index + m[0].length);
+    if (!NOT_A_CLAIM.test(c.text.slice(0, m.index - c.start))) bad.push(show(c));
+  }
+  for (const m of s.matchAll(/\breali[sz](?:ed|es|e|ing)\b/gi)) {
+    const c = clause(m.index, m.index + m[0].length);
+    if (NOT_A_CLAIM.test(c.text)) continue;
+    if (/\bto date\b/i.test(c.text)) {
+      // The amount nearest to the word must be one the value pipeline returned as realised.
+      const at = m.index - c.start;
+      const amounts = [...c.text.matchAll(AMOUNT_IN_TEXT)].map((x) => {
+        const read = readEnglishNumber(x[1] || x[3]);
+        const scale = SCALE_WORD[String(x[2] || x[4] || "").toLowerCase()] || 1;
+        return read ? { value: read.value * scale, half: 0.5 * 10 ** -read.decimals * scale, at: x.index } : null;
+      }).filter(Boolean).sort((x, y) => Math.abs(x.at - at) - Math.abs(y.at - at));
+      const near = amounts[0];
+      if (near && (known?.realised || []).some((r) => Math.abs(r - near.value) <= Math.max(near.half, 1e-9) || Math.abs(r - near.value) <= 0.02 * r)) continue;
+    }
+    bad.push(show(c));
+  }
+  return [...new Set(bad)];
 }

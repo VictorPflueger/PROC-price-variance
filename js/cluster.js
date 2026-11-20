@@ -35,9 +35,10 @@ export function openClusterDialog(req, { onAnswer, plantName = (id) => id, perso
       const box = h("input", { type: "checkbox", class: "vc-checkbox", id: `cl-${l.id}`, checked: true, dataset: { line: l.id } });
       box.addEventListener("change", update);
       boxes.set(l.id, box);
+      // The whole row is the checkbox's label: a target of at least 40 px.
       return h("li", { class: "cluster-line" },
-        box,
-        h("label", { for: `cl-${l.id}` },
+        h("label", { class: "cluster-line__label", for: `cl-${l.id}` },
+          box,
           h("span", { class: "cluster-line__qty vc-tabular" }, `${int(l.quantity)} ${l.order_unit}`),
           h("span", { class: "cluster-line__price vc-tabular" }, ` at ${l.currency === "EUR" ? "€" : l.currency === "GBP" ? "£" : `${l.currency} `}${Number(l.net_price).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per ${l.price_unit > 1 ? `${l.price_unit} ` : ""}${l.order_unit}`),
           h("span", { class: "vc-visually-hidden" }, `, line ${l.id}`)));
@@ -94,14 +95,17 @@ export function openClusterDialog(req, { onAnswer, plantName = (id) => id, perso
     size: "wide",
     className: "cluster-modal",
     dismissible: false,
+    // What decides the answer comes first: the agent's note, the evidence and the base unit, so they are
+    // in view with the buttons on a 1280 × 720 screen; the lines follow, each column whole (review R10).
     body: [
       h("div", { class: "cluster-proposal" }, h("span", { class: "vc-tag vc-tag--feature" }, "Proposed by the agent"), aiLabel("cluster")),
       req.note ? renderInline(req.note, h("p", { class: "cluster-note" })) : null,
-      h("div", { class: "cluster-cols" }, columns),
       h("h3", { class: "cluster-sub" }, "Evidence"),
       evidence,
       h("fieldset", { class: "cluster-base" }, h("legend", {}, "Base unit for the comparison"), radios),
-      msg
+      msg,
+      h("h3", { class: "cluster-sub" }, "The lines, by plant"),
+      h("div", { class: "cluster-cols" }, columns)
     ],
     footer: [reject, confirmSome, confirmAll]
   });

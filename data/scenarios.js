@@ -14,7 +14,8 @@ window.SCENARIOS = [
     "short": "Gloves",
     "category": "MRO supplies",
     "seed": "Lyon seems to pay far more for nitrile gloves than Frankfurt.",
-    "group_id": "20001001"
+    "group_id": "20001001",
+    "start_here": true
   },
   {
     "id": "SC-CONSULT",

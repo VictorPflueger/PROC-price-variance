@@ -11,7 +11,7 @@
   // Scenario 2: the steps after the person confirms the cluster, whole or split.
   const afterCluster = [
     { tool: "pv_compare", input: { group_id: "{{cluster.id}}" } },
-    { say: "{{cluster.id}} is now a comparable group with the person-day as its base unit. I check three of its lines step by step, from the benchmark pair and the highest pair." },
+    { say: "{{cluster.id}} is now a comparable group with {{cluster.base_unit_name}} as its base unit, as you chose. I check three of its lines step by step, from the benchmark pair and the highest pair." },
     { tool: "pv_normalise", input: { line_id: "{{benchmark.line}}" } },
     { tool: "pv_normalise", input: { line_id: "{{benchmark.line2}}" } },
     { tool: "pv_normalise", input: { line_id: "{{highest.line}}" } },
@@ -20,7 +20,7 @@
       { say: "No contract fixes {{group.benchmark_plant}}'s day rate, yet it is the group's best at volume: {{group.benchmark}}. {{group.highest_plant}} pays {{group.highest}}." },
       { alert: {
         title: "SAP finance consultants: {{group.highest_plant}} pays {{group.highest}}, the benchmark is {{group.benchmark}}",
-        summary: "The cluster you confirmed compares the same role across plants at one base unit, the person-day. {{group.benchmark_plant}} buys most days at {{group.benchmark}}; {{group.highest_plant}} pays {{group.highest}}. Unexplained: {{group.opportunity}} a year, spread {{group.spread}}."
+        summary: "The cluster you confirmed compares the same role across plants at one base unit, {{cluster.base_unit_name}}. {{group.benchmark_plant}} buys at {{group.benchmark}}; {{group.highest_plant}} pays {{group.highest}}. Unexplained: {{group.opportunity}} a year, spread {{group.spread}}."
       } },
       { propose: true }
     ], else: [
@@ -96,7 +96,7 @@
       ],
       options: {
         texts: {
-          H: { title: "Move the consulting to the benchmark supplier", description: "Call off the role at {{option.H.plants_moved}} from supplier {{option.H.supplier}} at {{group.benchmark}}.", residual_risk: "Birmingham stays as it is: the supplier does not deliver to the UK." },
+          H: { title: "Move the consulting to the benchmark supplier", description: "Call off the role at {{option.H.plants_moved}} from supplier {{option.H.supplier}} at {{group.benchmark}}.", residual_risk: { if: "option.H.not_covered", then: "{{option.H.not_covered}} stays as it is: the supplier does not work there.", else: "Every plant above the benchmark moves; the supplier must have consultants free for all of them." } },
           R: { title: "Renegotiate every day rate above the benchmark", description: "Ask the consultancies above the benchmark to match {{group.benchmark}}.", residual_risk: "The savings need every consultancy to agree." },
           B: { title: "One framework tender for the role", description: "Tender the group's whole volume of {{group.quantity}} as one framework, with a bundle discount of {{option.B.bundle}} a year (an assumption).", residual_risk: "A tender takes {{option.B.days}} days to a first saving and may change consultancies." }
         }

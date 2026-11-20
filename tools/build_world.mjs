@@ -456,7 +456,8 @@ export function buildWorld({ accounts, taxonomy, fx }) {
 // ---- scenarios and their frozen reference figures ---------------------------------------------------------
 export function scenariosOf(materialId) {
   return [
-    { id: "SC-GLOVES", number: 1, title: "Gloves at three sites", short: "Gloves", category: "MRO supplies", seed: "Lyon seems to pay far more for nitrile gloves than Frankfurt.", group_id: materialId.GLOVES },
+    // start_here: the scenario of the five-minute demonstration (DEMO_SCRIPT.md); the console marks it.
+    { id: "SC-GLOVES", number: 1, title: "Gloves at three sites", short: "Gloves", category: "MRO supplies", seed: "Lyon seems to pay far more for nitrile gloves than Frankfurt.", group_id: materialId.GLOVES, start_here: true },
     { id: "SC-CONSULT", number: 2, title: "Same consultant, different day rate", short: "Consultants", category: "Consulting", seed: "Our SAP finance consultants cost very different amounts depending on who orders them.", group_id: null, material_group: "SRV-CON" },
     { id: "SC-HOSES", number: 3, title: "Express is not a reason", short: "Hoses", category: "MRO supplies", seed: "Duisburg says its higher prices for hydraulic hoses come from urgent orders.", group_id: materialId.HOSE },
     { id: "SC-BOXES", number: 4, title: "It's the delivery terms", short: "Boxes", category: "Packaging", seed: "The UK pays 6% more for corrugated boxes than Lyon.", group_id: materialId.BOX },

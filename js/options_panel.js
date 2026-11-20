@@ -120,8 +120,10 @@ export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
     return h("div", { class: "option-actions" },
       // The recommended option's Approve is the one solid merlot button; the others are Vici's
       // secondary (soft merlot) buttons. Reject is a neutral decision, not an alarm.
-      h("button", { class: `vc-button${o.recommended ? "" : " vc-button--secondary"}`, type: "button", dataset: { action: "approve" }, on: { click: () => decide(o, "approved") } }, icon("check", 18), "Approve"),
-      h("button", { class: "vc-button vc-button--outline", type: "button", dataset: { action: "reject" }, on: { click: () => decide(o, "rejected") } }, "Reject"));
+      // Each name says which option it decides (WCAG 2.5.3: it starts with the visible word); a
+      // screen reader otherwise hears "Approve" on every card (review R15).
+      h("button", { class: `vc-button${o.recommended ? "" : " vc-button--secondary"}`, type: "button", dataset: { action: "approve" }, "aria-label": `Approve option ${o.id}: ${o.title}`, on: { click: () => decide(o, "approved") } }, icon("check", 18), "Approve"),
+      h("button", { class: "vc-button vc-button--outline", type: "button", dataset: { action: "reject" }, "aria-label": `Reject option ${o.id}: ${o.title}`, on: { click: () => decide(o, "rejected") } }, "Reject"));
   }
 
   function decide(o, decision, reason = null) {

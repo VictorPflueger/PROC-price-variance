@@ -10,12 +10,14 @@
 const VICI = {
   play: "play", reset: "refresh", gear: "settings", globe: "globe-hex", check: "check", x: "close",
   alert: "warning", info: "info", user: "user", mail: "mail", download: "download", copy: "copy",
-  chevronDown: "chevron-down", chevronUp: "chevron-up", chevronRight: "chevron-right", eye: "eye",
+  chevronDown: "chevron-down", chevronUp: "chevron-up", chevronRight: "chevron-right", chevronLeft: "chevron-left", eye: "eye",
   external: "external", spark: "sparkle", hub: "honeycomb", target: "honeycomb",
   // The states of a price on the board (above the benchmark, explained, approved): Vici's state icons.
   error: "error", warning: "warning", success: "success", clock: "clock",
   // The page icon: a price coming down.
-  trendDown: "trend-down", search: "search"
+  trendDown: "trend-down", search: "search",
+  // The Method dialog: how the engine works.
+  book: "book"
 };
 
 /** The app's own drawings (static, trusted strings; never built from data). */

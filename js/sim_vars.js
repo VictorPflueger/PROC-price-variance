@@ -98,6 +98,8 @@ export function runVars(world, latest) {
       if (o.plants_moved) {
         v[`${k}.plants_moved`] = list(o.plants_moved.map((p) => city(world, p)));
         v[`${k}.plants_not_covered`] = list((o.plants_not_covered || []).map((p) => city(world, p))) || "none";
+        // Empty when every plant above the benchmark moves, for a conditional text (review R4).
+        v[`${k}.not_covered`] = list((o.plants_not_covered || []).map((p) => city(world, p)));
       }
     }
   }
@@ -124,6 +126,8 @@ export function runVars(world, latest) {
   if (cl) {
     v["cluster.id"] = cl.id;
     v["cluster.base_unit"] = cl.base_unit;
+    // The base unit the person chose, in words (review R4: a confirmation in hours is not in person-days).
+    v["cluster.base_unit_name"] = { PD: "the person-day", H: "the hour", DAY: "the day" }[cl.base_unit] || cl.base_unit;
     v["cluster.lines"] = String(cl.line_ids.length);
   }
   const sc = latest.scanned;
@@ -169,9 +173,17 @@ export function unresolvedKeys(vars, text) {
   return out;
 }
 
-/** Fills every string of an object (a tool input) and lists what did not resolve. */
+/**
+ * Fills every string of an object (a tool input) and lists what did not resolve. A conditional text,
+ * { if: key, then: text, else: text }, becomes the text its key selects (a key that is empty or unknown
+ * selects else), so a script can word what depends on the person's answer (review R4).
+ */
 export function fillDeep(vars, value, missing = []) {
   if (typeof value === "string") { missing.push(...unresolvedKeys(vars, value)); return fillTemplate(vars, value); }
+  if (value && typeof value === "object" && !Array.isArray(value) && typeof value.if === "string" && typeof value.then === "string"
+    && (value.else === undefined || typeof value.else === "string") && Object.keys(value).every((k) => ["if", "then", "else"].includes(k))) {
+    return fillDeep(vars, vars[value.if] ? value.then : (value.else ?? ""), missing);
+  }
   if (Array.isArray(value)) return value.map((x) => fillDeep(vars, x, missing));
   if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, x]) => [k, fillDeep(vars, x, missing)]));
   return value;
