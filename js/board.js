@@ -79,7 +79,7 @@ export function createBoard(root, { world, analyse, pipeline }) {
       st.focus = a.id;
       st.candidate = null;
       st.view = "group";
-      st.sensitivity = p.detail.sensitivity || null;
+      if (p.detail.sensitivity) st.sensitivity = { ...p.detail.sensitivity, group_id: a.id };
       render();
     } else if (p.name === "pv_scan") {
       st.scanRows = p.result.rows || [];
