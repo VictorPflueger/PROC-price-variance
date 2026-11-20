@@ -3,6 +3,9 @@
 
 import { eur, pct, unitPrice, shortDate } from "./format.js";
 
+/** A rate a simulation replays says so: " (representative)" in authored scripts, " (recorded)" in recorded ones. */
+export const replayTag = (source) => { const m = /\((representative|recorded)\)\s*$/.exec(String(source || "")); return m ? ` (${m[1]})` : ""; };
+
 const plural = (n, word, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
 
 export function summarizeToolResult(name, r) {
@@ -41,7 +44,7 @@ export function summarizeToolResult(name, r) {
       return `Your confirmation: ${r.decision} as ${r.cluster_id} (${plural(r.line_ids?.length || 0, "line")}, base unit ${r.base_unit})`;
     case "open_ecb_rate":
       if (r.ok === false) return `Rate not fetched (${r.error}); the bundled rates stay`;
-      return `ECB reference rate of ${shortDate(r.date)}: 1 EUR = ${r.per_eur} ${r.currency}`;
+      return `ECB reference rate of ${shortDate(r.date)}${replayTag(r.source)}: 1 EUR = ${r.per_eur} ${r.currency}`;
     case "ui_mark_board":
       return `${plural(r.marked, "mark")} on the board`;
     case "ui_report_alert":

@@ -22,11 +22,14 @@ Large groups buy the same gloves, hoses, pallets and consultants at several plan
 
 ## Status
 
-**Version 0.1.0 (milestone M1): the shell, the world and the engine.** The page boots on Vici and the sister apps' shell; the board shows the engine's check of every comparable group of the world, run in the page at the bundled ECB rate; the header shows the value log's approved savings with what is implemented and realised to date. The live agent, the price ladder, the six scenarios as simulations, the cluster dialog and the Method dialog arrive in versions 0.2.0 and 1.0.0 ([PLAN.md](PLAN.md), section 9).
+**Version 0.2.0 (milestone M2): the agent, the board and the simulations.** The live agent runs in the browser with your own Anthropic key: sixteen tools, every guardrail in code, Rebate Hunter's caps of 40 model calls and €3 a run, and the ECB's rates through Frankfurter as a labelled sensitivity. The price board shows a group's price ladder (every pair, the benchmark, the unexplained and justified parts, every line's normalisation one click away) and the portfolio with the value pipeline, each with a table of the same numbers. The cluster dialog asks *Your confirmation* before free-text services become comparable; the options, the outbox with its drafts and the report follow. The six scenarios play as simulations, offline and without a key; Live sweep and Custom what-if run live. The Method dialog, the exports beyond the audit log and the release checks arrive in version 1.0.0 ([PLAN.md](PLAN.md), section 9).
 
 | Part | Where |
 | --- | --- |
 | The method: normalisation, comparable groups, benchmark, options, the value pipeline | `js/normalise.js`, `js/groups.js`, `js/variance.js`, `js/options.js`, `js/pipeline.js`, `js/params.js` |
+| The agent: the live loop, its prompt, the sixteen tools and their guardrails | `js/agent.js`, `js/prompt.js`, `js/tools.js`, `js/guards.js` |
+| The simulations: the six scripts, the player, the checker, the recorder | `data/sim_runs.js`, `js/simulation.js`, `js/sim_check.js`, `js/recorder.js` |
+| The price board and the cluster dialog | `js/board.js`, `js/board_ladder.js`, `js/board_portfolio.js`, `js/board_table.js`, `js/cluster.js` |
 | Display strings | `js/format.js` |
 | The figure audit | `js/figures.js` |
 | Data contracts and their validator | `js/schemas.js`, `js/schema.js` |
@@ -43,11 +46,22 @@ python -m http.server 8000
 
 then open <http://localhost:8000>. Opened straight from disk (`file://`), the browser blocks its modules and the boot screen explains why. On GitHub Pages it runs as is.
 
+Pick a scenario in the console or the Scenario menu and press **Start agent**:
+
+- **Simulation** replays the scenario's script offline, without a key: every tool call runs through the same tools and guardrails as a live run, and the engine recomputes every figure. A SIMULATION tape marks the whole screen.
+- **Live** asks for your Anthropic API key once per tab, checks it with the free `GET /v1/models` call and keeps it in this tab's session storage only (Forget key removes it). A run stops at 40 model calls or €3, whichever comes first; the Session cost tile shows what it spent. **Live sweep** scans every comparable group without a tip; **Custom what-if** takes a price question in your own words.
+
 To rebuild the data: `node tools/build_world.mjs` (the world from its fixed seed), `node tools/check_world.mjs` (its checks), and in GitHub Actions the workflow *FX snapshot* (the rates).
 
 ## Tests
 
 `node tests/run-all.mjs` runs every suite; [tests/README.md](tests/README.md) lists them. The engine reproduces the brief's golden cases to within 1e-9 (`node tests/engine.mjs`), the figure audit its cases F01 to F16 (`node tests/audit.mjs`), and the world its rules (`node tools/check_world.mjs`). GitHub Actions runs everything on every push and pull request (`.github/workflows/tests.yml`).
+
+## Acceptance record
+
+| ID | What | Status |
+| --- | --- | --- |
+| AC-20 | Victor runs one scenario live with his own key, end to end within the caps; the audit export shows the model, the usage, the rates and the cost | Pending: Victor's run of version 0.2.0 |
 
 ## In production
 

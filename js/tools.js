@@ -30,7 +30,7 @@ import { validate, formatErrors } from "./schema.js";
 import { RunEvidence, FigureLedger, verifiedAlert, linesOutsideGroup, optionsError, decisionError, draftError, reportOutcome, OUTCOMES, OPTION_LETTERS } from "./guards.js";
 import { finalizeDraft, DRAFT_TYPES, DRAFTS_BY_OPTION, DRAFT_WORDS } from "./drafts.js";
 import { ACCEPT_REASONS, OPTION_TITLES } from "./options.js";
-import { summarizeToolResult } from "./summaries.js";
+import { summarizeToolResult, replayTag } from "./summaries.js";
 import { toolPlain } from "./tool_plain.js";
 import { shortDate } from "./format.js";
 
@@ -430,7 +430,7 @@ export function createToolbox(ctx) {
     const b = analyseGroup(g2, engineCtx(rates));
     const r0 = used[0];
     return {
-      label: `at the ECB rate of ${shortDate(r0.date)}`,
+      label: `at the ECB rate of ${shortDate(r0.date)}${replayTag(r0.source)}`,
       currency: r0.currency,
       date: r0.date,
       per_eur: r0.per_eur,

@@ -16,8 +16,12 @@ const SUITES = [
   { id: "hygiene", what: "no private term and no e-mail address in any published file", file: "tests/hygiene.mjs", browser: false },
   { id: "docs", what: "documents consistent with the code: every path and section they name exists", file: "tests/docs.mjs", browser: false },
   { id: "parity", what: "shared shell identical to the sister app's, two modules adapted (needs a Rebate Hunter checkout; AC-06)", file: "tests/parity.mjs", browser: false, optional: true },
-  { id: "smoke", what: "the page boots, the engine in the page, scenarios, intro, drawer, keyboard, storage, a missing file", file: "tests/smoke.mjs", browser: true },
-  { id: "hexagon", what: "nothing round: the app's files, and the rendered app in both themes", file: "tests/hexagon.mjs", browser: true }
+  { id: "smoke", what: "the page boots; idle board, scenarios, intro, drawer, keyboard, storage, a missing file; the board equals the engine (AC-14)", file: "tests/smoke.mjs", browser: true },
+  { id: "hexagon", what: "nothing round: the app's files, and the rendered app in both themes", file: "tests/hexagon.mjs", browser: true },
+  { id: "design", what: "series colours: no chart uses merlot, fjord, lilac, honey or a state colour (AC-14)", file: "tests/design.mjs", browser: true },
+  { id: "accept", what: "the key: asked only for Live, checked, kept in this tab, never stored, exported or logged (AC-08)", file: "tests/accept.mjs", browser: true },
+  { id: "live", what: "the live agent against a scripted API stand-in: guardrails, rates, caps, recorder, entries (AC-09 to AC-11)", file: "tests/live.mjs", browser: true },
+  { id: "sims", what: "the six simulations along every decision path, the cluster dialog, the words (AC-10, AC-12, AC-15)", file: "tests/sims.mjs", browser: true }
 ];
 
 const only = process.argv.slice(2);
